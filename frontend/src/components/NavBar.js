@@ -1,6 +1,6 @@
 // What it does: Top navigation bar with app branding and route tabs
 // Input: alertCount prop for badge display
-// Output: Rendered navbar with navigation tabs
+// Output: Rendered navbar with navigation tabs and dark mode toggle
 // Called by: App (main.js)
 
 const NavBar = {
@@ -8,16 +8,44 @@ const NavBar = {
   props: {
     alertCount: { type: Number, default: 0 }
   },
+  data() {
+    return {
+      isDark: false
+    };
+  },
+  mounted() {
+    // Check initial system preference or saved preference
+    const savedTheme = localStorage.getItem('agronav_theme');
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      this.isDark = true;
+      document.documentElement.setAttribute('data-bs-theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-bs-theme', 'light');
+    }
+  },
+  methods: {
+    toggleTheme() {
+      this.isDark = !this.isDark;
+      const theme = this.isDark ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-bs-theme', theme);
+      localStorage.setItem('agronav_theme', theme);
+    }
+  },
   template: `
     <nav class="navbar navbar-agronav px-3 py-2">
-      <div class="container-fluid">
+      <div class="container-fluid align-items-center">
         <span class="navbar-brand mb-0 text-white fw-bold fs-5">
           <i class="bi bi-geo-alt-fill me-1"></i> AgroNav
         </span>
-        <span class="text-white-50 small">Arjun Kumar — Nalgonda</span>
+        <div class="d-flex align-items-center gap-3">
+          <span class="text-white-50 small d-none d-sm-inline">Arjun Kumar — Nalgonda</span>
+          <button @click="toggleTheme" class="theme-toggle" aria-label="Toggle Dark Mode">
+            <i class="bi" :class="isDark ? 'bi-sun-fill' : 'bi-moon-stars-fill'"></i>
+          </button>
+        </div>
       </div>
     </nav>
-    <div class="bg-white border-bottom">
+    <div class="border-bottom" style="background: var(--card-bg);">
       <div class="container-fluid px-3">
         <ul class="nav nav-tabs border-0">
           <li class="nav-item">
