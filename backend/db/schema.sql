@@ -21,13 +21,24 @@ CREATE TABLE IF NOT EXISTS outlets (
 );
 
 CREATE TABLE IF NOT EXISTS visit_logs (
-  id        INTEGER PRIMARY KEY AUTOINCREMENT,
-  outlet_id INTEGER,
-  rep_id    INTEGER,
-  date      TEXT,
-  outcome   TEXT,
-  notes     TEXT,
-  synced    INTEGER DEFAULT 0
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  outlet_id      INTEGER,
+  rep_id         INTEGER,
+  date           TEXT,
+  outcome        TEXT,
+  notes          TEXT,
+  synced         INTEGER DEFAULT 0,
+  outcome_score  INTEGER DEFAULT 0,
+  order_value    INTEGER DEFAULT 0,
+  rejection_reason TEXT
+);
+
+CREATE TABLE IF NOT EXISTS learning_metrics (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  outlet_id       INTEGER,
+  conversion_rate REAL DEFAULT 0.0,
+  acceptance_rate REAL DEFAULT 0.0,
+  last_updated    TEXT
 );
 
 CREATE TABLE IF NOT EXISTS alerts (

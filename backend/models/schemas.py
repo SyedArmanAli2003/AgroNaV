@@ -42,7 +42,10 @@ class NBACard(BaseModel):
 class OutcomeLog(BaseModel):
     """Visit outcome submitted by field rep."""
     outlet_id: int
+    rep_id: int = 1
     result: str                 # "sale" | "order" | "none"
+    order_value: int = 0
+    rejection_reason: Optional[str] = None
     notes: Optional[str] = ""
 
 

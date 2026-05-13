@@ -6,7 +6,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from routers import outlets, visits, alerts, nba, sync, demo
+from routers import outlets, visits, alerts, nba, sync, demo, recalibrate, manager
 import uvicorn
 import os
 
@@ -27,6 +27,8 @@ app.include_router(alerts.router, prefix="/api/alerts", tags=["alerts"])
 app.include_router(nba.router, prefix="/api/nba", tags=["nba"])
 app.include_router(sync.router, prefix="/api/sync", tags=["sync"])
 app.include_router(demo.router, prefix="/api/demo", tags=["demo"])
+app.include_router(recalibrate.router, prefix="/api", tags=["recalibrate"])
+app.include_router(manager.router, prefix="/api", tags=["manager"])
 
 # Serve frontend static files
 frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")

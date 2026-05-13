@@ -6,6 +6,7 @@
 from fastapi import APIRouter, Depends
 from db.database import get_db
 from models.schemas import OutcomeLog
+from services.outcome_scorer import calculate_outcome_score
 from datetime import datetime
 
 router = APIRouter()
@@ -26,12 +27,22 @@ async def log_outcome(outcome: OutcomeLog, db=Depends(get_db)):
             return {"success": False, "error": "Result must be 'sale', 'order', or 'none'"}
 
         today = datetime.now().strftime("%Y-%m-%d")
+        order_value = getattr(outcome, 'order_value', 0) or 0
+        rejection_reason = getattr(outcome, 'rejection_reason', None)
+        outcome_score = calculate_outcome_score(
+            outcome.result, order_value, rejection_reason
+        )
+
         await db.execute(
-            "INSERT INTO visit_logs (outlet_id, rep_id, date, outcome, notes, synced) VALUES (?, ?, ?, ?, ?, ?)",
-            (outcome.outlet_id, 1, today, outcome.result, outcome.notes or "", 1)
+            """INSERT INTO visit_logs
+               (outlet_id, rep_id, date, outcome, notes, synced, outcome_score, order_value, rejection_reason)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (outcome.outlet_id, getattr(outcome, 'rep_id', 1), today,
+             outcome.result, outcome.notes or "", 1,
+             outcome_score, order_value, rejection_reason)
         )
         await db.commit()
-        return {"success": True}
+        return {"success": True, "outcome_score": outcome_score}
 
     except Exception as e:
         print(f"[visits] Error logging outcome: {e}")
@@ -50,6 +61,7 @@ async def get_visit_log(db=Depends(get_db)):
     try:
         async with db.execute(
             """SELECT v.id, v.outlet_id, v.date, v.outcome, v.notes, v.synced,
+                      v.outcome_score, v.order_value,
                       o.name as outlet_name
                FROM visit_logs v
                LEFT JOIN outlets o ON v.outlet_id = o.id
@@ -65,12 +77,14 @@ async def get_visit_log(db=Depends(get_db)):
                 "outlet_id": row["outlet_id"],
                 "outlet_name": row["outlet_name"] or "Unknown",
                 "date": row["date"],
+                "result": row["outcome"],
                 "outcome": row["outcome"],
                 "notes": row["notes"],
                 "synced": row["synced"],
+                "outcome_score": row["outcome_score"] or 0,
             })
 
-        return logs
+        return {"logs": logs}
 
     except Exception as e:
         print(f"[visits] Error fetching visit log: {e}")
@@ -101,8 +115,8 @@ async def get_weekly_stats(db=Depends(get_db)):
                 "acceptance_rate": row["acceptance_rate"],
             })
 
-        return stats
+        return {"stats": stats}
 
     except Exception as e:
         print(f"[visits] Error fetching weekly stats: {e}")
-        return []
+        return {"stats": []}
