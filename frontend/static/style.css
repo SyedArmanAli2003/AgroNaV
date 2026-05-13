@@ -1,0 +1,379 @@
+/* ─────────────────────────────────────────────────────
+   AgroNav — Custom CSS (only what Bootstrap doesn't provide)
+   Called by: frontend/index.html
+   ───────────────────────────────────────────────────── */
+
+/* Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --agro-green: #1D9E75;
+  --agro-green-dark: #0F6E56;
+  --agro-green-light: #E1F5EE;
+  --agro-danger: #A32D2D;
+  --agro-danger-bg: #FCEBEB;
+  --agro-warning: #633806;
+  --agro-warning-bg: #FAEEDA;
+  --agro-success: #27500A;
+  --agro-success-bg: #EAF3DE;
+}
+
+* {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  background: #f7f8fa;
+  color: #1a1a2e;
+  min-height: 100vh;
+}
+
+/* ── Priority Badges ── */
+.priority-high {
+  background: #FCEBEB;
+  color: #A32D2D;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.priority-medium {
+  background: #FAEEDA;
+  color: #633806;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.priority-low {
+  background: #EAF3DE;
+  color: #27500A;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ── Reason Chips ── */
+.reason-chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  display: inline-block;
+  margin: 2px;
+  color: #444;
+}
+
+/* ── WHY NOW Box ── */
+.why-box {
+  background: #E1F5EE;
+  color: #0F6E56;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── Outlet Card ── */
+.outlet-card {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.outlet-card:hover {
+  border-color: #1D9E75 !important;
+  box-shadow: 0 4px 16px rgba(29, 158, 117, 0.12);
+  transform: translateY(-1px);
+}
+
+/* ── Rank Circle ── */
+.rank-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  flex-shrink: 0;
+}
+
+/* ── Nav Tabs ── */
+.nav-tabs .nav-link {
+  color: #666;
+  border: none;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-link.router-link-active {
+  color: #1D9E75;
+  border-bottom: 2px solid #1D9E75;
+  background: transparent;
+}
+
+.nav-tabs .nav-link:hover {
+  color: #1D9E75;
+  border-color: transparent;
+}
+
+/* ── Navbar ── */
+.navbar-agronav {
+  background: linear-gradient(135deg, #1D9E75, #15845f);
+  box-shadow: 0 2px 12px rgba(29, 158, 117, 0.3);
+}
+
+/* ── Stat Cards ── */
+.stat-card {
+  border: none;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s;
+}
+
+.stat-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1D9E75;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+/* ── Alert Card ── */
+.alert-card {
+  border: none;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
+}
+
+.alert-card:hover {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.alert-border-high {
+  border-left: 4px solid #dc3545;
+}
+
+.alert-border-medium {
+  border-left: 4px solid #ffc107;
+}
+
+.alert-border-info {
+  border-left: 4px solid #0d6efd;
+}
+
+/* ── NBA Card ── */
+.nba-card {
+  border: none;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.nba-card .card-header {
+  background: transparent;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 12px 16px;
+}
+
+.nba-section {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.nba-section-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #999;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.nba-product {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1D9E75;
+}
+
+/* ── Map ── */
+.map-container {
+  height: 260px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #e8e8e8;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+}
+
+.map-placeholder {
+  height: 260px;
+  border-radius: 12px;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 14px;
+}
+
+/* ── Section Titles ── */
+.section-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* ── Outcome Buttons ── */
+.outcome-btn {
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.outcome-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.outcome-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Toast ── */
+.toast-container {
+  z-index: 9999;
+}
+
+/* ── Table ── */
+.table-agronav th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+  font-weight: 600;
+  border-bottom: 2px solid #e8e8e8;
+}
+
+/* ── Alert Badge ── */
+.alert-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #dc3545;
+  display: inline-block;
+  margin-left: 4px;
+  animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Page Transitions ── */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .stat-value {
+    font-size: 22px;
+  }
+
+  .map-container, .map-placeholder {
+    height: 200px;
+  }
+}
+
+/* ── Synced Badges ── */
+.badge-synced {
+  background: #EAF3DE;
+  color: #27500A;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.badge-pending {
+  background: #FAEEDA;
+  color: #633806;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* ── Outcome Color Coding ── */
+.outcome-sale {
+  color: #27500A;
+  font-weight: 600;
+}
+
+.outcome-order {
+  color: #0d6efd;
+  font-weight: 600;
+}
+
+.outcome-none {
+  color: #999;
+}
+
+/* ── Back link ── */
+.back-link {
+  color: #1D9E75;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s;
+}
+
+.back-link:hover {
+  color: #0F6E56;
+}
+
+/* ── Loading Spinner ── */
+.spinner-agronav {
+  color: #1D9E75;
+}
