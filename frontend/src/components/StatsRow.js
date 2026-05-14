@@ -8,9 +8,9 @@ function StatsRow({ outlets = [], stats = [] }) {
     : "—";
 
   const cards = [
-    { label: "Visits planned", value: outlets.length, color: "#1D9E75" },
-    { label: "High priority", value: highCount, color: "#A32D2D" },
-    { label: "Acceptance rate", value: acceptance, color: "#1D9E75" }
+    { label: "Visits planned", value: outlets.length, accent: "var(--green-primary)", valColor: "var(--text-primary)" },
+    { label: "High priority", value: highCount, accent: "var(--high-text)", valColor: "var(--high-text)" },
+    { label: "Acceptance rate", value: acceptance, accent: "#4ECDC4", valColor: "var(--text-primary)" }
   ];
 
   return (
@@ -18,20 +18,20 @@ function StatsRow({ outlets = [], stats = [] }) {
       {cards.map((card) => (
         <div key={card.label} className="col-4">
           <div
-            className="p-3 rounded-3 text-center"
+            className="text-center"
             style={{
-              background: "rgba(255,255,255,0.85)",
-              backdropFilter: "blur(12px)",
-              border: "1px solid rgba(255,255,255,0.4)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.04)",
-              borderRadius: 16
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+              borderLeft: `3px solid ${card.accent}`,
+              borderRadius: "var(--radius-lg)",
+              padding: "16px"
             }}
           >
             <div
               style={{
-                fontSize: 28,
-                fontWeight: 700,
-                color: card.color,
+                fontSize: "24px",
+                fontWeight: 600,
+                color: card.valColor,
                 lineHeight: 1
               }}
             >
@@ -39,12 +39,10 @@ function StatsRow({ outlets = [], stats = [] }) {
             </div>
             <div
               style={{
-                fontSize: 10,
-                color: "#64748b",
+                fontSize: "11px",
+                color: "var(--text-muted)",
                 textTransform: "uppercase",
-                letterSpacing: 1,
-                fontWeight: 600,
-                marginTop: 6
+                marginTop: "6px"
               }}
             >
               {card.label}

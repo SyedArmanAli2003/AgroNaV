@@ -9,64 +9,77 @@ function NBACard({ nba }) {
 
   return (
     <div
-      className="card mb-3"
       style={{
-        background: "rgba(255,255,255,0.85)",
-        backdropFilter: "blur(12px)",
-        border: "1px solid rgba(255,255,255,0.4)",
-        borderRadius: 16,
-        boxShadow: "0 8px 32px rgba(0,0,0,0.04)"
+        background: "var(--bg-card)",
+        border: "1px solid var(--border-subtle)",
+        borderRadius: "var(--radius-lg)",
+        padding: "20px",
+        marginBottom: "16px"
       }}
     >
-      <div className="card-body">
-        <p
+      <p
+        style={{
+          fontSize: "10px", textTransform: "uppercase",
+          letterSpacing: "1px", color: "var(--text-muted)",
+          fontWeight: 700, marginBottom: "8px"
+        }}
+      >
+        Next best action
+      </p>
+
+      <h5
+        style={{
+          background: "linear-gradient(135deg, #1D9E75, #4ECDC4)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          fontSize: "22px", fontWeight: 700, marginBottom: "16px"
+        }}
+      >
+        {nba.product}
+      </h5>
+
+      {sections.map((s) => (
+        <div
+          key={s.label}
           style={{
-            fontSize: 10, textTransform: "uppercase",
-            letterSpacing: 1.5, color: "#64748b",
-            fontWeight: 700, marginBottom: 8
+            background: "var(--bg-glass)",
+            border: "1px solid var(--border-subtle)",
+            borderRadius: "var(--radius-md)",
+            padding: "12px 14px",
+            marginBottom: "10px"
           }}
         >
-          Next best action
-        </p>
-
-        <h5 style={{ color: "#1D9E75", fontWeight: 700, fontSize: 24, marginBottom: 16 }}>
-          {nba.product}
-        </h5>
-
-        {sections.map((s) => (
           <div
-            key={s.label}
-            className="rounded-3 p-3 mb-2"
             style={{
-              background: "rgba(255,255,255,0.6)",
-              border: "1px solid rgba(255,255,255,0.4)"
+              color: "var(--text-muted)", fontSize: "10px",
+              textTransform: "uppercase", letterSpacing: "1px",
+              marginBottom: "4px"
             }}
           >
-            <div
-              style={{
-                fontSize: 10, textTransform: "uppercase",
-                letterSpacing: 1, color: "#64748b",
-                fontWeight: 700, marginBottom: 6
-              }}
-            >
-              {s.label}
-            </div>
-            <div style={{ fontSize: 14, lineHeight: 1.6 }}>{s.value}</div>
+            {s.label}
           </div>
-        ))}
-
-        {/* WHY NOW — non-negotiable */}
-        <div
-          style={{
-            background: "#d1fae5", color: "#065f46",
-            padding: "14px 18px", borderRadius: 12,
-            fontSize: 14, lineHeight: 1.6, marginTop: 4,
-            border: "1px solid rgba(16,185,129,0.2)"
-          }}
-        >
-          <strong>Why now: </strong>
-          {nba.why}
+          <div style={{ color: "var(--text-secondary)", fontSize: "13px", lineHeight: 1.6 }}>
+            {s.value}
+          </div>
         </div>
+      ))}
+
+      {/* WHY NOW box */}
+      <div
+        style={{
+          background: "rgba(29,158,117,0.1)",
+          border: "1px solid rgba(29,158,117,0.25)",
+          borderLeft: "3px solid var(--green-primary)",
+          borderRadius: "var(--radius-md)",
+          padding: "14px 16px",
+          color: "#4ECDC4",
+          fontSize: "13px",
+          lineHeight: 1.6,
+          marginTop: "10px"
+        }}
+      >
+        <strong style={{ color: "var(--green-primary)" }}>Why now: </strong>
+        {nba.why}
       </div>
     </div>
   );

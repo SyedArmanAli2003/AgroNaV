@@ -41,29 +41,48 @@ function Dashboard() {
   };
 
   return (
-    <div>
+    <div className="page-enter">
       <StatsRow outlets={outlets} stats={stats} />
 
       {/* Recalibrate button */}
       <div className="d-flex align-items-center gap-2 mb-3">
         <button
-          className="btn btn-sm"
           style={{
-            background: "linear-gradient(135deg, #1D9E75, #34d399)",
-            color: "white", border: "none", borderRadius: 10,
-            padding: "8px 18px", fontWeight: 600, fontSize: 13,
-            boxShadow: "0 4px 12px rgba(29,158,117,0.3)",
-            transition: "transform 0.2s"
+            background: "linear-gradient(135deg, var(--green-primary), #0F6E56)",
+            color: "white",
+            border: "none",
+            borderRadius: "var(--radius-pill)",
+            padding: "10px 24px",
+            fontSize: "13px",
+            fontWeight: 600,
+            cursor: "pointer",
+            transition: "all var(--transition-fast)",
+            boxShadow: "0 4px 15px rgba(29,158,117,0.3)"
           }}
           onClick={handleRecalibrate}
           disabled={loading}
-          onMouseEnter={(e) => (e.target.style.transform = "translateY(-2px)")}
-          onMouseLeave={(e) => (e.target.style.transform = "")}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.boxShadow = "0 6px 20px rgba(29,158,117,0.45)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "";
+            e.currentTarget.style.boxShadow = "0 4px 15px rgba(29,158,117,0.3)";
+          }}
+          onMouseDown={(e) => e.currentTarget.style.transform = "translateY(0)"}
         >
           {loading ? "Recalibrating..." : "⟳ Recalibrate"}
         </button>
+        
         {recalMsg && (
-          <span style={{ fontSize: 13, color: "#1D9E75", fontWeight: 600 }}>
+          <span
+            style={{
+              fontSize: "13px",
+              color: "var(--green-primary)",
+              fontWeight: 600,
+              animation: "toastIn 0.3s ease forwards"
+            }}
+          >
             {recalMsg}
           </span>
         )}
@@ -75,18 +94,18 @@ function Dashboard() {
       {/* Visit plan */}
       <p
         style={{
-          fontSize: 12, textTransform: "uppercase",
-          color: "#64748b", fontWeight: 700,
-          letterSpacing: 1.5, marginBottom: 12
+          fontSize: "12px", textTransform: "uppercase",
+          color: "var(--text-muted)", fontWeight: 700,
+          letterSpacing: "1.5px", marginBottom: "12px"
         }}
       >
         Today's visit plan
       </p>
 
       {outlets.length === 0 && (
-        <div className="text-center text-muted py-4">
-          <div style={{ fontSize: 36 }}>📋</div>
-          <div style={{ marginTop: 8 }}>No outlets loaded — check your connection</div>
+        <div className="text-center py-4" style={{ color: "var(--text-muted)" }}>
+          <div style={{ fontSize: "36px" }}>📋</div>
+          <div style={{ marginTop: "8px" }}>No outlets loaded — check your connection</div>
         </div>
       )}
 

@@ -78,3 +78,12 @@ export const api = {
     return res.json();
   }
 };
+
+// ─────────────────────────────────────────
+// GOOGLE STITCH MCP INTEGRATION
+// TODO: Connect via Antigravity IDE MCP panel
+// Google Stitch handles: [define what it handles
+//   in your project — e.g. data sync, auth, etc.]
+// Replace the relevant api.* calls below once
+// the MCP server is connected in the IDE.
+// ─────────────────────────────────────────

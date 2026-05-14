@@ -3,59 +3,111 @@ import { Link, useLocation } from "react-router-dom";
 
 function NavBar() {
   const loc = useLocation();
-  const active = (path) =>
-    loc.pathname === path ? "nav-link active fw-semibold" : "nav-link";
-
-  const tabStyle = (path) =>
-    loc.pathname === path
-      ? { color: "#1D9E75", borderBottom: "3px solid #1D9E75" }
-      : { color: "#666" };
+  const isActive = (path) => loc.pathname === path;
 
   return (
-    <>
-      {/* Top bar */}
-      <nav
-        style={{
-          background: "linear-gradient(135deg, #1D9E75, #117855)",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.1)"
-        }}
-        className="px-3 py-2 d-flex justify-content-between align-items-center"
-      >
-        <span className="text-white fw-bold fs-5" style={{ letterSpacing: "-0.5px" }}>
-          📍 AgroNav
+    <div
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+        background: "rgba(15,17,23,0.85)",
+        backdropFilter: "blur(20px)",
+        borderBottom: "1px solid var(--border-subtle)",
+        padding: "12px 20px"
+      }}
+    >
+      {/* Top row */}
+      <div className="d-flex justify-content-between align-items-center">
+        <span
+          style={{
+            background: "linear-gradient(135deg, #1D9E75, #4ECDC4)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            fontSize: "20px",
+            fontWeight: 700
+          }}
+        >
+          AgroNav
         </span>
-        <span className="text-white opacity-75" style={{ fontSize: 13 }}>
+        <span style={{ color: "var(--text-muted)", fontSize: "12px" }}>
           Arjun Kumar — Nalgonda
         </span>
-      </nav>
-
-      {/* Tab bar */}
-      <div className="border-bottom bg-white px-2">
-        <ul className="nav nav-tabs border-0">
-          <li className="nav-item">
-            <Link to="/dashboard" className={active("/dashboard")} style={tabStyle("/dashboard")}>
-              Today's Route
-            </Link>
-          </li>
-          <li className="nav-item">
-            <Link to="/alerts" className={active("/alerts")} style={tabStyle("/alerts")}>
-              Alerts
-              <span className="ms-1 badge bg-danger" style={{ fontSize: 9 }}>!</span>
-            </Link>
-          </li>
-          <li className="nav-item">
-            <Link to="/outcomes" className={active("/outcomes")} style={tabStyle("/outcomes")}>
-              Outcomes
-            </Link>
-          </li>
-          <li className="nav-item">
-            <Link to="/manager" className={active("/manager")} style={tabStyle("/manager")}>
-              Manager
-            </Link>
-          </li>
-        </ul>
       </div>
-    </>
+
+      {/* Capsule tab bar */}
+      <div
+        style={{
+          display: "inline-flex",
+          background: "var(--bg-surface)",
+          borderRadius: "var(--radius-pill)",
+          padding: "4px",
+          marginTop: "10px",
+          border: "1px solid var(--border-subtle)",
+          maxWidth: "100%",
+          overflowX: "auto",
+          whiteSpace: "nowrap",
+          scrollbarWidth: "none" /* Firefox */
+        }}
+      >
+        <style>{`.nav-capsule::-webkit-scrollbar { display: none; }`}</style>
+        <div className="nav-capsule" style={{ display: "flex", gap: "4px" }}>
+          {[
+            { path: "/dashboard", label: "Today's Route" },
+            { path: "/alerts", label: "Alerts", badge: true },
+            { path: "/outcomes", label: "Outcomes" },
+            { path: "/manager", label: "Manager" }
+          ].map((tab) => {
+            const active = isActive(tab.path);
+            return (
+              <Link
+                key={tab.path}
+                to={tab.path}
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: "var(--radius-pill)",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  textDecoration: "none",
+                  transition: "all var(--transition-fast)",
+                  background: active ? "var(--green-primary)" : "transparent",
+                  color: active ? "white" : "var(--text-secondary)",
+                  boxShadow: active ? "0 2px 12px rgba(29,158,117,0.4)" : "none",
+                  position: "relative"
+                }}
+                onMouseEnter={(e) => {
+                  if (!active) {
+                    e.currentTarget.style.color = "var(--text-primary)";
+                    e.currentTarget.style.background = "var(--bg-glass)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!active) {
+                    e.currentTarget.style.color = "var(--text-secondary)";
+                    e.currentTarget.style.background = "transparent";
+                  }
+                }}
+              >
+                {tab.label}
+                {tab.badge && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: "6px",
+                      right: "10px",
+                      width: "6px",
+                      height: "6px",
+                      backgroundColor: "var(--high-text)",
+                      borderRadius: "50%"
+                    }}
+                  />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
 

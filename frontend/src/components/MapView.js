@@ -43,16 +43,21 @@ function MapView({ outlets }) {
     return (
       <div
         style={{
-          height: 200, borderRadius: 16,
-          background: "#e2e8f0",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          color: "#64748b", fontSize: 14, fontWeight: 500,
-          marginBottom: 16,
-          border: "1px solid rgba(255,255,255,0.4)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.04)"
+          height: "220px",
+          background: "var(--bg-card)",
+          border: "1px dashed var(--border-subtle)",
+          borderRadius: "var(--radius-lg)",
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          color: "var(--text-muted)", fontSize: "13px",
+          marginBottom: "16px",
+          backgroundImage: `linear-gradient(var(--border-subtle) 1px, transparent 1px),
+                            linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px)`,
+          backgroundSize: "40px 40px"
         }}
       >
-        🗺️ Map loads when GOOGLE_MAPS_KEY is added
+        <div style={{ fontSize: "24px", marginBottom: "8px" }}>🗺️</div>
+        Map loads when GOOGLE_MAPS_KEY is added
       </div>
     );
   }
@@ -61,9 +66,9 @@ function MapView({ outlets }) {
     <div
       ref={mapRef}
       style={{
-        height: 260, borderRadius: 16, marginBottom: 16,
-        border: "1px solid rgba(255,255,255,0.4)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.04)"
+        height: 260, borderRadius: "var(--radius-lg)", marginBottom: 16,
+        border: "1px solid var(--border-subtle)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.4)"
       }}
     />
   );

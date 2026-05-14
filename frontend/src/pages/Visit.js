@@ -5,9 +5,9 @@ import { api, FALLBACK_NBA } from "../services/api";
 import { queueOutcome } from "../services/offline";
 
 const PRIORITY_STYLE = {
-  HIGH: { bg: "#ffe4e6", color: "#e11d48" },
-  MEDIUM: { bg: "#fef3c7", color: "#d97706" },
-  LOW: { bg: "#dcfce7", color: "#16a34a" }
+  HIGH: { bg: "var(--high-bg)", color: "var(--high-text)" },
+  MEDIUM: { bg: "var(--medium-bg)", color: "var(--medium-text)" },
+  LOW: { bg: "var(--low-bg)", color: "var(--low-text)" }
 };
 
 function Visit() {
@@ -20,7 +20,6 @@ function Visit() {
   const [score, setScore] = useState(null);
 
   useEffect(() => {
-    // Find outlet in cached daily plan
     const cached = localStorage.getItem("agronav_daily");
     if (cached) {
       try {
@@ -29,7 +28,6 @@ function Visit() {
         setOutlet(found || null);
       } catch {}
     }
-    // Fetch NBA card
     api.getNBA(id).then(setNba).catch(() => setNba(FALLBACK_NBA));
   }, [id]);
 
@@ -48,9 +46,9 @@ function Visit() {
 
   if (!outlet) {
     return (
-      <div className="text-center text-muted mt-5">
-        <div className="spinner-border" style={{ color: "#1D9E75" }} role="status" />
-        <div style={{ marginTop: 8 }}>Loading visit details...</div>
+      <div className="text-center mt-5" style={{ color: "var(--text-muted)" }}>
+        <div className="spinner-border" style={{ color: "var(--green-primary)" }} role="status" />
+        <div style={{ marginTop: "8px" }}>Loading visit details...</div>
       </div>
     );
   }
@@ -58,11 +56,11 @@ function Visit() {
   const ps = PRIORITY_STYLE[outlet.label] || PRIORITY_STYLE.LOW;
 
   return (
-    <div>
+    <div className="page-enter">
       {/* Back link */}
       <button
         className="btn btn-sm btn-link text-decoration-none ps-0 mb-3"
-        style={{ color: "#1D9E75", fontWeight: 600 }}
+        style={{ color: "var(--green-primary)", fontWeight: 600, boxShadow: "none" }}
         onClick={() => navigate("/dashboard")}
       >
         ← Back to route
@@ -71,16 +69,16 @@ function Visit() {
       {/* Outlet header */}
       <div className="d-flex align-items-center gap-2 mb-2">
         <div style={{ flex: 1 }}>
-          <h5 style={{ marginBottom: 2, fontWeight: 700 }}>{outlet.name}</h5>
-          <small style={{ color: "#64748b" }}>
+          <h5 style={{ marginBottom: "2px", fontWeight: 700, color: "var(--text-primary)" }}>{outlet.name}</h5>
+          <small style={{ color: "var(--text-secondary)" }}>
             {outlet.type} · {outlet.owner_name} · {outlet.district}
           </small>
         </div>
         <span
           style={{
             background: ps.bg, color: ps.color,
-            padding: "4px 12px", borderRadius: 20,
-            fontSize: 11, fontWeight: 700, textTransform: "uppercase"
+            padding: "4px 12px", borderRadius: "var(--radius-pill)",
+            fontSize: "11px", fontWeight: 600, textTransform: "uppercase"
           }}
         >
           {outlet.label}
@@ -93,9 +91,9 @@ function Visit() {
           <span
             key={i}
             style={{
-              fontSize: 11, padding: "4px 10px", borderRadius: 20,
-              background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)",
-              color: "#475569", fontWeight: 500
+              fontSize: "11px", padding: "3px 10px", borderRadius: "var(--radius-pill)",
+              background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-subtle)",
+              color: "var(--text-secondary)", fontWeight: 500
             }}
           >
             {r}
@@ -110,40 +108,68 @@ function Visit() {
       <div className="mt-3">
         <p
           style={{
-            fontSize: 12, textTransform: "uppercase",
-            letterSpacing: 1.5, color: "#64748b",
-            fontWeight: 700, marginBottom: 12
+            fontSize: "12px", textTransform: "uppercase",
+            letterSpacing: "1px", color: "var(--text-muted)",
+            fontWeight: 700, marginBottom: "12px"
           }}
         >
           How did this visit go?
         </p>
+        
         <div className="d-flex gap-2">
-          {[
-            { label: "Sale Made", val: "sale", cls: "btn-outline-success" },
-            { label: "Order Placed", val: "order", cls: "btn-outline-primary" },
-            { label: "No Purchase", val: "none", cls: "btn-outline-danger" }
-          ].map((btn) => (
-            <button
-              key={btn.val}
-              className={`btn ${btn.cls} flex-fill`}
-              style={{
-                borderRadius: 12, padding: "12px", fontWeight: 600,
-                transition: "all 0.2s cubic-bezier(0.34,1.56,0.64,1)"
-              }}
-              disabled={logged}
-              onClick={() => logOutcome(btn.val)}
-            >
-              {btn.label}
-            </button>
-          ))}
+          <button
+            onClick={() => logOutcome("sale")}
+            disabled={logged}
+            style={{
+              flex: 1, borderRadius: "var(--radius-pill)", padding: "12px",
+              fontSize: "13px", fontWeight: 500, transition: "all var(--transition-fast)",
+              background: "rgba(29,158,117,0.12)", border: "1px solid rgba(29,158,117,0.3)",
+              color: "#1D9E75", opacity: logged ? 0.4 : 1, cursor: logged ? "not-allowed" : "pointer"
+            }}
+            onMouseEnter={(e) => !logged && (e.currentTarget.style.background = "rgba(29,158,117,0.25)")}
+            onMouseLeave={(e) => !logged && (e.currentTarget.style.background = "rgba(29,158,117,0.12)")}
+          >
+            Sale Made
+          </button>
+          
+          <button
+            onClick={() => logOutcome("order")}
+            disabled={logged}
+            style={{
+              flex: 1, borderRadius: "var(--radius-pill)", padding: "12px",
+              fontSize: "13px", fontWeight: 500, transition: "all var(--transition-fast)",
+              background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)",
+              color: "#818CF8", opacity: logged ? 0.4 : 1, cursor: logged ? "not-allowed" : "pointer"
+            }}
+            onMouseEnter={(e) => !logged && (e.currentTarget.style.background = "rgba(99,102,241,0.25)")}
+            onMouseLeave={(e) => !logged && (e.currentTarget.style.background = "rgba(99,102,241,0.12)")}
+          >
+            Order Placed
+          </button>
+          
+          <button
+            onClick={() => logOutcome("none")}
+            disabled={logged}
+            style={{
+              flex: 1, borderRadius: "var(--radius-pill)", padding: "12px",
+              fontSize: "13px", fontWeight: 500, transition: "all var(--transition-fast)",
+              background: "rgba(220,53,69,0.1)", border: "1px solid rgba(220,53,69,0.25)",
+              color: "#FF6B7A", opacity: logged ? 0.4 : 1, cursor: logged ? "not-allowed" : "pointer"
+            }}
+            onMouseEnter={(e) => !logged && (e.currentTarget.style.background = "rgba(220,53,69,0.2)")}
+            onMouseLeave={(e) => !logged && (e.currentTarget.style.background = "rgba(220,53,69,0.1)")}
+          >
+            No Purchase
+          </button>
         </div>
 
         {logged && score !== null && (
           <div
-            className="mt-2 text-center"
+            className="mt-3 text-center"
             style={{
-              fontSize: 13, color: "#1D9E75", fontWeight: 600,
-              background: "#d1fae5", padding: "8px 12px", borderRadius: 10
+              fontSize: "13px", color: "var(--green-primary)", fontWeight: 600,
+              background: "rgba(29,158,117,0.1)", border: "1px solid rgba(29,158,117,0.25)",
+              padding: "8px 12px", borderRadius: "var(--radius-md)"
             }}
           >
             Outcome score: {score} / 100
@@ -151,16 +177,21 @@ function Visit() {
         )}
       </div>
 
-      {/* Toast */}
+      {/* Toast Notification */}
       {toast && (
         <div
           style={{
-            position: "fixed", bottom: 24, right: 24,
-            background: "linear-gradient(135deg, #1D9E75, #34d399)",
-            color: "white", padding: "12px 24px",
-            borderRadius: 12, fontSize: 14, fontWeight: 600,
+            position: "fixed", bottom: "28px", right: "28px",
+            background: "var(--bg-card)",
+            border: "1px solid var(--border-active)",
+            borderRadius: "var(--radius-md)",
+            padding: "12px 20px",
+            fontSize: "13px",
+            color: "var(--green-primary)",
+            fontWeight: 600,
             zIndex: 9999,
-            boxShadow: "0 8px 24px rgba(29,158,117,0.4)"
+            boxShadow: "var(--shadow-glow)",
+            animation: "toastIn 0.2s ease forwards"
           }}
         >
           {toast}

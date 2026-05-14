@@ -1,11 +1,99 @@
-/* AgroNav — Global Styles */
+:root {
+  /* Brand */
+  --green-primary:   #1D9E75;
+  --green-light:     #E1F5EE;
+  --green-dark:      #0F6E56;
+
+  /* Dark theme backgrounds */
+  --bg-base:         #0F1117;
+  --bg-surface:      #1A1D27;
+  --bg-card:         #1E2132;
+  --bg-card-hover:   #252840;
+  --bg-glass:        rgba(255,255,255,0.04);
+
+  /* Text */
+  --text-primary:    #F0F2F8;
+  --text-secondary:  #8B90A7;
+  --text-muted:      #555A72;
+
+  /* Borders */
+  --border-subtle:   rgba(255,255,255,0.07);
+  --border-active:   rgba(29,158,117,0.5);
+
+  /* Priority colors */
+  --high-bg:         rgba(220,53,69,0.15);
+  --high-text:       #FF6B7A;
+  --medium-bg:       rgba(255,193,7,0.12);
+  --medium-text:     #FFD166;
+  --low-bg:          rgba(29,158,117,0.12);
+  --low-text:        #1D9E75;
+
+  /* Shadows */
+  --shadow-card:     0 4px 24px rgba(0,0,0,0.4);
+  --shadow-glow:     0 0 20px rgba(29,158,117,0.15);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-med:  0.25s ease;
+  --transition-slow: 0.4s ease;
+
+  /* Border radius */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-pill: 100px;
+}
+
 * {
-  font-family: "Outfit", -apple-system, BlinkMacSystemFont, sans-serif;
   box-sizing: border-box;
 }
+
 body {
   margin: 0;
-  background: #f0f4f8;
-  color: #1a1a2e;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Outfit', 'Inter', sans-serif;
   min-height: 100vh;
+}
+
+/* Page Transitions */
+.page-enter {
+  animation: fadeSlideUp 0.3s ease forwards;
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Toast Animation */
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--green-primary);
+}
+
+/* Utility to override Bootstrap text colors globally on cards if needed */
+.text-muted {
+  color: var(--text-muted) !important;
 }
