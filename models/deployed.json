@@ -1,0 +1,16 @@
+{
+  "deployed_name": "catboost",
+  "deployed_family": "catboost",
+  "dominant_model": "catboost",
+  "dominant_family": "catboost",
+  "adopt_ensemble": false,
+  "ensemble_winner_strategy": "rank_average",
+  "ensemble_winner_weights": {
+    "catboost": 0.3333333333333333,
+    "lightgbm": 0.3333333333333333,
+    "logreg": 0.3333333333333333
+  },
+  "ensemble_test_auc": 0.7846050293781279,
+  "best_single_name": "catboost",
+  "best_single_test_auc": 0.7869
+}
