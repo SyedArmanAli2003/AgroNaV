@@ -8,6 +8,12 @@ import '../css/landing.css';
 // --- Sub-Components ---
 
 function LeftPanel({ navigate, onOpenMenu, onScrollTo }) {
+  const { isAuthenticated, user } = useAuth();
+  
+  const repIdentity = isAuthenticated && user
+    ? `${user.name || "Rep"}${user.territory || user.district ? `, ${user.territory || user.district}` : ""}`
+    : "Syngenta Field Agent";
+
   return (
     <div className="panel-left">
       <div className="liquid-glass-strong panel-left-glass" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -88,7 +94,7 @@ function LeftPanel({ navigate, onOpenMenu, onScrollTo }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px', marginTop: '10px' }}>
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.2)' }} />
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'Poppins' }}>Arjun Kumar, Nalgonda</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'Poppins' }}>{repIdentity}</div>
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.2)' }} />
           </div>
         </div>
