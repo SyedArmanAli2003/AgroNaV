@@ -44,7 +44,7 @@ function LeftPanel({ navigate, onOpenMenu, onScrollTo }) {
           <div 
             className="liquid-glass-strong hover-scale" 
             style={{ borderRadius: 'var(--radius-pill)', padding: '14px 28px', display: 'flex', alignItems: 'center', gap: '12px', fontFamily: 'Poppins', fontWeight: 500, fontSize: '15px', color: 'var(--text-primary)', cursor: 'pointer' }}
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/signin')}
           >
             Get Started
             <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

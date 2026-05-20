@@ -169,7 +169,7 @@
   /* Hero: stack vertically */
   .hero-shell { flex-direction: column; }
   .panel-left, .panel-right { width: 100% !important; display: flex !important; min-height: auto; }
-  .panel-right { padding: 24px; }
+  .panel-right { padding: 24px !important; }
 
   /* Pill buttons: wrap */
   .pill-group { flex-wrap: wrap; gap: 8px; }

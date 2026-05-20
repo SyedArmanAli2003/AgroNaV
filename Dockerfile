@@ -4,7 +4,10 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ ./
-ENV REACT_APP_API_URL=""
+# Empty string = same origin (frontend and backend share the Cloud Run service on port 8080)
+# For a separate backend deployment, set this to the backend's full URL.
+ARG REACT_APP_API_URL=""
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
 RUN npm run build
 
 # Stage 2: Run Python FastAPI backend

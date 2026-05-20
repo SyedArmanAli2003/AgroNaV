@@ -14,12 +14,11 @@ function StatsRow({ outlets = [], stats = [] }) {
   ];
 
   return (
-    <div className="row g-2 mb-3">
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '12px' }}>
       {cards.map((card) => (
-        <div key={card.label} className="col-4">
           <div
-            className="text-center"
             style={{
+              textAlign: 'center',
               background: "var(--bg-card)",
               border: "1px solid var(--border-subtle)",
               borderLeft: `3px solid ${card.accent}`,
@@ -48,7 +47,6 @@ function StatsRow({ outlets = [], stats = [] }) {
               {card.label}
             </div>
           </div>
-        </div>
       ))}
     </div>
   );

@@ -180,7 +180,7 @@ function Dashboard() {
       <StatsRow outlets={outletsMapped} stats={stats} />
 
       {/* Recalibrate button */}
-      <div className="d-flex align-items-center gap-2 mb-3">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
         <button
           style={{
             background: "linear-gradient(135deg, var(--green-primary), #0F6E56)",

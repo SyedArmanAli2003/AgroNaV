@@ -1,8 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function NavBar() {
   const loc = useLocation();
+  const { user } = useAuth();
   const isActive = (path) => loc.pathname === path;
 
   return (
@@ -18,7 +20,7 @@ function NavBar() {
       }}
     >
       {/* Top row */}
-      <div className="d-flex justify-content-between align-items-center">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span
           style={{
             background: "linear-gradient(135deg, #1D9E75, #4ECDC4)",
@@ -31,7 +33,7 @@ function NavBar() {
           AgroNav
         </span>
         <span style={{ color: "var(--text-muted)", fontSize: "12px" }}>
-          Arjun Kumar — Nalgonda
+          {user?.name || "Field Rep"} — {user?.territory || "Territory"}
         </span>
       </div>
 

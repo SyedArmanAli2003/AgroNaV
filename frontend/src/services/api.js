@@ -1,7 +1,12 @@
 // All API calls go here. Nothing else imports fetch directly.
 // Base URL reads from env so it works locally and on Cloud Run.
 
-const BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
+// REACT_APP_API_URL="" → same-origin (Cloud Run: frontend + backend share the service)
+// REACT_APP_API_URL="https://..." → absolute URL (separate backend deployment)
+// undefined → local dev fallback
+const BASE = process.env.REACT_APP_API_URL !== undefined
+  ? process.env.REACT_APP_API_URL
+  : "http://localhost:8000";
 
 // --- Auth helpers ---
 

@@ -32,7 +32,8 @@ function SignIn() {
   };
 
   const handleGoogleSignIn = () => {
-    window.location.href = "http://localhost:8000/auth/google";
+    const apiBase = process.env.REACT_APP_API_URL || "http://localhost:8000";
+    window.location.href = `${apiBase}/auth/google`;
   };
 
   return (
