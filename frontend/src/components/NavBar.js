@@ -69,10 +69,23 @@ function NavBar() {
 
         {/* User + logout */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-            {user?.name?.split(" ")[0] || "Rep"}
-            {user?.territory || user?.district ? ` · ${user.territory || user.district}` : ""}
-          </span>
+          <div 
+            onClick={() => navigate("/select-territory")}
+            style={{ 
+              fontSize: 12, color: "var(--text-secondary)", cursor: "pointer", 
+              padding: "6px 10px", borderRadius: 8, background: "var(--glass-light-bg)",
+              border: "1px solid var(--glass-border, rgba(255,255,255,0.05))",
+              display: "flex", alignItems: "center", gap: 6, transition: "background 0.2s"
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = "var(--glass-strong-bg)"}
+            onMouseLeave={e => e.currentTarget.style.background = "var(--glass-light-bg)"}
+          >
+            <span style={{ fontSize: 14 }}>👤</span>
+            <span>
+              {user?.name?.split(" ")[0] || "Rep"}
+              {user?.territory || user?.district ? ` · ${user.territory || user.district}` : ""}
+            </span>
+          </div>
           <button
             onClick={handleLogout}
             style={{
@@ -101,14 +114,14 @@ function NavBar() {
             </Link>
           );
         })}
-        {/* Profile/logout tab */}
+        {/* Profile tab */}
         <button
-          className={`bottom-nav-tab`}
-          onClick={handleLogout}
+          className={`bottom-nav-tab${loc.pathname === "/select-territory" ? " active" : ""}`}
+          onClick={() => navigate("/select-territory")}
           style={{ border: "none" }}
         >
           <span className="icon">👤</span>
-          {user?.name?.split(" ")[0] || "Sign out"}
+          {user?.name?.split(" ")[0] || "Profile"}
         </button>
       </nav>
     </>
