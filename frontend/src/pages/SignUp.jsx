@@ -37,7 +37,9 @@ function SignUp() {
   };
 
   const handleGoogleSignUp = () => {
-    const apiBase = process.env.REACT_APP_API_URL || "http://localhost:8000";
+    const apiBase = process.env.REACT_APP_API_URL !== undefined
+      ? process.env.REACT_APP_API_URL
+      : "http://localhost:8000";
     window.location.href = `${apiBase}/auth/google`;
   };
 

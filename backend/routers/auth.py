@@ -83,8 +83,11 @@ async def google_auth(request: Request):
             detail="Google OAuth not configured. Use email/password login."
         )
 
-    base_url = str(request.base_url).rstrip("/")
+    # Use BASE_URL env var in production (Cloud Run).
+    # Falls back to request.base_url for local dev (localhost:8000).
+    base_url = os.getenv("BASE_URL", "").rstrip("/") or str(request.base_url).rstrip("/")
     redirect_uri = f"{base_url}/auth/google/callback"
+    print(f"[auth/google] redirect_uri = {redirect_uri}", flush=True)
 
     from urllib.parse import urlencode
     params = urlencode({
@@ -107,7 +110,9 @@ async def google_callback(request: Request, code: str = "", error: str = "", db=
     try:
         import httpx
 
-        base_url = str(request.base_url).rstrip("/")
+        # Use BASE_URL env var in production (Cloud Run).
+        # Falls back to request.base_url for local dev (localhost:8000).
+        base_url = os.getenv("BASE_URL", "").rstrip("/") or str(request.base_url).rstrip("/")
         redirect_uri = f"{base_url}/auth/google/callback"
 
         # Exchange code for tokens
@@ -156,8 +161,8 @@ async def google_callback(request: Request, code: str = "", error: str = "", db=
             )
         await db.commit()
 
-        token = create_jwt(rep_id, email, name)
-        return RedirectResponse(f"/signin?token={token}")
+        frontend_url = os.getenv("BASE_URL", "").rstrip("/") or str(request.base_url).rstrip("/")
+        return RedirectResponse(f"{frontend_url}/signin?token={token}")
 
     except Exception as e:
         print(f"[auth] Google OAuth error: {e}")
