@@ -68,10 +68,12 @@ app.add_middleware(
 from routers import auth as auth_router
 from routers import recommendations as reco_router
 from routers import visit_log as visit_log_router
+from routers import outcomes as outcomes_router
 
 app.include_router(auth_router.router)
 app.include_router(reco_router.router)
 app.include_router(visit_log_router.router)
+app.include_router(outcomes_router.router)
 
 # --- Existing routers (backward compatibility for current frontend) ---
 from routers import outlets, visits, alerts, nba, sync, demo, recalibrate, manager

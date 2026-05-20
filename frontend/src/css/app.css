@@ -1,0 +1,229 @@
+/* =================================================================
+   app.css — AgroNav app-wide styles (non-landing pages)
+   All CSS variables come from landing.css (single source of truth).
+   Never hardcode a color here — use var(--...) always.
+   ================================================================= */
+
+/* ---- Shop / Recommendation Cards (Dashboard) ---- */
+.shop-card {
+  background: var(--glass-light-bg);
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.10));
+  border-radius: 16px;
+  padding: 20px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  margin-bottom: 16px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  will-change: transform;
+  cursor: pointer;
+}
+.shop-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(29,158,117,0.18);
+}
+
+.priority-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.10);
+  border-radius: 99px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+.priority-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.5s ease;
+}
+.reasons-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+}
+.reasons-list li {
+  font-size: 13px;
+  opacity: 0.85;
+  padding: 2px 0;
+}
+
+/* ---- Rank badge ---- */
+.rank-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--glass-strong-bg);
+  border: 1px solid rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+/* ---- Page wrappers ---- */
+.app-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px 16px 100px 16px; /* 100px bottom for bottom nav */
+}
+
+/* ---- Glass card ---- */
+.glass-card {
+  background: var(--glass-light-bg);
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.10));
+  border-radius: 16px;
+  padding: 20px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ---- Section heading ---- */
+.section-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted, rgba(255,255,255,0.50));
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+/* ---- Toggle button group (PostVisitLog) ---- */
+.toggle-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.toggle-btn {
+  padding: 10px 18px;
+  border-radius: 99px;
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.15));
+  background: var(--glass-light-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.18s ease;
+  font-family: inherit;
+}
+.toggle-btn:hover {
+  background: var(--glass-strong-bg);
+}
+.toggle-btn.active {
+  background: var(--color-primary, #1D9E75);
+  border-color: var(--color-primary, #1D9E75);
+  color: #fff;
+}
+
+/* ---- Alert cards ---- */
+.alert-card {
+  background: var(--glass-light-bg);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  backdrop-filter: blur(8px);
+  transition: transform 0.18s ease;
+}
+.alert-card:hover {
+  transform: translateY(-1px);
+}
+
+/* ---- Interactive card (landing + dashboard) ---- */
+.interactive-card {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.interactive-card:hover {
+  filter: brightness(1.12);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(29,158,117,0.20);
+}
+
+/* ---- Bottom NavBar (mobile) ---- */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(15,17,23,0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--glass-border, rgba(255,255,255,0.08));
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 200;
+}
+
+.bottom-nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, rgba(255,255,255,0.50));
+  font-size: 10px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  text-decoration: none;
+  position: relative;
+}
+.bottom-nav-tab.active {
+  color: var(--color-primary, #1D9E75);
+}
+.bottom-nav-tab span.icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* ---- Toast notification ---- */
+.toast-pill {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--glass-light-bg);
+  backdrop-filter: blur(12px);
+  border-radius: 99px;
+  padding: 12px 24px;
+  color: #fff;
+  font-size: 14px;
+  z-index: 9999;
+  animation: toastIn 0.25s ease forwards;
+  white-space: nowrap;
+}
+
+/* ---- Page entrance animation ---- */
+.page-enter {
+  animation: fadeSlideUp 0.3s ease forwards;
+}
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Spinner ---- */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+/* ---- Utility ---- */
+.text-muted { color: var(--text-muted) !important; }
+.text-primary { color: var(--text-primary) !important; }
+.text-secondary { color: var(--text-secondary) !important; }
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  .app-page { padding: 12px 12px 80px 12px; }
+  .glass-card { padding: 16px; }
+}

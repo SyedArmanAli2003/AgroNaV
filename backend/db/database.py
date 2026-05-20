@@ -23,5 +23,17 @@ async def init_tables():
         schema_sql = f.read()
     async with aiosqlite.connect(DB_PATH) as db:
         await db.executescript(schema_sql)
+        try:
+            await db.execute("ALTER TABLE users ADD COLUMN state TEXT")
+        except Exception:
+            pass
+        try:
+            await db.execute("ALTER TABLE users ADD COLUMN district TEXT")
+        except Exception:
+            pass
+        try:
+            await db.execute("ALTER TABLE users ADD COLUMN territory_id TEXT")
+        except Exception:
+            pass
         await db.commit()
     print("Database tables created.")

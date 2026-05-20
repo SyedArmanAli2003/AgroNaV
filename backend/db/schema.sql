@@ -77,6 +77,9 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   rep_id TEXT NOT NULL,
   google_id TEXT,
+  state TEXT,
+  district TEXT,
+  territory_id TEXT,
   created_at TEXT DEFAULT (datetime('now'))
 );
 

@@ -1,115 +1,117 @@
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useCallback } from "react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import "../css/app.css";
+
+const TABS = [
+  { path: "/dashboard", icon: "🏠", label: "Today"    },
+  { path: "/alerts",    icon: "🔔", label: "Alerts"   },
+  { path: "/log",       icon: "✍️", label: "Log"     },
+  { path: "/outcomes",  icon: "📋", label: "History"  }
+];
 
 function NavBar() {
   const loc = useLocation();
-  const { user } = useAuth();
-  const isActive = (path) => loc.pathname === path;
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = useCallback(() => {
+    if (window.confirm("Sign out of AgroNav?")) {
+      logout();
+      navigate("/signin");
+    }
+  }, [logout, navigate]);
 
   return (
-    <div
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-        background: "rgba(15,17,23,0.85)",
+    <>
+      {/* ---- Desktop top bar ---- */}
+      <div style={{
+        position: "sticky", top: 0, zIndex: 200,
+        background: "rgba(15,17,23,0.9)",
         backdropFilter: "blur(20px)",
-        borderBottom: "1px solid var(--border-subtle)",
-        padding: "12px 20px"
-      }}
-    >
-      {/* Top row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        borderBottom: "1px solid var(--glass-border, rgba(255,255,255,0.08))",
+        padding: "10px 20px",
+        display: "flex", justifyContent: "space-between", alignItems: "center"
+      }}>
+        {/* Brand */}
         <span
+          onClick={() => navigate("/dashboard")}
           style={{
             background: "linear-gradient(135deg, #1D9E75, #4ECDC4)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            fontSize: "20px",
-            fontWeight: 700
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            fontSize: 20, fontWeight: 700, cursor: "pointer"
           }}
         >
-          AgroNav
+          🌿 AgroNav
         </span>
-        <span style={{ color: "var(--text-muted)", fontSize: "12px" }}>
-          {user?.name || "Field Rep"} — {user?.territory || "Territory"}
-        </span>
-      </div>
 
-      {/* Capsule tab bar */}
-      <div
-        style={{
-          display: "inline-flex",
-          background: "var(--bg-surface)",
-          borderRadius: "var(--radius-pill)",
-          padding: "4px",
-          marginTop: "10px",
-          border: "1px solid var(--border-subtle)",
-          maxWidth: "100%",
-          overflowX: "auto",
-          whiteSpace: "nowrap",
-          scrollbarWidth: "none" /* Firefox */
-        }}
-      >
-        <style>{`.nav-capsule::-webkit-scrollbar { display: none; }`}</style>
-        <div className="nav-capsule" style={{ display: "flex", gap: "4px" }}>
-          {[
-            { path: "/dashboard", label: "Today's Route" },
-            { path: "/alerts", label: "Alerts", badge: true },
-            { path: "/outcomes", label: "Outcomes" },
-            { path: "/manager", label: "Manager" }
-          ].map((tab) => {
-            const active = isActive(tab.path);
+        {/* Desktop tabs */}
+        <div style={{ display: "flex", gap: 4, "@media (max-width: 768px)": { display: "none" } }}>
+          {TABS.map(tab => {
+            const active = loc.pathname === tab.path;
             return (
               <Link
                 key={tab.path}
                 to={tab.path}
                 style={{
-                  padding: "8px 20px",
-                  borderRadius: "var(--radius-pill)",
-                  fontSize: "13px",
-                  fontWeight: 500,
-                  textDecoration: "none",
-                  transition: "all var(--transition-fast)",
-                  background: active ? "var(--green-primary)" : "transparent",
-                  color: active ? "white" : "var(--text-secondary)",
-                  boxShadow: active ? "0 2px 12px rgba(29,158,117,0.4)" : "none",
-                  position: "relative"
-                }}
-                onMouseEnter={(e) => {
-                  if (!active) {
-                    e.currentTarget.style.color = "var(--text-primary)";
-                    e.currentTarget.style.background = "var(--bg-glass)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!active) {
-                    e.currentTarget.style.color = "var(--text-secondary)";
-                    e.currentTarget.style.background = "transparent";
-                  }
+                  padding: "7px 18px", borderRadius: 99, fontSize: 13, fontWeight: 500,
+                  textDecoration: "none", transition: "all 0.15s ease",
+                  background: active ? "#1D9E75" : "transparent",
+                  color: active ? "#fff" : "var(--text-secondary)",
+                  boxShadow: active ? "0 2px 12px rgba(29,158,117,0.4)" : "none"
                 }}
               >
-                {tab.label}
-                {tab.badge && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: "6px",
-                      right: "10px",
-                      width: "6px",
-                      height: "6px",
-                      backgroundColor: "var(--high-text)",
-                      borderRadius: "50%"
-                    }}
-                  />
-                )}
+                {tab.icon} {tab.label}
               </Link>
             );
           })}
         </div>
+
+        {/* User + logout */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+            {user?.name?.split(" ")[0] || "Rep"}
+            {user?.territory || user?.district ? ` · ${user.territory || user.district}` : ""}
+          </span>
+          <button
+            onClick={handleLogout}
+            style={{
+              background: "var(--glass-light-bg)", border: "1px solid var(--glass-border, rgba(255,255,255,0.10))",
+              borderRadius: 99, padding: "6px 14px", color: "var(--text-muted)",
+              cursor: "pointer", fontSize: 12, fontFamily: "inherit"
+            }}
+          >
+            Sign out
+          </button>
+        </div>
       </div>
-    </div>
+
+      {/* ---- Mobile bottom tab bar ---- */}
+      <nav className="bottom-nav" style={{ display: "flex" }}>
+        {TABS.map(tab => {
+          const active = loc.pathname === tab.path;
+          return (
+            <Link
+              key={tab.path}
+              to={tab.path}
+              className={`bottom-nav-tab${active ? " active" : ""}`}
+            >
+              <span className="icon">{tab.icon}</span>
+              {tab.label}
+            </Link>
+          );
+        })}
+        {/* Profile/logout tab */}
+        <button
+          className={`bottom-nav-tab`}
+          onClick={handleLogout}
+          style={{ border: "none" }}
+        >
+          <span className="icon">👤</span>
+          {user?.name?.split(" ")[0] || "Sign out"}
+        </button>
+      </nav>
+    </>
   );
 }
 

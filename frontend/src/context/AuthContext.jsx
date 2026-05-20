@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { getRecommendations, cacheRecommendations } from "../services/api";
 
 const AuthContext = createContext(null);
 
 /**
  * Decode a JWT token payload without a library dependency.
- * Works for standard base64url-encoded JWTs.
  */
 function decodeJwt(token) {
   try {
@@ -22,6 +22,19 @@ function decodeJwt(token) {
   }
 }
 
+/** Pre-fetch recommendations in background after login so Dashboard loads instantly. */
+async function prefetchRecs(repId) {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    const data = await getRecommendations(repId, today);
+    if (data && data.recommendations) {
+      cacheRecommendations(data);
+    }
+  } catch {
+    /* silent — dashboard handles missing cache gracefully */
+  }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
@@ -29,7 +42,26 @@ export function AuthProvider({ children }) {
   const login = useCallback((newToken) => {
     localStorage.setItem("agronav_token", newToken);
     setToken(newToken);
-    setUser(decodeJwt(newToken));
+
+    const decoded = decodeJwt(newToken);
+
+    // Merge stored territory into user object (set during TerritorySelect)
+    const storedTerritory = (() => {
+      try {
+        return JSON.parse(localStorage.getItem("agronav_rep_territory") || "{}");
+      } catch {
+        return {};
+      }
+    })();
+
+    const mergedUser = decoded ? { ...decoded, ...storedTerritory } : null;
+    setUser(mergedUser);
+
+    // Pre-fetch recommendations in background
+    const repId = decoded?.sub || decoded?.rep_id;
+    if (repId) {
+      prefetchRecs(repId);
+    }
   }, []);
 
   const logout = useCallback(() => {
@@ -38,30 +70,26 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
-  // On mount: check localStorage for existing token
+  // On mount: restore from localStorage if token exists and not expired
   useEffect(() => {
     const stored = localStorage.getItem("agronav_token");
     if (stored) {
       const decoded = decodeJwt(stored);
       if (decoded && decoded.exp * 1000 > Date.now()) {
+        const storedTerritory = (() => {
+          try {
+            return JSON.parse(localStorage.getItem("agronav_rep_territory") || "{}");
+          } catch {
+            return {};
+          }
+        })();
         setToken(stored);
-        setUser(decoded);
+        setUser({ ...decoded, ...storedTerritory });
       } else {
-        localStorage.removeItem("agronav_token"); // expired
+        localStorage.removeItem("agronav_token");
       }
     }
   }, []);
-
-  // Handle Google OAuth callback: /signin?token=xxx
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const callbackToken = params.get("token");
-    if (callbackToken) {
-      login(callbackToken);
-      // Clean the URL
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-  }, [login]);
 
   return (
     <AuthContext.Provider
