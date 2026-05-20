@@ -1,23 +1,43 @@
-# What it does: recomputes outlet priority scores using
-#               logged visit outcomes, returns updated ranked list
-# Called by: frontend Recalibrate button
+# What it does: Recomputes outlet priority scores using logged visit outcomes
+# Called by: frontend Recalibrate button (existing + new system)
 
 from fastapi import APIRouter, Depends
 from db.database import get_db
 from services.scoring import rank_outlets
 from datetime import date, timedelta
 
-router = APIRouter()
+router = APIRouter(tags=["recalibrate"])
+
+
+@router.post("/api/recalibrate")
+async def recalibrate_legacy(rep_id: int = 1, db=Depends(get_db)):
+    """Legacy recalibrate endpoint for existing frontend.
+    Kept for backward compatibility with /api prefix.
+    """
+    return await _do_recalibrate(rep_id, db)
+
 
 @router.post("/recalibrate")
-async def recalibrate(rep_id: int = 1, db=Depends(get_db)):
+async def recalibrate_new(rep_id: str = "REP_0001", db=Depends(get_db)):
+    """New recalibrate endpoint for updated frontend.
+    Accepts string rep_id format.
+    """
+    # Extract numeric part if present for legacy query
+    try:
+        numeric_id = int("".join(filter(str.isdigit, rep_id))) if rep_id else 1
+    except ValueError:
+        numeric_id = 1
+    return await _do_recalibrate(numeric_id, db)
 
+
+async def _do_recalibrate(rep_id, db):
+    """Shared recalibration logic."""
     # Step 1: get all visit_logs for this rep last 30 days
     thirty_days_ago = (date.today() - timedelta(days=30)).isoformat()
 
     async with db.execute(
         """SELECT outlet_id,
-                  SUM(CASE WHEN outcome IN ('sale','order')
+                  SUM(CASE WHEN outcome IN ('sale','order','Order placed')
                       THEN 1 ELSE 0 END) as wins,
                   COUNT(*) as total
            FROM visit_logs
@@ -28,13 +48,10 @@ async def recalibrate(rep_id: int = 1, db=Depends(get_db)):
         logs = await cursor.fetchall()
 
     # Build conversion rate lookup dict
-    # { outlet_id: conversion_rate 0.0-1.0 }
     conversion = {}
     for row in logs:
         if row["total"] > 0:
-            conversion[row["outlet_id"]] = (
-                row["wins"] / row["total"]
-            )
+            conversion[row["outlet_id"]] = row["wins"] / row["total"]
 
     # Step 2: get all outlets
     async with db.execute("SELECT * FROM outlets") as cursor:
@@ -46,7 +63,6 @@ async def recalibrate(rep_id: int = 1, db=Depends(get_db)):
 
     # Step 4: apply learning boost
     # final = 0.80 * base_score + 0.20 * conversion_rate * 100
-    # This makes outlets where rep succeeded score higher
     for outlet in ranked:
         rate = conversion.get(outlet["id"], 0.0)
         learning_boost = int(rate * 20)

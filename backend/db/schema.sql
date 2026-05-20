@@ -69,3 +69,31 @@ CREATE TABLE IF NOT EXISTS weekly_stats (
   accepted         INTEGER,
   acceptance_rate  REAL
 );
+
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT,
+  name TEXT NOT NULL,
+  rep_id TEXT NOT NULL,
+  google_id TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS retailers (
+  retailer_id TEXT PRIMARY KEY,
+  retailer_name TEXT NOT NULL,
+  territory_id TEXT,
+  tehsil TEXT,
+  state TEXT,
+  district TEXT
+);
+
+CREATE TABLE IF NOT EXISTS nba_responses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  retailer_id TEXT NOT NULL,
+  date TEXT NOT NULL,
+  response_json TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(retailer_id, date)
+);

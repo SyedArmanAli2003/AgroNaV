@@ -5,7 +5,7 @@
 
 from fastapi import APIRouter, Depends
 from db.database import get_db
-from models.schemas import OutcomeLog
+from schemas.schemas import OutcomeLog
 from services.outcome_scorer import calculate_outcome_score
 from datetime import datetime
 

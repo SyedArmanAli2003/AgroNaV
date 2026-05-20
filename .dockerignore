@@ -1,0 +1,15 @@
+.git
+.gitignore
+.gcloudignore
+node_modules
+frontend/node_modules
+frontend/build
+backend/venv
+backend/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/__pycache__
+backend/agronav.db
+.env
+backend/.env

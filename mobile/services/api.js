@@ -3,13 +3,39 @@
 // Output: JSON responses from backend
 // Called by: All mobile screens
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 // Change this to your Cloud Run URL for production
 const BASE = "http://localhost:8000";
+
+/**
+ * Get the stored auth token from AsyncStorage.
+ */
+async function getAuthToken() {
+  try {
+    return await AsyncStorage.getItem("agronav_token");
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Build headers with auth token if available.
+ */
+async function authHeaders(extra = {}) {
+  const token = await getAuthToken();
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...extra
+  };
+}
 
 export const api = {
   morningSync: async () => {
     try {
-      const res = await fetch(`${BASE}/api/sync/morning`);
+      const headers = await authHeaders();
+      const res = await fetch(`${BASE}/api/sync/morning`, { headers });
       return await res.json();
     } catch (e) {
       console.log('[api] morningSync failed:', e);
@@ -19,7 +45,8 @@ export const api = {
 
   getNBA: async (outlet_id) => {
     try {
-      const res = await fetch(`${BASE}/api/nba/${outlet_id}`);
+      const headers = await authHeaders();
+      const res = await fetch(`${BASE}/api/nba/${outlet_id}`, { headers });
       return await res.json();
     } catch (e) {
       console.log('[api] getNBA failed:', e);
@@ -29,9 +56,10 @@ export const api = {
 
   logOutcome: async (outlet_id, result, notes = "") => {
     try {
+      const headers = await authHeaders();
       const res = await fetch(`${BASE}/api/visits/log`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ outlet_id, result, notes })
       });
       return await res.json();
@@ -43,7 +71,8 @@ export const api = {
 
   getAlerts: async () => {
     try {
-      const res = await fetch(`${BASE}/api/alerts`);
+      const headers = await authHeaders();
+      const res = await fetch(`${BASE}/api/alerts`, { headers });
       return await res.json();
     } catch (e) {
       return [];
@@ -52,7 +81,11 @@ export const api = {
 
   dismissAlert: async (alert_id) => {
     try {
-      const res = await fetch(`${BASE}/api/alerts/${alert_id}/dismiss`, { method: "POST" });
+      const headers = await authHeaders();
+      const res = await fetch(`${BASE}/api/alerts/${alert_id}/dismiss`, {
+        method: "POST",
+        headers
+      });
       return await res.json();
     } catch (e) {
       return null;
@@ -61,7 +94,8 @@ export const api = {
 
   getVisitLog: async () => {
     try {
-      const res = await fetch(`${BASE}/api/visits/log`);
+      const headers = await authHeaders();
+      const res = await fetch(`${BASE}/api/visits/log`, { headers });
       return await res.json();
     } catch (e) {
       return [];
@@ -70,7 +104,8 @@ export const api = {
 
   getWeeklyStats: async () => {
     try {
-      const res = await fetch(`${BASE}/api/visits/weekly-stats`);
+      const headers = await authHeaders();
+      const res = await fetch(`${BASE}/api/visits/weekly-stats`, { headers });
       return await res.json();
     } catch (e) {
       return [];
@@ -79,7 +114,8 @@ export const api = {
 
   demoReset: async () => {
     try {
-      const res = await fetch(`${BASE}/api/demo/reset`);
+      const headers = await authHeaders();
+      const res = await fetch(`${BASE}/api/demo/reset`, { headers });
       return await res.json();
     } catch (e) {
       return null;

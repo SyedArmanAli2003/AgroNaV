@@ -3,17 +3,7 @@
 # Output: List of ScoredOutlet dicts sorted by score descending
 # Called by: routers/outlets.py, routers/sync.py
 
-import sys
-import os
 from datetime import datetime
-
-# Add backend to path so ml imports work
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
-try:
-    from ml.ranking import score_outlets as ml_score
-except ImportError:
-    ml_score = None
 
 
 def _fallback_score(outlet):
@@ -95,28 +85,11 @@ def _get_label(score):
 def rank_outlets(outlets):
     """Score, label, and sort outlets by visit priority.
 
-    # What it does: Tries ML scoring first, falls back to rule-based formula
+    # What it does: Rule-based scoring formula
     # Input: list of outlet dicts from database
     # Output: list of ScoredOutlet dicts sorted by score descending
     # Called by: routers/outlets.py, routers/sync.py
     """
-    # Try ML scoring first
-    try:
-        if ml_score is not None:
-            ml_result = ml_score(outlets)
-            if ml_result is not None:
-                # ML model returned scores — add labels and reasons
-                for o in ml_result:
-                    score = o.get("score", 0)
-                    o["label"] = _get_label(score)
-                    if "reasons" not in o:
-                        o["reasons"] = _get_reasons(o)
-                ml_result.sort(key=lambda x: x.get("score", 0), reverse=True)
-                return ml_result
-    except Exception as e:
-        print(f"[scoring] ML scoring failed, using fallback: {e}")
-
-    # Fallback: rule-based scoring
     scored = []
     for o in outlets:
         outlet = dict(o) if not isinstance(o, dict) else o.copy()
@@ -127,3 +100,4 @@ def rank_outlets(outlets):
 
     scored.sort(key=lambda x: x["score"], reverse=True)
     return scored
+

@@ -14,7 +14,7 @@ xgboost>=2.0.0
 optuna>=3.4.0
 
 # Explainability
-shap>=0.43.0
+shap>=0.44.0
 
 # Visualization
 matplotlib>=3.7.0
@@ -26,13 +26,21 @@ jupyter>=1.0.0
 ipykernel>=6.25.0
 notebook>=7.0.0
 
-# LLM layer
-# anthropic>=0.40.0
-# python-dotenv>=1.0.0
+# Backend API
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-jose[cryptography]>=3.3.0
+bcrypt>=4.0.0
+passlib[bcrypt]>=1.7.4
+authlib>=1.2.0
+httpx>=0.25.0
+aiosqlite>=0.19.0
+python-dotenv>=1.0.0
+pydantic[email]>=2.0.0
 
-# RAG (optional, IITM final round)
-# chromadb>=0.4.0
-# sentence-transformers>=2.2.0
+# LLM layer
+google-generativeai>=0.8.0
+openai>=1.30.0
 
 # Utilities
 tqdm>=4.66.0

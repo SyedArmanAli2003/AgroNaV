@@ -1,18 +1,9 @@
-# What it does: Generates anomaly alerts using ML detection + rule-based fallback
+# What it does: Generates anomaly alerts using rule-based detection
 # Input: District name and database connection
 # Output: List of alert dicts sorted by severity
 # Called by: routers/alerts.py, routers/sync.py
 
-import sys
-import os
 from datetime import datetime, timedelta
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
-try:
-    from ml.outliers import detect_anomalies as ml_detect
-except ImportError:
-    ml_detect = None
 
 
 async def get_alerts(district, db):
@@ -42,34 +33,6 @@ async def get_alerts(district, db):
                 })
     except Exception as e:
         print(f"[anomaly] DB alert fetch failed: {e}")
-
-    # Try ML detection
-    ml_alerts = None
-    try:
-        if ml_detect is not None:
-            # Build territory data for ML
-            territory_data = {"district": district}
-            ml_alerts = ml_detect(territory_data)
-    except Exception as e:
-        print(f"[anomaly] ML detection failed, using rule-based fallback: {e}")
-        ml_alerts = None
-
-    # If ML returned alerts, merge with existing (deduplicate by outlet_id + type)
-    if ml_alerts:
-        existing_keys = {(a.get("outlet_id"), a.get("type")) for a in alerts}
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        for ml_alert in ml_alerts:
-            key = (ml_alert.get("outlet_id"), ml_alert.get("type"))
-            if key not in existing_keys:
-                alerts.append({
-                    "id": 0,
-                    "outlet_id": ml_alert.get("outlet_id"),
-                    "type": ml_alert.get("type", "anomaly"),
-                    "message": ml_alert.get("message", "Anomaly detected"),
-                    "severity": ml_alert.get("severity", "medium"),
-                    "created_at": now,
-                    "dismissed": 0
-                })
 
     # Sort: high → medium → info
     severity_order = {"high": 0, "medium": 1, "info": 2}

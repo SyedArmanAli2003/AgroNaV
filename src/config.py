@@ -42,3 +42,5 @@ SKEWED_LOG1P = [
 SENTINEL_NEG1 = ["days_since_last_visit", "days_since_product_last_pushed"]
 
 COLLINEAR_DROP_FOR_LR = "rolling_avg_weekly_sales"
+
+FEATURE_COLS = CAT_LOWCARD + CAT_HIGHCARD + NUM_COLS + BOOL_COLS + FE_EXT_COLS

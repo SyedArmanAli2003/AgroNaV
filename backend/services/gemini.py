@@ -9,7 +9,7 @@ import sys
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from config import GEMINI_API_KEY
+from settings import GEMINI_API_KEY
 
 # Hardcoded fallback NBA when Gemini is unavailable
 FALLBACK = {
