@@ -78,9 +78,9 @@ async def get_recommendations(
                         "retailer_id": f"RTL_{row['id']:05d}",
                         "retailer_name": row["name"],
                         "territory_id": "TERR_001",
-                        "tehsil": row.get("district", "Nalgonda"),
+                        "tehsil": row["district"] or "Nalgonda",
                         "state": "Telangana",
-                        "district": row.get("district", "Nalgonda")
+                        "district": row["district"] or "Nalgonda"
                     })
         except Exception as e:
             print(f"[recommendations] DB error: {e}")

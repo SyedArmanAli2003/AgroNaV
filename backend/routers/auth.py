@@ -50,9 +50,21 @@ async def signup(req: SignUpRequest, db=Depends(get_db)):
     )
     await db.commit()
 
+    # Find territory for the rep
+    territory = "Nalgonda"
+    try:
+        clean_rep_id = "".join(filter(str.isdigit, req.rep_id))
+        rep_id_int = int(clean_rep_id) if clean_rep_id else 1
+        async with db.execute("SELECT territory FROM reps WHERE id=?", (rep_id_int,)) as cursor:
+            rep_row = await cursor.fetchone()
+            if rep_row:
+                territory = rep_row["territory"]
+    except Exception:
+        pass
+
     # Generate JWT
-    token = create_jwt(req.rep_id, req.email, req.name)
-    return {"token": token, "user": {"email": req.email, "name": req.name, "rep_id": req.rep_id}}
+    token = create_jwt(req.rep_id, req.email, req.name, territory)
+    return {"token": token, "user": {"email": req.email, "name": req.name, "rep_id": req.rep_id, "territory": territory}}
 
 
 @router.post("/login")
@@ -70,8 +82,20 @@ async def login(req: LoginRequest, db=Depends(get_db)):
     if not user["password_hash"] or not verify_password(req.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    token = create_jwt(user["rep_id"], req.email, user["name"])
-    return {"token": token, "user": {"email": req.email, "name": user["name"], "rep_id": user["rep_id"]}}
+    # Find territory for the rep
+    territory = "Nalgonda"
+    try:
+        clean_rep_id = "".join(filter(str.isdigit, user["rep_id"]))
+        rep_id_int = int(clean_rep_id) if clean_rep_id else 1
+        async with db.execute("SELECT territory FROM reps WHERE id=?", (rep_id_int,)) as cursor:
+            rep_row = await cursor.fetchone()
+            if rep_row:
+                territory = rep_row["territory"]
+    except Exception:
+        pass
+
+    token = create_jwt(user["rep_id"], req.email, user["name"], territory)
+    return {"token": token, "user": {"email": req.email, "name": user["name"], "rep_id": user["rep_id"], "territory": territory}}
 
 
 @router.get("/auth/google")
@@ -160,6 +184,20 @@ async def google_callback(request: Request, code: str = "", error: str = "", db=
                 (email, name, rep_id, google_id)
             )
         await db.commit()
+
+        # Find territory for the rep
+        territory = "Nalgonda"
+        try:
+            clean_rep_id = "".join(filter(str.isdigit, rep_id))
+            rep_id_int = int(clean_rep_id) if clean_rep_id else 1
+            async with db.execute("SELECT territory FROM reps WHERE id=?", (rep_id_int,)) as cursor:
+                rep_row = await cursor.fetchone()
+                if rep_row:
+                    territory = rep_row["territory"]
+        except Exception:
+            pass
+
+        token = create_jwt(rep_id, email, name, territory)
 
         frontend_url = os.getenv("BASE_URL", "").rstrip("/") or str(request.base_url).rstrip("/")
         return RedirectResponse(f"{frontend_url}/signin?token={token}")

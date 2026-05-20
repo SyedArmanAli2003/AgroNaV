@@ -98,7 +98,7 @@ if os.path.exists(frontend_build_dir):
     @app.get("/{catchall:path}")
     async def serve_react_app(catchall: str):
         # Exclude API endpoints from static file serving
-        if catchall.startswith("api/") or catchall in ["login", "signup", "recommendations", "visit_log", "recalibrate"]:
+        if catchall.startswith("api/") or catchall in ["login", "recommendations", "visit_log", "recalibrate"]:
             from fastapi import HTTPException
             raise HTTPException(status_code=404, detail="Not Found")
 

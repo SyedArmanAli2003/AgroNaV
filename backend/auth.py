@@ -38,12 +38,13 @@ def verify_password(plain: str, hashed: str) -> bool:
         return False
 
 
-def create_jwt(rep_id: str, email: str, name: str) -> str:
-    """Create a JWT token with rep_id, email, name, and 24h expiry."""
+def create_jwt(rep_id: str, email: str, name: str, territory: str = "Nalgonda") -> str:
+    """Create a JWT token with rep_id, email, name, territory, and 24h expiry."""
     payload = {
         "sub": rep_id,
         "email": email,
         "name": name,
+        "territory": territory or "Nalgonda",
         "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRY_HOURS),
         "iat": datetime.utcnow()
     }
