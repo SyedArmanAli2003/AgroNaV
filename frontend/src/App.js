@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import NavBar from "./components/NavBar";
@@ -10,12 +10,18 @@ import Manager from "./pages/Manager";
 import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
-import { api } from "./services/api";
+import About from "./pages/About";
+import PostVisitLog from "./pages/PostVisitLog";
 import "./App.css";
 
-/**
- * ProtectedRoute — redirects to /signin if not authenticated.
- */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) {
@@ -26,7 +32,7 @@ function ProtectedRoute() {
 
 function MainLayout() {
   const location = useLocation();
-  const isPublicPage = ["/", "/signin", "/signup"].includes(location.pathname);
+  const isPublicPage = ["/", "/signin", "/signup", "/about"].includes(location.pathname);
 
   return (
     <>
@@ -37,6 +43,7 @@ function MainLayout() {
           <Route path="/" element={<Landing />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/about" element={<About />} />
 
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
@@ -44,6 +51,7 @@ function MainLayout() {
             <Route path="/visit/:id" element={<Visit />} />
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/outcomes" element={<Outcomes />} />
+            <Route path="/log" element={<PostVisitLog />} />
             <Route path="/manager" element={<Manager />} />
           </Route>
         </Routes>
@@ -56,6 +64,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ScrollToTop />
         <MainLayout />
       </AuthProvider>
     </BrowserRouter>

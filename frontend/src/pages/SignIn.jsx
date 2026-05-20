@@ -2,16 +2,16 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Leaf } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { api } from "../services/api";
+import { login as apiLogin, cacheRepProfile } from "../services/api";
 import "../css/auth.css";
 import "../css/landing.css";
 
 function SignIn() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const authContext = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -20,15 +20,12 @@ function SignIn() {
     setLoading(true);
 
     try {
-      const data = await api.login(email, password);
-      if (data.token) {
-        login(data.token);
-        navigate("/dashboard");
-      } else {
-        setError(data.detail || "Login failed. Please check your credentials.");
-      }
+      const data = await apiLogin(identifier, password);
+      cacheRepProfile(data);
+      authContext.login(data.token);
+      navigate("/dashboard");
     } catch (err) {
-      setError(err.message || "Login failed. Please try again.");
+      setError("Invalid credentials. Check your Rep ID or email and password.");
     } finally {
       setLoading(false);
     }
@@ -59,17 +56,22 @@ function SignIn() {
         {/* Form */}
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="auth-input-group">
-            <label className="auth-label">Email</label>
+            <label className="auth-label">Email or Rep ID</label>
             <input
               id="signin-email"
               className="auth-input"
-              type="email"
-              placeholder="you@syngenta.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              placeholder="you@syngenta.com or REP_0203"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
-              autoComplete="email"
+              autoComplete="username"
             />
+            {identifier.startsWith("REP_") && (
+              <small style={{ color: "var(--medium-text)", marginTop: "4px", display: "block", fontSize: "11px" }}>
+                Using your Rep ID — password still required
+              </small>
+            )}
           </div>
 
           <div className="auth-input-group">

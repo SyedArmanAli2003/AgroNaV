@@ -159,3 +159,93 @@
   .panel-right { display: none; }
   .panel-left  { width: 100%; }
 }
+
+/* ==========================================
+   AGRONAV ADDITIONS — DO NOT EDIT ABOVE
+   ========================================== */
+
+/* Mobile responsive breakpoint */
+@media (max-width: 768px) {
+  /* Hero: stack vertically */
+  .hero-shell { flex-direction: column; }
+  .panel-left, .panel-right { width: 100% !important; display: flex !important; min-height: auto; }
+  .panel-right { padding: 24px; }
+
+  /* Pill buttons: wrap */
+  .pill-group { flex-wrap: wrap; gap: 8px; }
+
+  /* Feature cards: single column */
+  .features-grid { grid-template-columns: 1fr !important; }
+
+  /* How it works: vertical steps */
+  .steps-row { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
+  .step-arrow { transform: rotate(90deg); margin: 8px 0; }
+
+  /* About: single column */
+  .about-cols { flex-direction: column !important; }
+
+  /* Stats: 2 columns on mobile (keep the 2x2 grid) */
+  .stats-grid { grid-template-columns: 1fr 1fr !important; }
+
+  /* Footer: single column */
+  .footer-cols { flex-direction: column !important; gap: 32px !important; }
+}
+
+/* Shop card styles (for Dashboard) */
+.shop-card {
+  background: var(--glass-light-bg);
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.1));
+  border-radius: 16px;
+  padding: 20px;
+  backdrop-filter: blur(12px);
+  margin-bottom: 16px;
+  transition: transform 0.2s ease;
+}
+.shop-card:hover { transform: translateY(-2px); }
+.priority-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 99px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+.priority-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
+.reasons-list { list-style: none; padding: 0; margin: 10px 0; }
+.reasons-list li { font-size: 13px; opacity: 0.8; padding: 2px 0; }
+
+/* PostVisitLog toggle button group */
+.toggle-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.toggle-btn {
+  padding: 10px 18px;
+  border-radius: 99px;
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.15));
+  background: var(--glass-light-bg);
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.toggle-btn.active {
+  background: var(--color-primary, #1D9E75);
+  border-color: var(--color-primary, #1D9E75);
+  color: #fff;
+}
+
+.interactive-card {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.interactive-card:hover {
+  filter: brightness(1.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(29, 158, 117, 0.2);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

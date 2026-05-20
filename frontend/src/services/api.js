@@ -27,55 +27,100 @@ export const FALLBACK_NBA = {
   why: "Pest alert active + stock running low + boll formation window = act today."
 };
 
+const BASE_URL = BASE;
+
+export const login = async (identifier, password) => {
+  /**
+   * identifier: email address OR Rep ID (e.g. REP_0203)
+   * If identifier starts with "REP_" treat as rep_id, else treat as email.
+   * Either way, password is REQUIRED — never skip it.
+   */
+  const body = identifier.startsWith("REP_")
+    ? { rep_id: identifier, password }
+    : { email: identifier, password };
+
+  const res = await fetch(`${BASE_URL}/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json(); // returns { token, rep_id, name, territory, district }
+};
+
+export const signup = async (name, email, repId, password) => {
+  const res = await fetch(`${BASE_URL}/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, rep_id: repId, password })
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const getRecommendations = async (repId, date) => {
+  const token = localStorage.getItem("agronav_token");
+  const dateStr = date || new Date().toISOString().split("T")[0];
+  const res = await fetch(
+    `${BASE_URL}/recommendations?rep_id=${repId}&date=${dateStr}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const postVisitLog = async (data) => {
+  const token = localStorage.getItem("agronav_token");
+  const res = await fetch(`${BASE_URL}/visit_log`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+};
+
+export const cacheRepProfile = (profile) => {
+  // profile = { rep_id, name, territory, district, retailers[] }
+  localStorage.setItem("agronav_rep_profile", JSON.stringify({
+    ...profile,
+    cached_at: new Date().toISOString()
+  }));
+};
+
+export const getCachedRepProfile = () => {
+  const raw = localStorage.getItem("agronav_rep_profile");
+  return raw ? JSON.parse(raw) : null;
+};
+
+export const cacheRecommendations = (data) => {
+  localStorage.setItem("agronav_recommendations", JSON.stringify({
+    ...data,
+    cached_at: new Date().toISOString()
+  }));
+};
+
+export const getCachedRecommendations = () => {
+  const raw = localStorage.getItem("agronav_recommendations");
+  return raw ? JSON.parse(raw) : null;
+};
+
 // --- API functions ---
 
 export const api = {
-  // ──── Auth ─────────────────────────────────
-  login: async (email, password) => {
-    const res = await fetch(`${BASE}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Login failed" }));
-      throw new Error(err.detail || "Login failed");
-    }
-    return res.json();
-  },
-
-  signup: async (name, email, repId, password) => {
-    const res = await fetch(`${BASE}/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, rep_id: repId, password })
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: "Signup failed" }));
-      throw new Error(err.detail || "Signup failed");
-    }
-    return res.json();
-  },
-
-  // ──── New CatBoost-powered endpoints ───────
-  getRecommendations: async (repId, date) => {
-    const params = new URLSearchParams({ rep_id: repId });
-    if (date) params.append("date", date);
-    const res = await fetch(`${BASE}/recommendations?${params}`, {
-      headers: authHeaders()
-    });
-    if (!res.ok) return { recommendations: [] };
-    return res.json();
-  },
-
-  postVisitLog: async (data) => {
-    const res = await fetch(`${BASE}/visit_log`, {
-      method: "POST",
-      headers: authHeaders(),
-      body: JSON.stringify(data)
-    });
-    return res.json();
-  },
+  login,
+  signup,
+  getRecommendations,
+  postVisitLog,
+  cacheRepProfile,
+  getCachedRepProfile,
+  cacheRecommendations,
+  getCachedRecommendations,
+  getMorningSync: async (rep_id) => api.morningSync(rep_id),
+  getLogs: async () => api.getVisitLog(),
 
   // ──── Existing endpoints (backward compat) ──
   morningSync: async (rep_id = 1) => {
