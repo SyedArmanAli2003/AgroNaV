@@ -1,0 +1,81 @@
+{
+  "status": "SUCCESS",
+  "recommended_count": 5,
+  "optimized_visit_itinerary": [
+    {
+      "retailer_id": "RTL_03973",
+      "tehsil": "Hisar_T146",
+      "priority_score": 82,
+      "priority_tier": "Critical",
+      "priority_probability": 0.8156,
+      "justification_triggers": [
+        "Retailer has not been visited for 37 days.",
+        "Top-selling SKU for this retailer."
+      ],
+      "next_best_action": {
+        "recommended_strategy": "Schedule Recovery Visit With SKU Replenishment Pitch",
+        "focus_sku": "SY_AXI_50EC"
+      }
+    },
+    {
+      "retailer_id": "RTL_03686",
+      "tehsil": "Hisar_T135",
+      "priority_score": 82,
+      "priority_tier": "Critical",
+      "priority_probability": 0.8155,
+      "justification_triggers": [
+        "Recent 30-day revenue is above the network benchmark.",
+        "Top-selling SKU for this retailer."
+      ],
+      "next_best_action": {
+        "recommended_strategy": "Reinforce Growth With Focus SKU Push",
+        "focus_sku": "SY_KAV_75WP"
+      }
+    },
+    {
+      "retailer_id": "RTL_02737",
+      "tehsil": "Amravati_T113",
+      "priority_score": 81,
+      "priority_tier": "Critical",
+      "priority_probability": 0.8111,
+      "justification_triggers": [
+        "Retailer has not been visited for 71 days.",
+        "Recent sales trend is improving versus the previous period.",
+        "Top-selling SKU for this retailer."
+      ],
+      "next_best_action": {
+        "recommended_strategy": "Schedule Recovery Visit With SKU Replenishment Pitch",
+        "focus_sku": "SY_AXI_50EC"
+      }
+    },
+    {
+      "retailer_id": "RTL_01872",
+      "tehsil": "Jalgaon_T078",
+      "priority_score": 80,
+      "priority_tier": "Critical",
+      "priority_probability": 0.8028,
+      "justification_triggers": [
+        "Top-selling SKU for this retailer."
+      ],
+      "next_best_action": {
+        "recommended_strategy": "Reinforce Proven SKU Demand",
+        "focus_sku": "SY_AXI_50EC"
+      }
+    },
+    {
+      "retailer_id": "RTL_00068",
+      "tehsil": "Sikar_T006",
+      "priority_score": 80,
+      "priority_tier": "Critical",
+      "priority_probability": 0.8042,
+      "justification_triggers": [
+        "No historical visit recorded for this retailer area.",
+        "Top-selling SKU for this retailer."
+      ],
+      "next_best_action": {
+        "recommended_strategy": "Schedule Recovery Visit With SKU Replenishment Pitch",
+        "focus_sku": "SY_AXI_50EC"
+      }
+    }
+  ]
+}
