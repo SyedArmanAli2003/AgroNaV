@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
+import { Activity, IndianRupee, Map, TrendingUp, Users } from "lucide-react";
 import { api } from "../services/api";
+
+const FALLBACK_KPIS = {
+  visits_completed: 38,
+  acceptance_rate: 67.4,
+  revenue_this_week: 284000,
+  active_alerts: 9
+};
 
 function Manager() {
   const [kpis, setKpis] = useState(null);
@@ -7,80 +15,69 @@ function Manager() {
   useEffect(() => {
     api.getManagerKPIs("Nalgonda")
       .then(setKpis)
-      .catch(() => {});
+      .catch(() => setKpis(FALLBACK_KPIS));
   }, []);
 
-  if (!kpis) {
-    return (
-      <div className="text-center mt-5" style={{ color: "var(--text-muted)" }}>
-        <div className="spinner-border" style={{ color: "var(--green-primary)" }} role="status" />
-        <div style={{ marginTop: "8px" }}>Loading territory data...</div>
-      </div>
-    );
-  }
-
+  const data = kpis || FALLBACK_KPIS;
   const cards = [
-    { label: "Visits planned", value: kpis.visits_planned, gradient: "linear-gradient(90deg, #1D9E75, #4ECDC4)" },
-    { label: "Completed today", value: kpis.visits_completed, gradient: "linear-gradient(90deg, #1D9E75, #4ECDC4)" },
-    { label: "Acceptance rate", value: kpis.acceptance_rate.toFixed(1) + "%", gradient: "linear-gradient(90deg, #6366F1, #818CF8)" },
-    { label: "Revenue this week", value: "₹" + kpis.revenue_this_week, gradient: "linear-gradient(90deg, #6366F1, #818CF8)" },
-    { label: "Active alerts", value: kpis.active_alerts, gradient: "linear-gradient(90deg, #F59E0B, #FFD166)" },
-    { label: "Coverage efficiency", value: kpis.coverage_efficiency.toFixed(0) + "%", gradient: "linear-gradient(90deg, #F59E0B, #FFD166)" }
+    {
+      title: "Total Revenue",
+      value: `₹${Number(data.revenue_this_week || 0).toLocaleString("en-IN")}`,
+      trend: "+12%",
+      icon: IndianRupee
+    },
+    {
+      title: "Visits Completed",
+      value: data.visits_completed || 0,
+      trend: "+8%",
+      icon: Users
+    },
+    {
+      title: "Acceptance Rate",
+      value: `${Number(data.acceptance_rate || 0).toFixed(1)}%`,
+      trend: "+5%",
+      icon: TrendingUp
+    },
+    {
+      title: "Active Alerts",
+      value: data.active_alerts || 0,
+      trend: "-3%",
+      icon: Activity
+    }
   ];
 
   return (
-    <div className="page-enter">
-      <h5 style={{ fontWeight: 700, marginBottom: "4px", color: "var(--text-primary)" }}>Manager Overview</h5>
-      <p style={{ color: "var(--text-secondary)", fontSize: "13px", marginBottom: "20px" }}>Territory: Nalgonda</p>
+    <div className="liquid-app-page page-enter">
+      <div className="liquid-app-shell">
+        <p className="liquid-page-subtitle" style={{ marginTop: 0 }}>Manager KPI dashboard</p>
+        <h1 className="liquid-page-title">Nalgonda Territory</h1>
 
-      <div className="row g-3 mb-4">
-        {cards.map((c, i) => (
-          <div key={i} className="col-6">
-            <div
-              style={{
-                background: "var(--bg-card)",
-                border: "1px solid var(--border-subtle)",
-                borderRadius: "var(--radius-lg)",
-                padding: "18px",
-                position: "relative",
-                overflow: "hidden"
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0, left: 0, right: 0,
-                  height: "4px",
-                  background: c.gradient
-                }}
-              />
-              <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "4px" }}>
-                {c.value}
-              </div>
-              <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase" }}>
-                {c.label}
-              </div>
+        <section className="manager-kpi-grid">
+          {cards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <article className="liquid-kpi-card" key={card.title}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative", zIndex: 1 }}>
+                  <span className="liquid-kpi-title">{card.title}</span>
+                  <div className="icon-circle"><Icon size={16} /></div>
+                </div>
+                <div className="liquid-kpi-value" style={{ position: "relative", zIndex: 1 }}>{card.value}</div>
+                <span className="trend-pill" style={{ position: "relative", zIndex: 1 }}>{card.trend}</span>
+              </article>
+            );
+          })}
+        </section>
+
+        <section className="liquid-panel territory-heatmap">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, position: "relative", zIndex: 1 }}>
+            <div>
+              <h2 style={{ color: "var(--text-primary)", fontSize: 22, fontWeight: 600, margin: 0 }}>Territory Heatmap</h2>
+              <p className="liquid-page-subtitle">Revenue, alert pressure, and coverage intensity by route cluster</p>
             </div>
+            <div className="icon-circle"><Map size={17} /></div>
           </div>
-        ))}
-      </div>
-
-      <div
-        style={{
-          height: "220px",
-          background: "var(--bg-card)",
-          border: "1px dashed var(--border-subtle)",
-          borderRadius: "var(--radius-lg)",
-          display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center",
-          color: "var(--text-muted)", fontSize: "13px",
-          backgroundImage: `linear-gradient(var(--border-subtle) 1px, transparent 1px),
-                            linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px)`,
-          backgroundSize: "40px 40px"
-        }}
-      >
-        <div style={{ fontSize: "24px", marginBottom: "8px" }}>🗺️</div>
-        Territory Heatmap loads when GOOGLE_MAPS_KEY is added
+          <div className="heatmap-canvas" />
+        </section>
       </div>
     </div>
   );

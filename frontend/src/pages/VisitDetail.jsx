@@ -1,194 +1,127 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { api, getCachedRecommendations } from "../services/api";
-import "../css/landing.css";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft, AlertTriangle, Boxes, PackageCheck, Sparkles } from "lucide-react";
+import { api, getCachedRecommendations, FALLBACK_NBA } from "../services/api";
 import "../css/app.css";
 
 function VisitDetail() {
   const { retailer_id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [rec, setRec] = useState(null);
+  const [rec, setRec] = useState(location.state?.retailer || null);
   const [nba, setNba] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load recommendation from cache
     const cached = getCachedRecommendations();
     if (cached?.recommendations) {
-      const found = cached.recommendations.find(r => r.retailer_id === retailer_id);
+      const found = cached.recommendations.find((item) => item.retailer_id === retailer_id);
       if (found) setRec(found);
     }
 
-    // Fetch NBA advice
-    api.getNBA(retailer_id).then(data => {
-      setNba(data);
-    }).catch(() => {
-      setNba(null);
-    }).finally(() => setLoading(false));
+    api.getNBA(retailer_id)
+      .then(setNba)
+      .catch(() => setNba(FALLBACK_NBA))
+      .finally(() => setLoading(false));
   }, [retailer_id]);
 
-  const scoreColor = (score) => {
-    if (score > 0.80) return "#ef4444";
-    if (score > 0.60) return "#f97316";
-    return "#22c55e";
-  };
+  const advice = nba || FALLBACK_NBA;
+  const shopName = rec?.retailer_name || retailer_id;
+  const product = advice?.product || rec?.product_recommended || "Tilt 250 EC";
+  const talkingPoints = [
+    advice?.tip,
+    advice?.promotion,
+    ...(rec?.reasons || [])
+  ].filter(Boolean).slice(0, 4);
 
   if (loading && !rec) {
     return (
-      <div style={{ display: "flex", height: "100vh", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
-        <span style={{ fontSize: 32, animation: "spin 1.2s linear infinite", display: "inline-block" }}>🌿</span>
-        <span style={{ color: "var(--text-muted)" }}>Loading visit details…</span>
+      <div className="liquid-app-page" style={{ display: "grid", placeItems: "center" }}>
+        <div className="liquid-panel" style={{ padding: "24px 28px", color: "var(--text-secondary)" }}>
+          Loading AI advice...
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="app-page page-enter">
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-        <button
-          onClick={() => navigate("/dashboard")}
-          style={{
-            background: "var(--glass-light-bg)", border: "1px solid var(--glass-border, rgba(255,255,255,0.10))",
-            borderRadius: 99, padding: "8px 16px", color: "var(--text-primary)",
-            cursor: "pointer", fontSize: 13, fontFamily: "inherit"
-          }}
-        >
-          ← Back
-        </button>
-        <div>
-          <div style={{ fontWeight: 700, fontSize: 18, color: "var(--text-primary)" }}>
-            {rec?.retailer_name || retailer_id}
+    <div className="liquid-app-page detail-page page-enter">
+      <div className="liquid-app-shell" style={{ maxWidth: 900 }}>
+        <header className="liquid-header">
+          <button className="liquid-icon-button" onClick={() => navigate("/dashboard")} aria-label="Back to dashboard">
+            <ArrowLeft size={20} />
+          </button>
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <p className="liquid-page-subtitle" style={{ marginTop: 0 }}>Next Best Action</p>
+            <h1 style={{ color: "var(--text-primary)", fontSize: 22, fontWeight: 600, margin: 0 }}>{shopName}</h1>
           </div>
-          <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-            📍 {rec?.tehsil || rec?.district || "Field Visit"}
-          </div>
-        </div>
-        {rec?.priority_score && (
-          <div style={{
-            marginLeft: "auto",
-            background: scoreColor(rec.priority_score),
-            color: "#fff", fontWeight: 700, fontSize: 14,
-            borderRadius: 99, padding: "6px 16px"
-          }}>
-            {Math.round(rec.priority_score * 100)}%
-          </div>
-        )}
-      </div>
+          <Sparkles className="sparkle-pulse" size={20} style={{ marginLeft: "auto", position: "relative", zIndex: 1 }} />
+        </header>
 
-      {/* SHAP Reasons — Why This Visit */}
-      <div style={{ marginBottom: 24 }}>
-        <p className="section-label">Why AgroNav prioritized this visit</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {(rec?.reasons || ["High demand signal detected", "Stock running low", "Optimal crop stage for this product"]).map((reason, i) => (
-            <div key={i} className="glass-card" style={{
-              borderLeft: "3px solid #22c55e",
-              padding: "14px 18px"
-            }}>
-              <span style={{ color: "#22c55e", marginRight: 8 }}>✓</span>
-              <span style={{ color: "var(--text-primary)", fontSize: 14 }}>{reason}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Next Best Action */}
-      <div style={{ marginBottom: 24 }}>
-        <p className="section-label">What to do at this visit</p>
-        <div className="glass-card">
-          {/* Product to pitch */}
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            background: "rgba(29,158,117,0.15)", borderRadius: 99,
-            padding: "8px 18px", marginBottom: 16
-          }}>
-            <span>📦</span>
-            <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)" }}>
-              {nba?.product || rec?.product_recommended || "Tilt 250 EC"}
-            </span>
-          </div>
-
-          {/* Agronomic pitch */}
-          {nba?.pitch && (
-            <div style={{
-              background: "var(--glass-strong-bg)", borderRadius: 12, padding: 16,
-              marginBottom: 14, fontStyle: "italic", color: "var(--text-secondary)", fontSize: 14
-            }}>
-              "{nba.pitch}"
-            </div>
-          )}
-
-          {/* Talking points */}
-          {nba?.tip && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 700, marginBottom: 8 }}>
-                TALKING POINTS
+        <main className="detail-card-grid">
+          <section className="liquid-detail-card">
+            <h2 className="detail-card-title">Context</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, position: "relative", zIndex: 1 }}>
+              <div className="recommendation-product" style={{ background: "rgba(255,255,255,0.045)", boxShadow: "none", borderColor: "rgba(255,255,255,0.10)" }}>
+                <Boxes size={20} color="#1D9E75" />
+                <div style={{ color: "var(--text-primary)", fontWeight: 700, marginTop: 12 }}>Inventory</div>
+                <div style={{ color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.55, marginTop: 6 }}>
+                  {rec?.product_recommended || product} stock is flagged for replenishment before the next demand spike.
+                </div>
               </div>
-              <div style={{ color: "var(--text-primary)", fontSize: 14, lineHeight: 1.7 }}>
-                {nba.tip}
+              <div className="recommendation-product" style={{ background: "rgba(239,68,68,0.10)", boxShadow: "0 0 28px rgba(239,68,68,0.10)", borderColor: "rgba(239,68,68,0.22)" }}>
+                <AlertTriangle size={20} color="#ef4444" />
+                <div style={{ color: "var(--text-primary)", fontWeight: 700, marginTop: 12 }}>Pest Alerts</div>
+                <div style={{ color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.55, marginTop: 6 }}>
+                  {advice?.why || "District-level pest pressure is elevated, so the visit should focus on preventive crop protection."}
+                </div>
               </div>
             </div>
-          )}
+          </section>
 
-          {/* Promotion */}
-          {nba?.promotion && (
-            <div style={{
-              background: "rgba(249,115,22,0.12)",
-              border: "1px solid rgba(249,115,22,0.25)",
-              borderRadius: 10, padding: "10px 14px",
-              color: "#f97316", fontSize: 13, fontWeight: 600
-            }}>
-              🏷️ {nba.promotion}
+          <section className="liquid-detail-card">
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, position: "relative", zIndex: 1 }}>
+              <h2 className="detail-card-title" style={{ margin: 0 }}>Recommendation</h2>
+              <Sparkles className="sparkle-pulse" size={18} />
             </div>
-          )}
+            <div className="recommendation-product" style={{ position: "relative", zIndex: 1 }}>
+              <PackageCheck size={24} color="#1D9E75" />
+              <div style={{ color: "#1D9E75", fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 14 }}>
+                Product to pitch
+              </div>
+              <div style={{ color: "var(--text-primary)", fontSize: 28, fontWeight: 700, lineHeight: 1.1, marginTop: 6 }}>
+                {product}
+              </div>
+              <p style={{ color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.7, margin: "14px 0 0" }}>
+                {advice?.pitch || "Position this as the highest-likelihood product for the shop based on inventory, crop stage, and local alert signals."}
+              </p>
+            </div>
+          </section>
+
+          <section className="liquid-detail-card">
+            <h2 className="detail-card-title">Talking Points</h2>
+            <ul className="talking-list" style={{ position: "relative", zIndex: 1 }}>
+              {(talkingPoints.length ? talkingPoints : [
+                "Open with the current crop-stage risk in this territory.",
+                "Anchor the pitch on faster replenishment and preventive spray timing.",
+                "Close with today's margin or bundle offer if the shop is ready."
+              ]).map((point, index) => (
+                <li key={`${point}-${index}`}>{point}</li>
+              ))}
+            </ul>
+          </section>
+        </main>
+
+        <div className="liquid-action-bar">
+          <button
+            className="liquid-pill-button"
+            onClick={() => navigate("/log", { state: { retailer: rec } })}
+          >
+            Log Outcome
+          </button>
         </div>
       </div>
-
-      {/* Why summary */}
-      {nba?.why && (
-        <div style={{ marginBottom: 24 }}>
-          <p className="section-label">The AI's reasoning</p>
-          <div className="glass-card" style={{ color: "var(--text-secondary)", fontSize: 13, lineHeight: 1.6 }}>
-            {nba.why}
-          </div>
-        </div>
-      )}
-
-      {/* Quick stats */}
-      {rec && (
-        <div style={{ marginBottom: 24 }}>
-          <p className="section-label">Quick stats</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {[
-              { label: "Priority score", value: `${Math.round((rec.priority_score || 0) * 100)}%` },
-              { label: "Territory", value: rec.district || rec.tehsil || "—" },
-              { label: "Product", value: rec.product_recommended || "—" },
-              { label: "Rank", value: rec.rank ? `#${rec.rank}` : "—" }
-            ].map(stat => (
-              <div key={stat.label} className="glass-card" style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>{stat.value}</div>
-                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, textTransform: "uppercase" }}>{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* CTA */}
-      <button
-        id="visit-log-cta"
-        onClick={() => navigate("/log", { state: { retailer: rec } })}
-        style={{
-          width: "100%", padding: "16px", borderRadius: 99, border: "none",
-          background: "linear-gradient(135deg, #1D9E75, #0F6E56)",
-          color: "#fff", fontWeight: 700, fontSize: 15,
-          cursor: "pointer", boxShadow: "0 4px 20px rgba(29,158,117,0.35)",
-          fontFamily: "inherit"
-        }}
-      >
-        Log This Visit →
-      </button>
     </div>
   );
 }

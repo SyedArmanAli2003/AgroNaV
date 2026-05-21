@@ -227,3 +227,460 @@
   .app-page { padding: 12px 12px 80px 12px; }
   .glass-card { padding: 16px; }
 }
+
+/* =================================================================
+   Liquid Glass App Surfaces
+   Scoped to post-auth pages so the landing page remains untouched.
+   ================================================================= */
+
+.liquid-app-page {
+  min-height: calc(100vh - 64px);
+  background:
+    radial-gradient(circle at 12% 12%, rgba(29, 158, 117, 0.12), transparent 30%),
+    radial-gradient(circle at 86% 8%, rgba(78, 205, 196, 0.08), transparent 28%),
+    #0F1117;
+  color: var(--text-primary);
+  font-family: "Poppins", "Outfit", sans-serif;
+  padding: 24px;
+}
+
+.liquid-app-shell {
+  width: min(1240px, 100%);
+  margin: 0 auto;
+}
+
+.liquid-page-title {
+  color: var(--text-primary);
+  font-family: "Poppins", "Outfit", sans-serif;
+  font-size: clamp(24px, 3vw, 38px);
+  font-weight: 600;
+  line-height: 1.08;
+  margin: 0;
+}
+
+.liquid-page-subtitle {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 8px 0 0;
+}
+
+.liquid-two-column {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.88fr) minmax(360px, 1.12fr);
+  gap: 20px;
+  align-items: stretch;
+  margin-top: 20px;
+}
+
+.liquid-panel,
+.liquid-shop-card,
+.liquid-kpi-card,
+.liquid-detail-card,
+.liquid-action-bar,
+.liquid-header {
+  background: linear-gradient(145deg, rgba(255,255,255,0.075), rgba(255,255,255,0.025));
+  border: 1px solid rgba(255,255,255,0.13);
+  box-shadow:
+    0 24px 70px rgba(0,0,0,0.32),
+    inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  position: relative;
+  overflow: hidden;
+}
+
+.liquid-panel::before,
+.liquid-shop-card::before,
+.liquid-kpi-card::before,
+.liquid-detail-card::before,
+.liquid-action-bar::before,
+.liquid-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255,255,255,0.16), transparent 36%, rgba(255,255,255,0.04));
+  opacity: 0.85;
+}
+
+.liquid-panel {
+  border-radius: 24px;
+  padding: 20px;
+}
+
+.liquid-map-wrap {
+  min-height: 360px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+.liquid-map-wrap > div {
+  height: 360px !important;
+  margin-bottom: 0 !important;
+  border-radius: 18px !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.liquid-map-placeholder {
+  min-height: 360px;
+  border-radius: 18px;
+  background:
+    linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px),
+    radial-gradient(circle at 35% 30%, rgba(29,158,117,0.24), transparent 28%),
+    rgba(255,255,255,0.035);
+  background-size: 44px 44px, 44px 44px, auto, auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.liquid-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.liquid-stat-card {
+  border-radius: 18px;
+  padding: 16px;
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.09);
+}
+
+.liquid-stat-value {
+  color: var(--text-primary);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.liquid-stat-label {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  margin-top: 8px;
+  text-transform: uppercase;
+}
+
+.liquid-list-panel {
+  max-height: calc(100vh - 174px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.liquid-shop-card {
+  border-radius: 22px;
+  padding: 20px;
+  margin-bottom: 14px;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.liquid-shop-card:hover,
+.liquid-kpi-card:hover,
+.liquid-pill-button:hover,
+.liquid-icon-button:hover {
+  transform: scale(1.015);
+}
+
+.liquid-shop-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.liquid-shop-name {
+  color: var(--text-primary);
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.liquid-shop-meta {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.priority-pill {
+  border-radius: 999px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 12px;
+  white-space: nowrap;
+}
+
+.priority-pill.high {
+  background: rgba(239,68,68,0.22);
+  border: 1px solid rgba(239,68,68,0.48);
+  box-shadow: 0 0 22px rgba(239,68,68,0.34);
+}
+
+.priority-pill.medium {
+  background: rgba(249,115,22,0.22);
+  border: 1px solid rgba(249,115,22,0.48);
+  box-shadow: 0 0 22px rgba(249,115,22,0.30);
+}
+
+.priority-pill.low {
+  background: rgba(34,197,94,0.20);
+  border: 1px solid rgba(34,197,94,0.46);
+  box-shadow: 0 0 22px rgba(34,197,94,0.28);
+}
+
+.liquid-priority-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.10);
+  overflow: hidden;
+  margin: 18px 0 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.liquid-priority-fill {
+  height: 100%;
+  border-radius: inherit;
+  box-shadow: 0 0 18px currentColor;
+}
+
+.liquid-pill-button {
+  border: 0;
+  border-radius: 999px;
+  background: #1D9E75;
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 12px 20px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 12px 28px rgba(29,158,117,0.30);
+}
+
+.liquid-empty-state {
+  border-radius: 22px;
+  padding: 32px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.manager-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 22px 0;
+}
+
+.liquid-kpi-card {
+  border-radius: 22px;
+  min-height: 156px;
+  padding: 20px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.liquid-kpi-title {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.liquid-kpi-value {
+  color: var(--text-primary);
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 700;
+  line-height: 1;
+  margin: 22px 0 14px;
+}
+
+.trend-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(29,158,117,0.14);
+  border: 1px solid rgba(29,158,117,0.34);
+  color: #35d399;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 10px;
+}
+
+.territory-heatmap {
+  border-radius: 28px;
+  min-height: 380px;
+  padding: 24px;
+}
+
+.heatmap-canvas {
+  height: 280px;
+  border-radius: 20px;
+  margin-top: 18px;
+  border: 1px solid rgba(255,255,255,0.10);
+  background:
+    radial-gradient(circle at 26% 42%, rgba(239,68,68,0.52), transparent 8%),
+    radial-gradient(circle at 52% 30%, rgba(249,115,22,0.50), transparent 10%),
+    radial-gradient(circle at 72% 62%, rgba(29,158,117,0.46), transparent 11%),
+    linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px),
+    rgba(255,255,255,0.035);
+  background-size: auto, auto, auto, 42px 42px, 42px 42px, auto;
+}
+
+.detail-page {
+  padding-bottom: 122px;
+}
+
+.liquid-header {
+  position: sticky;
+  top: 76px;
+  z-index: 80;
+  border-radius: 24px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.liquid-icon-button {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.detail-card-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.liquid-detail-card {
+  border-radius: 24px;
+  padding: 22px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.detail-card-title {
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 14px;
+}
+
+.recommendation-product {
+  border-radius: 20px;
+  background: rgba(29,158,117,0.14);
+  border: 1px solid rgba(29,158,117,0.34);
+  box-shadow: 0 0 34px rgba(29,158,117,0.18);
+  color: var(--text-primary);
+  padding: 18px;
+}
+
+.sparkle-pulse {
+  color: #1D9E75;
+  filter: drop-shadow(0 0 10px rgba(29,158,117,0.85));
+  animation: sparklePulse 1.8s ease-in-out infinite;
+}
+
+@keyframes sparklePulse {
+  0%, 100% { opacity: 0.62; transform: scale(0.92); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+.talking-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.talking-list li {
+  display: flex;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.talking-list li::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin-top: 8px;
+  border-radius: 50%;
+  background: #1D9E75;
+  box-shadow: 0 0 12px rgba(29,158,117,0.75);
+  flex: 0 0 auto;
+}
+
+.liquid-action-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: min(860px, calc(100% - 32px));
+  z-index: 120;
+  border-radius: 28px;
+  padding: 14px;
+  display: flex;
+  gap: 12px;
+}
+
+.liquid-action-bar .liquid-pill-button {
+  flex: 1;
+  font-size: 15px;
+  padding: 15px 22px;
+}
+
+@media (max-width: 980px) {
+  .liquid-two-column,
+  .manager-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .liquid-list-panel {
+    max-height: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .liquid-app-page {
+    padding: 16px 12px 82px;
+  }
+
+  .liquid-two-column,
+  .manager-kpi-grid,
+  .liquid-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .liquid-header {
+    top: 12px;
+  }
+
+  .territory-heatmap {
+    min-height: 320px;
+  }
+}
