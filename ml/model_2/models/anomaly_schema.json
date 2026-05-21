@@ -1,0 +1,6 @@
+{
+  "anomaly_features": [
+    "total_volume_sold",
+    "avg_unit_price"
+  ]
+}

@@ -16,12 +16,12 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parents[2]  # AgroNaV/
 sys.path.insert(0, str(REPO_ROOT))
 
-from src.config import FEATURE_COLS, GLOBAL_POS_RATE
+from ml.model_1.src.config import FEATURE_COLS, GLOBAL_POS_RATE
 
 # Import FE-extension feature functions from teammate's code
 # These use relative imports internally (from ..config), so we import them
 # via the properly-pathed src package.
-from src.features.extensions import add_stock_to_velocity_weeks
+from ml.model_1.src.features.extensions import add_stock_to_velocity_weeks
 
 
 def build_features_sync(retailer: dict, product: str,
@@ -49,7 +49,7 @@ def build_features_sync(retailer: dict, product: str,
     day_of_week = pred_dt.weekday()
 
     # week_of_season relative to src/config.py SEASON_START
-    from src.config import SEASON_START
+    from ml.model_1.src.config import SEASON_START
     season_start = SEASON_START.date() if hasattr(SEASON_START, 'date') else date(2025, 10, 6)
     week_of_season = max(1, min(26, ((pred_dt - season_start).days // 7) + 1))
 

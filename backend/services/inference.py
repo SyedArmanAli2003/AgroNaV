@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]  # AgroNaV/
 sys.path.insert(0, str(REPO_ROOT))
 
 from catboost import CatBoostClassifier
-from src.config import FEATURE_COLS
+from ml.model_1.src.config import FEATURE_COLS
 import pandas as pd
 
 _model = None
