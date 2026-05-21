@@ -302,6 +302,24 @@
   to { transform: rotate(360deg); }
 }
 
+/* NavBar AI status dot pulse */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(29,158,117,0.5); }
+  50%       { opacity: 0.8; box-shadow: 0 0 0 5px rgba(29,158,117,0); }
+}
+
+/* Extra semantic color vars used in pages */
+:root {
+  --color-success:      #22c55e;
+  --color-success-dim:  rgba(34,197,94,0.12);
+  --color-warning:      #f97316;
+  --color-warning-dim:  rgba(249,115,22,0.12);
+  --color-urgent:       #ef4444;
+  --color-urgent-dim:   rgba(239,68,68,0.12);
+  --color-info:         #3b82f6;
+  --color-info-dim:     rgba(59,130,246,0.12);
+}
+
 /* ================================================================
    Responsive Navbar Rules
    Mobile (< 768px): ONLY bottom tab bar

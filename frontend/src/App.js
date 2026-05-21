@@ -22,6 +22,7 @@ const AlertFeed       = lazy(() => import("./pages/AlertFeed"));
 const Outcomes        = lazy(() => import("./pages/Outcomes"));
 const About           = lazy(() => import("./pages/About"));
 const Manager         = lazy(() => import("./pages/Manager"));
+const UserGuide       = lazy(() => import("./pages/UserGuide"));
 
 // ---- Loading screen (no emoji) ----
 function LoadingScreen() {
@@ -50,13 +51,13 @@ function ProtectedRoute({ requiredRole }) {
   const { isAuthenticated, user } = useAuth();
   if (!isAuthenticated) return <Navigate to="/signin" replace />;
   if (requiredRole && user?.role !== requiredRole && user?.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/dashboard" state={{ error: "You don't have permission to access that page." }} replace />;
   }
   return <Outlet />;
 }
 
 // ---- Pages that should NOT show NavBar ----
-const PUBLIC_PATHS = ["/", "/signin", "/signup", "/about"];
+const PUBLIC_PATHS = ["/", "/signin", "/signup", "/about", "/guide"];
 
 function MainLayout() {
   const location = useLocation();
@@ -73,6 +74,7 @@ function MainLayout() {
             <Route path="/signin"  element={<SignIn />} />
             <Route path="/signup"  element={<SignUp />} />
             <Route path="/about"   element={<ErrorBoundary><About /></ErrorBoundary>} />
+            <Route path="/guide"   element={<ErrorBoundary><UserGuide /></ErrorBoundary>} />
 
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>

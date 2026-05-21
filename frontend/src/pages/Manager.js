@@ -1,129 +1,440 @@
-import React, { useState, useEffect } from "react";
-import { IndianRupee, TrendingUp, Users, AlertTriangle, RefreshCw, UserPlus, Download, Map } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  IndianRupee, TrendingUp, Users, RefreshCw,
+  UserPlus, Download, Map, Store, PlusCircle,
+  ToggleLeft, ToggleRight, CheckCircle, X, Cpu, Zap
+} from "lucide-react";
 import { api } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
-const FALLBACK = { visits_completed: 38, acceptance_rate: 67.4, revenue_this_week: 284000, active_alerts: 9 };
-const DEMO_REPS = [
-  { rep_id: "REP_0201", name: "Arjun Kumar", territory: "Nalgonda", visits_today: 5, acceptance: 72, status: "active" },
-  { rep_id: "REP_0202", name: "Priya Sharma", territory: "Miryalaguda", visits_today: 3, acceptance: 68, status: "active" },
-  { rep_id: "REP_0203", name: "Rajesh Patel", territory: "Devarakonda", visits_today: 0, acceptance: 55, status: "offline" },
-  { rep_id: "REP_0204", name: "Sunita Devi", territory: "Suryapet", visits_today: 7, acceptance: 81, status: "active" },
-];
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function Modal({ open, onClose, title, children }) {
+  if (!open) return null;
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 1000,
+      background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 16
+    }} onClick={onClose}>
+      <div className="glass-card-strong" style={{ width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto", position: "relative" }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600, fontFamily: "var(--font-heading)" }}>{title}</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4 }}>
+            <X size={20} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function InputField({ label, id, ...props }) {
+  return (
+    <div className="auth-input-group" style={{ marginBottom: 14 }}>
+      <label className="auth-label" htmlFor={id}>{label}</label>
+      <input id={id} className="glass-input auth-input" {...props} />
+    </div>
+  );
+}
+
+// ── Manager Page ───────────────────────────────────────────────────────────────
 
 function Manager() {
-  const [kpis, setKpis] = useState(null);
   const { user } = useAuth();
+  const [kpis, setKpis] = useState(null);
+  const [retailers, setRetailers] = useState([]);
+  const [reps, setReps] = useState([]);
+  const [modelInfo, setModelInfo] = useState(null);
+  const [tab, setTab] = useState("retailers");
 
-  useEffect(() => { api.getManagerKPIs("Nalgonda").then(setKpis).catch(() => setKpis(FALLBACK)); }, []);
+  // Modal state
+  const [addRetailerOpen, setAddRetailerOpen] = useState(false);
+  const [addRepOpen, setAddRepOpen] = useState(false);
+  const [toast, setToast] = useState("");
 
-  const data = kpis?.kpis || kpis || FALLBACK;
-  const cards = [
-    { title: "Total Visits Today", value: data.visits_completed || data.visits_today || 0, sub: "across 4 reps", trend: "+12%", icon: Users, color: "var(--color-primary)" },
-    { title: "Acceptance Rate", value: `${Number(data.acceptance_rate || data.acceptance_rate_this_week || 0).toFixed(1)}%`, sub: "recommendations followed", trend: "+5%", icon: TrendingUp, color: "var(--color-primary)" },
-    { title: "High Priority Missed", value: data.high_priority_pending || 3, sub: "outlets not visited", trend: null, icon: AlertTriangle, color: "var(--color-urgent)" },
-    { title: "Revenue Signals", value: `₹${Number(data.revenue_this_week || 0).toLocaleString("en-IN")}`, sub: "estimated today", trend: "+8%", icon: IndianRupee, color: "var(--color-success)" },
+  // Form state
+  const [newRetailer, setNewRetailer] = useState({ retailer_name: "", contact_name: "", phone: "", tehsil: "" });
+  const [newRep, setNewRep] = useState({ name: "", email: "", rep_id: "", password: "" });
+  const [saving, setSaving] = useState(false);
+
+  const token = localStorage.getItem("agronav_token");
+  const authHeader = { Authorization: `Bearer ${token}` };
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3500); };
+
+  // Load all data
+  const loadData = useCallback(async () => {
+    // KPIs
+    api.getManagerKPIs().then(setKpis).catch(() => {});
+
+    // Retailers
+    fetch("/api/manager/retailers", { headers: authHeader })
+      .then(r => r.json())
+      .then(d => setRetailers(d.retailers || []))
+      .catch(() => {});
+
+    // Reps
+    fetch("/api/manager/reps", { headers: authHeader })
+      .then(r => r.json())
+      .then(d => setReps(d.reps || []))
+      .catch(() => {});
+
+    // Model info
+    fetch("/api/debug/model")
+      .then(r => r.json())
+      .then(setModelInfo)
+      .catch(() => {});
+  }, []); // eslint-disable-line
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const data = kpis?.kpis || kpis || {};
+  const kpiCards = [
+    { title: "Active Retailers", value: retailers.filter(r => r.is_active !== 0).length || data.total_retailers || 0, Icon: Store, color: "var(--color-primary)" },
+    { title: "Reps in Team", value: reps.length || data.reps_count || 0, Icon: Users, color: "var(--color-primary)" },
+    { title: "Visits Today", value: data.visits_completed || 0, Icon: TrendingUp, color: "var(--color-success)" },
+    { title: "Acceptance Rate", value: `${Number(data.acceptance_rate_this_week || 0).toFixed(1)}%`, Icon: IndianRupee, color: "var(--color-warning)" }
   ];
+
+  // ── Add Retailer Submit ──
+  const handleAddRetailer = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch("/api/manager/retailers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body: JSON.stringify(newRetailer)
+      });
+      const d = await res.json();
+      if (d.success) {
+        showToast(`Retailer "${newRetailer.retailer_name}" added`);
+        setAddRetailerOpen(false);
+        setNewRetailer({ retailer_name: "", contact_name: "", phone: "", tehsil: "" });
+        loadData();
+      }
+    } catch { showToast("Failed to add retailer"); }
+    setSaving(false);
+  };
+
+  // ── Deactivate Retailer ──
+  const handleDeactivate = async (retailer_id) => {
+    if (!window.confirm("Deactivate this retailer?")) return;
+    await fetch(`/api/manager/retailers/${retailer_id}`, { method: "DELETE", headers: authHeader });
+    showToast("Retailer deactivated");
+    loadData();
+  };
+
+  // ── Add Rep Submit ──
+  const handleAddRep = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch("/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...newRep, role: "rep", manager_id: null })
+      });
+      const d = await res.json();
+      if (d.token) {
+        showToast(`Rep "${newRep.name}" created`);
+        setAddRepOpen(false);
+        setNewRep({ name: "", email: "", rep_id: "", password: "" });
+        loadData();
+      } else {
+        showToast(d.detail || "Failed to create rep");
+      }
+    } catch { showToast("Failed to create rep"); }
+    setSaving(false);
+  };
+
+  const TABS = ["retailers", "reps", "model", "heatmap"];
+  const TAB_LABELS = { retailers: "Retailers", reps: "My Team", model: "AI Status", heatmap: "Territory" };
 
   return (
     <div className="page-container page-enter" style={{ padding: "20px 16px 100px" }}>
-      <div style={{ maxWidth: 1240, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
         <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>Manager Portal</p>
-        <h1 style={{ margin: "4px 0 24px", fontFamily: "var(--font-heading)", fontSize: "clamp(24px, 3vw, 34px)", fontWeight: 600 }}>
-          {user?.territory || user?.district || "Nalgonda"} Territory
+        <h1 style={{ margin: "4px 0 24px", fontFamily: "var(--font-heading)", fontSize: "clamp(22px, 3vw, 32px)", fontWeight: 600 }}>
+          {user?.territory || user?.district || "Jalgaon"} Territory
         </h1>
 
-        {/* KPI Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 24 }}>
-          {cards.map(card => {
-            const Icon = card.icon;
+        {/* KPI cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 28 }}>
+          {kpiCards.map(card => {
+            const Icon = card.Icon;
             return (
-              <div key={card.title} className="glass-card-strong" style={{ padding: 20, minHeight: 140 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--text-secondary)" }}>{card.title}</span>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--glass-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon size={16} color={card.color} />
+              <div key={card.title} className="glass-card-strong" style={{ padding: 18, minHeight: 120 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-secondary)" }}>{card.title}</span>
+                  <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--glass-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon size={15} color={card.color} />
                   </div>
                 </div>
-                <div style={{ fontSize: "clamp(28px, 4vw, 36px)", fontWeight: 700, fontFamily: "var(--font-heading)", lineHeight: 1, color: card.color }}>{card.value}</div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6 }}>{card.sub}</div>
-                {card.trend && (
-                  <span style={{ display: "inline-flex", alignItems: "center", marginTop: 8, borderRadius: 99, background: "var(--color-primary-dim)", border: "1px solid var(--color-primary)", color: "var(--color-primary)", fontSize: 12, fontWeight: 700, padding: "4px 10px" }}>
-                    {card.trend}
-                  </span>
-                )}
+                <div style={{ fontSize: 32, fontWeight: 700, fontFamily: "var(--font-heading)", color: card.color }}>{card.value}</div>
               </div>
             );
           })}
         </div>
 
-        {/* Rep Status Table */}
-        <div className="glass-card" style={{ marginBottom: 24 }}>
-          <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 600, fontFamily: "var(--font-heading)" }}>Your Field Team</h2>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "var(--font-body)", fontSize: 14 }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--glass-border)" }}>
-                  {["Rep Name", "Territory", "Visits Today", "Acceptance %", "Status"].map(h => (
-                    <th key={h} style={{ textAlign: "left", padding: "10px 12px", color: "var(--text-muted)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {DEMO_REPS.map(rep => (
-                  <tr key={rep.rep_id} style={{ borderBottom: "1px solid var(--glass-border)", cursor: "pointer", transition: "background 0.15s" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "var(--glass-bg)"}
-                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                  >
-                    <td style={{ padding: "12px", fontWeight: 600 }}>{rep.name}</td>
-                    <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{rep.territory}</td>
-                    <td style={{ padding: "12px" }}>{rep.visits_today}</td>
-                    <td style={{ padding: "12px" }}>{rep.acceptance}%</td>
-                    <td style={{ padding: "12px" }}>
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: rep.status === "active" ? "var(--color-success)" : rep.status === "alert" ? "var(--color-urgent)" : "var(--text-muted)" }} />
-                        <span style={{ fontSize: 12, textTransform: "capitalize" }}>{rep.status}</span>
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {/* Tab bar */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 20, borderBottom: "1px solid var(--glass-border)", paddingBottom: 0 }}>
+          {TABS.map(t => (
+            <button key={t} onClick={() => setTab(t)} style={{
+              background: "none", border: "none", cursor: "pointer", padding: "10px 18px",
+              fontSize: 14, fontWeight: 600, fontFamily: "var(--font-body)",
+              color: tab === t ? "var(--color-primary)" : "var(--text-muted)",
+              borderBottom: tab === t ? "2px solid var(--color-primary)" : "2px solid transparent",
+              transition: "all 0.15s"
+            }}>{TAB_LABELS[t]}</button>
+          ))}
         </div>
 
-        {/* Territory Heatmap */}
-        <div className="glass-card" style={{ marginBottom: 24 }}>
-          <h2 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 600, fontFamily: "var(--font-heading)", display: "flex", alignItems: "center", gap: 8 }}>
-            <Map size={18} /> Territory Alert Heatmap
-          </h2>
-          <p style={{ margin: "0 0 16px", fontSize: 13, color: "var(--text-secondary)" }}>High-priority areas requiring attention</p>
-          <div style={{ minHeight: 200, borderRadius: "var(--radius-md)", display: "flex", flexWrap: "wrap", gap: 10, padding: 16, background: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}>
-            {["Nalgonda", "Miryalaguda", "Devarakonda", "Suryapet", "Kodad", "Huzurnagar"].map((dist, i) => {
-              const severity = i < 2 ? "urgent" : i < 4 ? "warning" : "primary";
-              return (
-                <span key={dist} style={{ padding: "8px 16px", borderRadius: 99, fontSize: 13, fontWeight: 600, background: `var(--color-${severity}-dim)`, color: `var(--color-${severity})`, border: `1px solid var(--color-${severity})` }}>
-                  {dist}
-                </span>
-              );
-            })}
-          </div>
-        </div>
+        {/* ── RETAILERS TAB ── */}
+        {tab === "retailers" && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600, fontFamily: "var(--font-heading)" }}>Territory Retailers</h2>
+                <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>
+                  Retailers your reps can visit. Add, edit, or deactivate.
+                </p>
+              </div>
+              <button className="btn-primary" style={{ width: "auto", padding: "10px 18px", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }} onClick={() => setAddRetailerOpen(true)}>
+                <PlusCircle size={15} /> Add Retailer
+              </button>
+            </div>
 
-        {/* Quick Actions */}
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <button className="btn-primary" style={{ width: "auto", padding: "12px 20px", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
-            <UserPlus size={16} /> Add New Rep
-          </button>
-          <button style={{ padding: "12px 20px", borderRadius: 99, border: "1px solid var(--glass-border)", background: "var(--glass-bg)", color: "var(--text-secondary)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)", display: "flex", alignItems: "center", gap: 6 }}
-            onClick={() => api.recalibrate()}>
+            {retailers.length === 0 ? (
+              <div className="glass-card" style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
+                <Store size={40} style={{ marginBottom: 12, opacity: 0.4 }} />
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>No retailers yet</div>
+                <div style={{ fontSize: 13 }}>Add your first retailer above. Without retailers, your reps see an empty app.</div>
+              </div>
+            ) : (
+              <div className="glass-card" style={{ overflow: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, fontFamily: "var(--font-body)" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--glass-border)" }}>
+                      {["Retailer Name", "Contact", "Tehsil", "District", "Active", "Actions"].map(h => (
+                        <th key={h} style={{ textAlign: "left", padding: "10px 12px", color: "var(--text-muted)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {retailers.map(r => (
+                      <tr key={r.retailer_id} style={{ borderBottom: "1px solid var(--glass-border)" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "var(--glass-bg)"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >
+                        <td style={{ padding: "12px", fontWeight: 600 }}>{r.retailer_name}</td>
+                        <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{r.contact_name || "—"}</td>
+                        <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{r.tehsil}</td>
+                        <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{r.district}</td>
+                        <td style={{ padding: "12px" }}>
+                          {r.is_active !== 0
+                            ? <ToggleRight size={20} color="var(--color-primary)" />
+                            : <ToggleLeft size={20} color="var(--text-muted)" />}
+                        </td>
+                        <td style={{ padding: "12px" }}>
+                          <button
+                            onClick={() => handleDeactivate(r.retailer_id)}
+                            style={{ background: "none", border: "1px solid var(--glass-border)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", color: "var(--color-urgent, #ef4444)", fontSize: 12 }}
+                          >
+                            Deactivate
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── REPS TAB ── */}
+        {tab === "reps" && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600, fontFamily: "var(--font-heading)" }}>Your Field Team</h2>
+                <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>Reps assigned to your territory</p>
+              </div>
+              <button className="btn-primary" style={{ width: "auto", padding: "10px 18px", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }} onClick={() => setAddRepOpen(true)}>
+                <UserPlus size={15} /> Add Rep
+              </button>
+            </div>
+            {reps.length === 0 ? (
+              <div className="glass-card" style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
+                <Users size={40} style={{ marginBottom: 12, opacity: 0.4 }} />
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>No reps yet</div>
+                <div style={{ fontSize: 13 }}>Add reps to your team. They will see the daily plan for your territory.</div>
+              </div>
+            ) : (
+              <div className="glass-card" style={{ overflow: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--glass-border)" }}>
+                      {["Name", "Rep ID", "Territory", "Visits Today", "Status"].map(h => (
+                        <th key={h} style={{ textAlign: "left", padding: "10px 12px", color: "var(--text-muted)", fontSize: 11, textTransform: "uppercase" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reps.map(rep => (
+                      <tr key={rep.rep_id} style={{ borderBottom: "1px solid var(--glass-border)" }}>
+                        <td style={{ padding: 12, fontWeight: 600 }}>{rep.name}</td>
+                        <td style={{ padding: 12, color: "var(--text-secondary)", fontFamily: "monospace", fontSize: 12 }}>{rep.rep_id}</td>
+                        <td style={{ padding: 12, color: "var(--text-secondary)" }}>{rep.territory_id || rep.district || "—"}</td>
+                        <td style={{ padding: 12 }}>{rep.visits_today || 0}</td>
+                        <td style={{ padding: 12 }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--color-success)" }} />
+                            <span style={{ fontSize: 12 }}>Active</span>
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── AI STATUS TAB ── */}
+        {tab === "model" && (
+          <div>
+            <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 600, fontFamily: "var(--font-heading)", display: "flex", alignItems: "center", gap: 8 }}>
+              <Cpu size={20} color="var(--color-primary)" /> AI Model Status
+            </h2>
+            {modelInfo ? (
+              <div style={{ display: "grid", gap: 14 }}>
+                <div className="glass-card-strong" style={{ borderLeft: `3px solid ${modelInfo.status === "ok" ? "var(--color-primary)" : "var(--color-urgent)"}` }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                    <Zap size={20} className="ai-pulse" color="var(--color-primary)" />
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
+                      {modelInfo.status === "ok" ? "CatBoost Model Running" : "Model Unavailable"}
+                    </h3>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
+                    {[
+                      { label: "Status", value: modelInfo.status === "ok" ? "Live" : "Error" },
+                      { label: "AUC Score", value: modelInfo.auc || "0.7869" },
+                      { label: "Training Samples", value: (modelInfo.training_samples || 23862).toLocaleString() },
+                      { label: "Feature Count", value: modelInfo.feature_count || 28 },
+                      { label: "Test Prediction", value: modelInfo.test_prediction?.toFixed(4) || "—" },
+                      { label: "Inference Time", value: modelInfo.inference_ms ? `${modelInfo.inference_ms}ms` : "—" },
+                    ].map(stat => (
+                      <div key={stat.label} style={{ padding: 12, background: "var(--glass-bg)", borderRadius: "var(--radius-md)", border: "1px solid var(--glass-border)" }}>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
+                        <div style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-heading)", color: "var(--color-primary)" }}>{stat.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <p style={{ margin: "16px 0 0", fontSize: 13, color: "var(--text-secondary)", fontStyle: "italic" }}>
+                    {modelInfo.message}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="glass-card" style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
+                <Cpu size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
+                <div>Loading model status...</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── TERRITORY HEATMAP TAB ── */}
+        {tab === "heatmap" && (
+          <div>
+            <h2 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600, fontFamily: "var(--font-heading)", display: "flex", alignItems: "center", gap: 8 }}>
+              <Map size={18} /> Territory Alert Heatmap
+            </h2>
+            <p style={{ margin: "0 0 20px", fontSize: 13, color: "var(--text-secondary)" }}>Retail coverage across your territory</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+              {[
+                { name: "Jalgaon", severity: "urgent", count: 3 },
+                { name: "Amalner", severity: "warning", count: 2 },
+                { name: "Dharangaon", severity: "primary", count: 1 },
+                { name: "Bhusawal", severity: "primary", count: 1 },
+                { name: "Pachora", severity: "success", count: 0 },
+                { name: "Erandol", severity: "success", count: 0 },
+              ].map(dist => (
+                <div key={dist.name} style={{
+                  padding: "14px 20px", borderRadius: 14,
+                  background: `var(--color-${dist.severity}-dim)`,
+                  border: `1px solid var(--color-${dist.severity}, var(--color-primary))`,
+                  color: `var(--color-${dist.severity}, var(--color-primary))`,
+                  fontWeight: 700, fontSize: 15, minWidth: 120, textAlign: "center"
+                }}>
+                  <div>{dist.name}</div>
+                  <div style={{ fontSize: 11, fontWeight: 400, marginTop: 4 }}>
+                    {dist.count > 0 ? `${dist.count} alert${dist.count > 1 ? "s" : ""}` : "No alerts"}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
+              {[["urgent", "High alert"], ["warning", "Medium alert"], ["primary", "Low alert"], ["success", "Clear"]].map(([sev, label]) => (
+                <div key={sev} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-secondary)" }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 2, background: `var(--color-${sev}, var(--color-primary))` }} />
+                  {label}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Quick actions */}
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 28 }}>
+          <button
+            onClick={() => { api.recalibrate(); showToast("Recalibration triggered"); }}
+            style={{ padding: "11px 18px", borderRadius: 99, border: "1px solid var(--glass-border)", background: "var(--glass-bg)", color: "var(--text-secondary)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)", display: "flex", alignItems: "center", gap: 6 }}
+          >
             <RefreshCw size={14} /> Trigger Recalibration
           </button>
-          <button style={{ padding: "12px 20px", borderRadius: 99, border: "1px solid var(--glass-border)", background: "var(--glass-bg)", color: "var(--text-secondary)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)", display: "flex", alignItems: "center", gap: 6 }}>
+          <button style={{ padding: "11px 18px", borderRadius: 99, border: "1px solid var(--glass-border)", background: "var(--glass-bg)", color: "var(--text-secondary)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)", display: "flex", alignItems: "center", gap: 6 }}>
             <Download size={14} /> Export Report
           </button>
         </div>
       </div>
+
+      {/* ── ADD RETAILER MODAL ── */}
+      <Modal open={addRetailerOpen} onClose={() => setAddRetailerOpen(false)} title="Add Retailer">
+        <form onSubmit={handleAddRetailer}>
+          <InputField label="Retailer Name *" id="r-name" required placeholder="e.g. Sharma Krishi Kendra" value={newRetailer.retailer_name} onChange={e => setNewRetailer(p => ({ ...p, retailer_name: e.target.value }))} />
+          <InputField label="Contact Name" id="r-contact" placeholder="Owner's name" value={newRetailer.contact_name} onChange={e => setNewRetailer(p => ({ ...p, contact_name: e.target.value }))} />
+          <InputField label="Phone" id="r-phone" placeholder="Mobile number" value={newRetailer.phone} onChange={e => setNewRetailer(p => ({ ...p, phone: e.target.value }))} />
+          <InputField label="Tehsil *" id="r-tehsil" required placeholder="e.g. Jalgaon" value={newRetailer.tehsil} onChange={e => setNewRetailer(p => ({ ...p, tehsil: e.target.value }))} />
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 16px" }}>District and state will be auto-filled from your profile.</p>
+          <button type="submit" className="btn-primary" disabled={saving}>{saving ? "Saving…" : "Add Retailer"}</button>
+        </form>
+      </Modal>
+
+      {/* ── ADD REP MODAL ── */}
+      <Modal open={addRepOpen} onClose={() => setAddRepOpen(false)} title="Add Field Rep">
+        <form onSubmit={handleAddRep}>
+          <InputField label="Full Name *" id="rep-name" required placeholder="Rep's full name" value={newRep.name} onChange={e => setNewRep(p => ({ ...p, name: e.target.value }))} />
+          <InputField label="Email *" id="rep-email" type="email" required placeholder="rep@syngenta.com" value={newRep.email} onChange={e => setNewRep(p => ({ ...p, email: e.target.value }))} />
+          <InputField label="Rep ID *" id="rep-id" required placeholder="e.g. REP_0204" value={newRep.rep_id} onChange={e => setNewRep(p => ({ ...p, rep_id: e.target.value }))} />
+          <InputField label="Temporary Password *" id="rep-pw" type="text" required placeholder="Min 6 characters" value={newRep.password} onChange={e => setNewRep(p => ({ ...p, password: e.target.value }))} />
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 16px" }}>Share these credentials with the rep. They can change password after first login.</p>
+          <button type="submit" className="btn-primary" disabled={saving}>{saving ? "Creating…" : "Create Rep Account"}</button>
+        </form>
+      </Modal>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: "fixed", bottom: 82, left: "50%", transform: "translateX(-50%)", background: "var(--glass-bg-strong)", backdropFilter: "blur(12px)", borderRadius: 99, padding: "12px 24px", fontSize: 14, zIndex: 9999, animation: "toastIn 0.25s ease forwards", whiteSpace: "nowrap", border: "1px solid var(--color-primary-dim)", color: "var(--color-primary)" }}>
+          <CheckCircle size={14} style={{ marginRight: 6, verticalAlign: "-2px" }} />
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

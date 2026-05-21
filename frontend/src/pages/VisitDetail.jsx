@@ -108,6 +108,13 @@ function VisitDetail() {
               ))}
             </div>
           </section>
+
+          {/* Model attribution */}
+          <div className="glass-card" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 11, color: "var(--text-muted)", lineHeight: 1.5 }}>
+              Powered by CatBoost &middot; AUC 0.7869 &middot; Trained on 23,862 visits &middot; SHAP explanations by TreeSHAP
+            </span>
+          </div>
         </div>
 
         {/* Fixed bottom */}

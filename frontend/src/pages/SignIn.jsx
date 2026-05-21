@@ -26,7 +26,13 @@ function SignIn() {
       const data = await apiLogin(identifier, password);
       cacheRepProfile(data);
       authContext.login(data.token);
-      navigate("/dashboard");
+      // Role-based redirect
+      const role = data.role || data.user?.role || "rep";
+      if (role === "manager" || role === "admin") {
+        navigate("/manager");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       setError("Invalid credentials. Check your Rep ID or email and password.");
     } finally {
@@ -136,11 +142,25 @@ function SignIn() {
         )}
 
         {/* Tagline */}
-        <div style={{
-          textAlign: "center", marginTop: 24, fontSize: 11,
-          color: "var(--text-muted)", fontFamily: "var(--font-body)"
-        }}>
+        <div style={{ textAlign: "center", marginTop: 24, fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-body)" }}>
           Syngenta Field Force Intelligence · IITM Hackathon 2026
+        </div>
+
+        {/* Demo quick-login */}
+        <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--glass-border)" }}>
+          <div style={{ textAlign: "center", fontSize: 11, color: "var(--text-muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Try a demo account</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+            {[
+              { label: "Rep", email: "rep@agronav.com", pw: "Rep1234!", color: "var(--color-primary)" },
+              { label: "Manager", email: "manager@agronav.com", pw: "Manager1234!", color: "#3b82f6" },
+              { label: "Admin", email: "admin@agronav.com", pw: "Admin1234!", color: "#7c3aed" },
+            ].map(d => (
+              <button key={d.label} type="button" onClick={() => { setIdentifier(d.email); setPassword(d.pw); }} style={{ padding: "6px 14px", borderRadius: 99, border: `1px solid ${d.color}`, background: "transparent", color: d.color, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)" }}>
+                {d.label}
+              </button>
+            ))}
+          </div>
+          <p style={{ textAlign: "center", fontSize: 11, color: "var(--text-muted)", margin: "8px 0 0" }}>Fills credentials · then press Sign In</p>
         </div>
       </div>
     </div>

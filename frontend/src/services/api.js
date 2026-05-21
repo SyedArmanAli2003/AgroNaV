@@ -36,11 +36,11 @@ export const login = async (identifier, password) => {
   return res.json(); // { token, user: { rep_id, name, territory, … } }
 };
 
-export const signup = async (name, email, repId, password) => {
+export const signup = async (name, email, repId, password, role = "rep", district = null, state = null, territory_id = null) => {
   const res = await fetch(`${BASE}/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, rep_id: repId, password })
+    body: JSON.stringify({ name, email, rep_id: repId, password, role, district, state, territory_id })
   });
   if (!res.ok) throw new Error(await res.text());
   return res.json();

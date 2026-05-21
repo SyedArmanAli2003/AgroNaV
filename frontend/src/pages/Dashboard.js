@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { MapPin, RefreshCw, AlertTriangle, WifiOff, CheckCircle, Zap, Package } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { SkeletonCard } from "../components/ui/Skeleton";
+import WelcomeTour from "../components/onboarding/WelcomeTour";
 import {
   api,
   getRecommendations,
@@ -148,6 +149,7 @@ function Dashboard() {
       background: `radial-gradient(ellipse at 85% 5%, rgba(29,158,117,0.08) 0%, transparent 50%), var(--bg-base)`,
       padding: "0 0 80px 0",
     }}>
+      <WelcomeTour userRole={authContext.user?.role || "rep"} />
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "20px 16px" }}>
 
         {/* Page header */}

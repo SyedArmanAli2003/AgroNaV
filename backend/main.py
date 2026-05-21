@@ -9,29 +9,38 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-# Load .env FIRST — before any module reads os.getenv
 load_dotenv()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Preload ML models at startup so first request isn't slow."""
-    from db.database import init_tables
+    """Startup: init DB tables, seed demo data, warm up ML models."""
+    from db.database import init_tables, get_db
+    from db.seed_demo import seed_demo_data
 
-    # Initialize database tables
+    # 1. Init tables
     await init_tables()
     print("[AgroNav] Database tables initialized")
 
-    # Warm up CatBoost model
+    # 2. Seed demo data (no-op if already seeded)
+    try:
+        import aiosqlite
+        db_path = os.path.join(os.path.dirname(__file__), "agronav.db")
+        async with aiosqlite.connect(db_path) as db:
+            db.row_factory = aiosqlite.Row
+            await seed_demo_data(db)
+    except Exception as e:
+        print(f"[AgroNav] Seed warning: {e}")
+
+    # 3. Warm up CatBoost model
     try:
         from services.inference import get_model
         get_model()
         print("[AgroNav] CatBoost model loaded")
     except Exception as e:
         print(f"[AgroNav] WARNING: CatBoost model failed to load: {e}")
-        print("[AgroNav] Recommendations endpoint will not work until model is available")
 
-    # Warm up SHAP explainer
+    # 4. Warm up SHAP explainer
     try:
         from services.shap_service import get_explainer
         get_explainer()
@@ -39,8 +48,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[AgroNav] WARNING: SHAP explainer failed to init: {e}")
 
-    print("[AgroNav] API ready at http://localhost:8000")
-    print("[AgroNav] Docs at http://localhost:8000/docs")
+    print("[AgroNav] API ready")
     yield
 
 
@@ -50,48 +58,54 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS — allow frontend and mobile origins
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3002",
-        "http://localhost:3000",
-        "http://localhost:19006",
-        "*"
-    ],
+    allow_origins=["http://localhost:3002", "http://localhost:3000", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- New routers (CatBoost + auth system) ---
+# ── Core routers ───────────────────────────────────────────────────────────────
 from routers import auth as auth_router
 from routers import recommendations as reco_router
 from routers import visit_log as visit_log_router
 from routers import outcomes as outcomes_router
+from routers import debug as debug_router
 
 app.include_router(auth_router.router)
 app.include_router(reco_router.router)
 app.include_router(visit_log_router.router)
 app.include_router(outcomes_router.router)
+app.include_router(debug_router.router)
 
-# --- Existing routers (backward compatibility for current frontend) ---
+# ── Legacy / compatibility routers ────────────────────────────────────────────
 from routers import outlets, visits, alerts, nba, sync, demo, recalibrate, manager
 
-app.include_router(outlets.router, prefix="/api/outlets", tags=["outlets"])
-app.include_router(visits.router, prefix="/api/visits", tags=["visits"])
-app.include_router(alerts.router, prefix="/api/alerts", tags=["alerts"])
-app.include_router(nba.router, prefix="/api/nba", tags=["nba"])
-app.include_router(sync.router, prefix="/api/sync", tags=["sync"])
-app.include_router(demo.router, prefix="/api/demo", tags=["demo"])
-app.include_router(recalibrate.router)  # has both /api/recalibrate and /recalibrate
-app.include_router(manager.router, prefix="/api", tags=["manager"])
+app.include_router(outlets.router,    prefix="/api/outlets",    tags=["outlets"])
+app.include_router(visits.router,     prefix="/api/visits",     tags=["visits"])
+app.include_router(alerts.router,     prefix="/api/alerts",     tags=["alerts"])
+app.include_router(nba.router,        prefix="/api/nba",        tags=["nba"])
+app.include_router(sync.router,       prefix="/api/sync",       tags=["sync"])
+app.include_router(demo.router,       prefix="/api/demo",       tags=["demo"])
+app.include_router(recalibrate.router)
+app.include_router(manager.router,    prefix="/api",            tags=["manager"])
 
-# --- Serve React Frontend ---
+# ── Serve React Frontend ───────────────────────────────────────────────────────
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-frontend_build_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend/build"))
+frontend_build_dir = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "../frontend/build")
+)
+
+# API path prefixes that must NOT be caught by the React fallback
+_API_PREFIXES = (
+    "api/", "login", "signup", "recommendations", "visit_log",
+    "recalibrate", "health", "docs", "openapi.json"
+)
+
 if os.path.exists(frontend_build_dir):
     static_dir = os.path.join(frontend_build_dir, "static")
     if os.path.exists(static_dir):
@@ -99,20 +113,19 @@ if os.path.exists(frontend_build_dir):
 
     @app.get("/{catchall:path}")
     async def serve_react_app(catchall: str):
-        # Exclude API endpoints from static file serving
-        if catchall.startswith("api/") or catchall in ["login", "recommendations", "visit_log", "recalibrate"]:
+        if catchall.startswith(_API_PREFIXES):
             from fastapi import HTTPException
             raise HTTPException(status_code=404, detail="Not Found")
-
         file_path = os.path.join(frontend_build_dir, catchall)
         if os.path.isfile(file_path):
             return FileResponse(file_path)
-            
-        index_file = os.path.join(frontend_build_dir, "index.html")
-        return FileResponse(index_file)
+        return FileResponse(os.path.join(frontend_build_dir, "index.html"))
+
+    @app.get("/health")
+    async def health():
+        return {"status": "ok", "service": "AgroNav"}
 
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
-

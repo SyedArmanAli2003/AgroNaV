@@ -2,14 +2,16 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ChevronLeft, Store, Megaphone, Users, CheckCircle, Handshake, XCircle, WifiOff } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { postVisitLog, getCachedRecommendations } from "../services/api";
+import { postVisitLog } from "../services/api";
 import { queueVisitLog } from "../services/offline";
 import { Select } from "../components/ui/Select";
 
 const SYNGENTA_PRODUCTS = [
   "Tilt 250 EC", "Score 250 EC", "Kavach 75 WP", "Amistar 250 SC",
   "Alto 5 SC", "Actara 25 WG", "Cruiser 350 FS", "Vibrance Integral",
-  "Topik 15 WP", "Axial 50 EC", "Vertimec 1.8 EC", "Movondo"
+  "Topik 15 WP", "Axial 50 EC", "Vertimec 1.8 EC", "Movondo",
+  "Ampligo 150 ZC", "Amistar Top", "Curacron 500 EC", "Pegasus 500 SC",
+  "Revus 250 SC", "Proclaim 5 SG", "Karate Zeon", "Virtako 40 WG"
 ];
 
 const VISIT_TYPES = [
@@ -39,19 +41,64 @@ function PostVisitLog() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState("");
 
-  useEffect(() => {
-    const cached = getCachedRecommendations();
-    if (cached?.recommendations) {
-      setRetailers(cached.recommendations.map(r => ({
-        value: r.retailer_id,
-        label: `${r.retailer_name} — ${r.tehsil || r.district || ""}`
-      })));
+  // Load retailers from cache + API fallback
+  const loadRetailers = async () => {
+    const sources = [];
+
+    // Source 1: cached recommendations
+    try {
+      const cached = localStorage.getItem("agronav_recommendations");
+      if (cached) {
+        const data = JSON.parse(cached);
+        const fromCache = (data.recommendations || []).map(r => ({
+          value: r.retailer_id,
+          label: `${r.retailer_name} — ${r.tehsil || r.district || ""}`
+        }));
+        sources.push(...fromCache);
+      }
+    } catch (e) { /* ignore */ }
+
+    // Source 2: fetch fresh if cache is empty
+    if (sources.length === 0) {
+      try {
+        const repId = user?.sub || user?.rep_id || "";
+        const token = localStorage.getItem("agronav_token");
+        const today = new Date().toISOString().split("T")[0];
+        const res = await fetch(
+          `/recommendations?rep_id=${repId}&date=${today}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = await res.json();
+        const fromAPI = (data.recommendations || []).map(r => ({
+          value: r.retailer_id,
+          label: `${r.retailer_name} — ${r.tehsil || ""}`
+        }));
+        sources.push(...fromAPI);
+        // Update cache
+        localStorage.setItem("agronav_recommendations",
+          JSON.stringify({ ...data, cached_at: new Date().toISOString() }));
+      } catch (e) {
+        console.error("[PostVisitLog] Could not load retailers:", e);
+      }
     }
-    const navState = window.history.state?.usr;
-    if (navState?.retailer) {
-      setRetailerId(navState.retailer.retailer_id);
+
+    // Deduplicate by value
+    const seen = new Set();
+    const unique = sources.filter(s => {
+      if (seen.has(s.value)) return false;
+      seen.add(s.value);
+      return true;
+    });
+
+    setRetailers(unique);
+
+    // Pre-select from router state
+    if (preselected?.retailer_id) {
+      setRetailerId(preselected.retailer_id);
     }
-  }, []);
+  };
+
+  useEffect(() => { loadRetailers(); }, []); // eslint-disable-line
 
   const isReady = retailerId && visitType && product && outcome;
 
@@ -60,7 +107,20 @@ function PostVisitLog() {
     if (!isReady) return;
     setSubmitting(true);
     const repId = user?.sub || user?.rep_id || "REP_0000";
-    const payload = { rep_id: repId, retailer_id: retailerId, visit_type: visitType, product_discussed: product, outcome, notes };
+    const selectedRetailerLabel = retailers.find(r => r.value === retailerId)?.label || "";
+    const retailerName = selectedRetailerLabel.split(" — ")[0] || retailerId;
+
+    const payload = {
+      rep_id: repId,
+      retailer_id: retailerId,
+      retailer_name: retailerName,
+      visit_type: visitType,
+      product_discussed: product,
+      outcome,
+      notes,
+      date: new Date().toISOString().split("T")[0],
+      submitted_at: new Date().toISOString()
+    };
 
     let msg = "Visit logged successfully";
     try {
@@ -93,7 +153,23 @@ function PostVisitLog() {
         {/* Retailer */}
         <div className="glass-card">
           <p className="section-label">Retailer</p>
-          <Select options={retailers} value={retailerId} onChange={setRetailerId} placeholder="— Select retailer —" />
+          {retailers.length > 0 ? (
+            <Select options={retailers} value={retailerId} onChange={setRetailerId} placeholder="— Select retailer —" />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ padding: "10px 14px", background: "var(--glass-bg)", borderRadius: "var(--radius-md)", border: "1px solid var(--glass-border)", fontSize: 13, color: "var(--text-muted)" }}>
+                Loading retailers… (check your dashboard first to load today's plan)
+              </div>
+              <input
+                id="manual-retailer-id"
+                className="glass-input"
+                type="text"
+                placeholder="Or enter retailer ID manually (e.g. RTL_001)"
+                value={retailerId}
+                onChange={e => setRetailerId(e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
         {/* Visit type */}
@@ -123,9 +199,8 @@ function PostVisitLog() {
           <div className="toggle-group">
             {OUTCOMES.map(o => {
               const Icon = o.Icon;
-              const isActive = outcome === o.value;
               return (
-                <button key={o.value} type="button" className={`toggle-btn ${isActive ? o.activeClass : ""}`} onClick={() => setOutcome(o.value)} style={{ fontSize: 15 }}>
+                <button key={o.value} type="button" className={`toggle-btn ${outcome === o.value ? o.activeClass : ""}`} onClick={() => setOutcome(o.value)} style={{ fontSize: 15 }}>
                   <Icon size={16} /> {o.label}
                 </button>
               );
@@ -139,7 +214,6 @@ function PostVisitLog() {
           <textarea className="glass-input" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any context for this visit…" rows={3} style={{ resize: "vertical" }} />
         </div>
 
-        {/* Submit */}
         <button type="submit" className="btn-primary" disabled={!isReady || submitting} style={{ opacity: isReady ? 1 : 0.4 }}>
           {submitting ? "Saving…" : "Submit Visit Log"}
         </button>

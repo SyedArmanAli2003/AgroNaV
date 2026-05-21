@@ -12,7 +12,6 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///agronav.db")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 JWT_SECRET = os.getenv("JWT_SECRET", "")
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3002")
