@@ -1,13 +1,14 @@
 import React, { useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { Home, Bell, PenLine, ClipboardList, User, Leaf, LogOut } from "lucide-react";
 import "../css/app.css";
 
 const TABS = [
-  { path: "/dashboard", icon: "🏠", label: "Today"    },
-  { path: "/alerts",    icon: "🔔", label: "Alerts"   },
-  { path: "/log",       icon: "✍️", label: "Log"     },
-  { path: "/outcomes",  icon: "📋", label: "History"  }
+  { path: "/dashboard", icon: Home,          label: "Today"   },
+  { path: "/alerts",    icon: Bell,          label: "Alerts"  },
+  { path: "/log",       icon: PenLine,       label: "Log"     },
+  { path: "/outcomes",  icon: ClipboardList, label: "History" }
 ];
 
 function NavBar() {
@@ -27,9 +28,10 @@ function NavBar() {
       {/* ---- Desktop top bar ---- */}
       <div style={{
         position: "sticky", top: 0, zIndex: 200,
-        background: "rgba(15,17,23,0.9)",
+        background: "rgba(15,26,20,0.92)",
         backdropFilter: "blur(20px)",
-        borderBottom: "1px solid var(--glass-border, rgba(255,255,255,0.08))",
+        WebkitBackdropFilter: "blur(20px)",
+        borderBottom: "1px solid var(--glass-border)",
         padding: "10px 20px",
         display: "flex", justifyContent: "space-between", alignItems: "center"
       }}>
@@ -37,18 +39,26 @@ function NavBar() {
         <span
           onClick={() => navigate("/dashboard")}
           style={{
-            background: "linear-gradient(135deg, #1D9E75, #4ECDC4)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            fontSize: 20, fontWeight: 700, cursor: "pointer"
+            display: "flex", alignItems: "center", gap: 8,
+            cursor: "pointer"
           }}
         >
-          🌿 AgroNav
+          <Leaf size={20} color="var(--color-primary)" />
+          <span style={{
+            background: "linear-gradient(135deg, #1D9E75, #4ECDC4)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            fontSize: 20, fontWeight: 700,
+            fontFamily: "var(--font-heading)"
+          }}>
+            AgroNav
+          </span>
         </span>
 
-        {/* Desktop tabs */}
-        <div style={{ display: "flex", gap: 4, "@media (max-width: 768px)": { display: "none" } }}>
+        {/* Desktop tabs — hidden on mobile via CSS class */}
+        <div className="top-nav-links" style={{ gap: 4 }}>
           {TABS.map(tab => {
             const active = loc.pathname === tab.path;
+            const Icon = tab.icon;
             return (
               <Link
                 key={tab.path}
@@ -56,12 +66,15 @@ function NavBar() {
                 style={{
                   padding: "7px 18px", borderRadius: 99, fontSize: 13, fontWeight: 500,
                   textDecoration: "none", transition: "all 0.15s ease",
-                  background: active ? "#1D9E75" : "transparent",
+                  background: active ? "var(--color-primary)" : "transparent",
                   color: active ? "#fff" : "var(--text-secondary)",
-                  boxShadow: active ? "0 2px 12px rgba(29,158,117,0.4)" : "none"
+                  boxShadow: active ? "0 2px 12px var(--color-primary-glow)" : "none",
+                  display: "flex", alignItems: "center", gap: 6,
+                  fontFamily: "var(--font-body)"
                 }}
               >
-                {tab.icon} {tab.label}
+                <Icon size={14} />
+                {tab.label}
               </Link>
             );
           })}
@@ -69,18 +82,19 @@ function NavBar() {
 
         {/* User + logout */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div 
+          <div
             onClick={() => navigate("/select-territory")}
-            style={{ 
-              fontSize: 12, color: "var(--text-secondary)", cursor: "pointer", 
-              padding: "6px 10px", borderRadius: 8, background: "var(--glass-light-bg)",
-              border: "1px solid var(--glass-border, rgba(255,255,255,0.05))",
-              display: "flex", alignItems: "center", gap: 6, transition: "background 0.2s"
+            style={{
+              fontSize: 12, color: "var(--text-secondary)", cursor: "pointer",
+              padding: "6px 10px", borderRadius: 8, background: "var(--glass-bg)",
+              border: "1px solid var(--glass-border)",
+              display: "flex", alignItems: "center", gap: 6, transition: "background 0.2s",
+              fontFamily: "var(--font-body)"
             }}
-            onMouseEnter={e => e.currentTarget.style.background = "var(--glass-strong-bg)"}
-            onMouseLeave={e => e.currentTarget.style.background = "var(--glass-light-bg)"}
+            onMouseEnter={e => e.currentTarget.style.background = "var(--glass-bg-strong)"}
+            onMouseLeave={e => e.currentTarget.style.background = "var(--glass-bg)"}
           >
-            <span style={{ fontSize: 14 }}>👤</span>
+            <User size={14} />
             <span>
               {user?.name?.split(" ")[0] || "Rep"}
               {user?.territory || user?.district ? ` · ${user.territory || user.district}` : ""}
@@ -88,39 +102,53 @@ function NavBar() {
           </div>
           <button
             onClick={handleLogout}
+            title="Sign out"
             style={{
-              background: "var(--glass-light-bg)", border: "1px solid var(--glass-border, rgba(255,255,255,0.10))",
+              background: "var(--glass-bg)", border: "1px solid var(--glass-border)",
               borderRadius: 99, padding: "6px 14px", color: "var(--text-muted)",
-              cursor: "pointer", fontSize: 12, fontFamily: "inherit"
+              cursor: "pointer", fontSize: 12, fontFamily: "var(--font-body)",
+              display: "flex", alignItems: "center", gap: 6
             }}
           >
+            <LogOut size={13} />
             Sign out
           </button>
         </div>
       </div>
 
-      {/* ---- Mobile bottom tab bar ---- */}
-      <nav className="bottom-nav" style={{ display: "flex" }}>
+      {/* ---- Mobile bottom tab bar — shown only on mobile via CSS class ---- */}
+      <nav className="bottom-tab-bar">
         {TABS.map(tab => {
           const active = loc.pathname === tab.path;
+          const Icon = tab.icon;
           return (
             <Link
               key={tab.path}
               to={tab.path}
-              className={`bottom-nav-tab${active ? " active" : ""}`}
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center",
+                gap: 3, padding: "8px 16px", border: "none", background: "transparent",
+                color: active ? "var(--color-primary)" : "var(--text-muted)",
+                fontSize: 10, fontFamily: "var(--font-body)", cursor: "pointer",
+                transition: "color 0.15s ease", textDecoration: "none",
+              }}
             >
-              <span className="icon">{tab.icon}</span>
+              <Icon size={20} />
               {tab.label}
             </Link>
           );
         })}
         {/* Profile tab */}
         <button
-          className={`bottom-nav-tab${loc.pathname === "/select-territory" ? " active" : ""}`}
           onClick={() => navigate("/select-territory")}
-          style={{ border: "none" }}
+          style={{
+            display: "flex", flexDirection: "column", alignItems: "center",
+            gap: 3, padding: "8px 16px", border: "none", background: "transparent",
+            color: loc.pathname === "/select-territory" ? "var(--color-primary)" : "var(--text-muted)",
+            fontSize: 10, fontFamily: "var(--font-body)", cursor: "pointer",
+          }}
         >
-          <span className="icon">👤</span>
+          <User size={20} />
           {user?.name?.split(" ")[0] || "Profile"}
         </button>
       </nav>

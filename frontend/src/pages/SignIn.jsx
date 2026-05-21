@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { Leaf } from "lucide-react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { Leaf, Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { login as apiLogin, cacheRepProfile } from "../services/api";
 import "../css/auth.css";
@@ -9,10 +9,13 @@ import "../css/landing.css";
 function SignIn() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const authContext = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isManagerLogin = searchParams.get("role") === "manager";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,7 +26,6 @@ function SignIn() {
       const data = await apiLogin(identifier, password);
       cacheRepProfile(data);
       authContext.login(data.token);
-      // Territory check happens in AuthContext after login
       navigate("/dashboard");
     } catch (err) {
       setError("Invalid credentials. Check your Rep ID or email and password.");
@@ -37,18 +39,25 @@ function SignIn() {
       <div className="auth-card">
         {/* Logo */}
         <div className="auth-logo">
-          <Leaf size={24} color="white" />
+          <Leaf size={24} color="var(--color-primary, #1D9E75)" />
           <span className="auth-logo-text">AgroNav</span>
         </div>
 
         {/* Heading */}
         <h1 className="auth-heading">Welcome Back</h1>
         <p className="auth-subheading">
-          Sign in to access your field intelligence dashboard
+          {isManagerLogin
+            ? "Sign in to your manager dashboard"
+            : "Sign in to your field intelligence account"}
         </p>
 
         {/* Error */}
-        {error && <div className="auth-error">{error}</div>}
+        {error && (
+          <div className="auth-error" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <AlertTriangle size={16} />
+            {error}
+          </div>
+        )}
 
         {/* Form */}
         <form className="auth-form" onSubmit={handleSubmit}>
@@ -73,16 +82,31 @@ function SignIn() {
 
           <div className="auth-input-group">
             <label className="auth-label">Password</label>
-            <input
-              id="signin-password"
-              className="auth-input"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                id="signin-password"
+                className="auth-input"
+                type={showPw ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                style={{ paddingRight: 44 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw(!showPw)}
+                style={{
+                  position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                  background: "none", border: "none", cursor: "pointer",
+                  color: "var(--text-muted)", padding: 4
+                }}
+                tabIndex={-1}
+              >
+                {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button
@@ -95,10 +119,28 @@ function SignIn() {
           </button>
         </form>
 
-        {/* Footer */}
+        {/* Footer links */}
         <div className="auth-footer">
           Don't have an account?{" "}
-          <Link to="/signup">Sign Up</Link>
+          <Link to="/signup">Create one</Link>
+        </div>
+        {!isManagerLogin && (
+          <div style={{ textAlign: "center", marginTop: 12 }}>
+            <Link to="/signin?role=manager" style={{
+              color: "var(--text-muted)", fontSize: 13, textDecoration: "none",
+              fontFamily: "var(--font-body)"
+            }}>
+              Sign in as Manager
+            </Link>
+          </div>
+        )}
+
+        {/* Tagline */}
+        <div style={{
+          textAlign: "center", marginTop: 24, fontSize: 11,
+          color: "var(--text-muted)", fontFamily: "var(--font-body)"
+        }}>
+          Syngenta Field Force Intelligence · IITM Hackathon 2026
         </div>
       </div>
     </div>

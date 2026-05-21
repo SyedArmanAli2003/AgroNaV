@@ -1,17 +1,19 @@
-import React, { useEffect, lazy, Suspense } from "react";
+import React, { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import NavBar from "./components/NavBar";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { Leaf } from "lucide-react";
 import "./index.css";
 import "./css/landing.css";
 import "./css/app.css";
 
-// Eager (critical path — load immediately)
+// Eager (critical path)
 import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 
-// Lazy (non-critical — code split)
+// Lazy (code split)
 const Dashboard       = lazy(() => import("./pages/Dashboard"));
 const TerritorySelect = lazy(() => import("./pages/TerritorySelect"));
 const VisitDetail     = lazy(() => import("./pages/VisitDetail"));
@@ -21,17 +23,17 @@ const Outcomes        = lazy(() => import("./pages/Outcomes"));
 const About           = lazy(() => import("./pages/About"));
 const Manager         = lazy(() => import("./pages/Manager"));
 
-// ---- Loading screen ----
+// ---- Loading screen (no emoji) ----
 function LoadingScreen() {
   return (
     <div style={{
       display: "flex", height: "100vh", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
-      background: "#050a08", color: "#1D9E75", gap: 16,
-      fontFamily: "'Outfit','Inter',sans-serif"
+      background: "var(--bg-base, #0f1a14)", color: "var(--color-primary, #1D9E75)", gap: 16,
+      fontFamily: "var(--font-heading, 'Poppins', sans-serif)"
     }}>
-      <span style={{ fontSize: 40, animation: "spin 1.2s linear infinite", display: "inline-block" }}>🌿</span>
-      <span style={{ fontSize: 16 }}>Loading AgroNav…</span>
+      <Leaf size={36} style={{ animation: "spin 1.2s linear infinite" }} />
+      <span style={{ fontSize: 16, fontFamily: "var(--font-body, 'Inter', sans-serif)" }}>Loading AgroNav…</span>
     </div>
   );
 }
@@ -39,14 +41,17 @@ function LoadingScreen() {
 // ---- Scroll to top on route change ----
 function ScrollToTop() {
   const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  React.useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   return null;
 }
 
-// ---- Protected route wrapper ----
-function ProtectedRoute() {
-  const { isAuthenticated } = useAuth();
+// ---- Protected route wrapper with optional role check ----
+function ProtectedRoute({ requiredRole }) {
+  const { isAuthenticated, user } = useAuth();
   if (!isAuthenticated) return <Navigate to="/signin" replace />;
+  if (requiredRole && user?.role !== requiredRole && user?.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
   return <Outlet />;
 }
 
@@ -67,17 +72,17 @@ function MainLayout() {
             <Route path="/"        element={<Landing />} />
             <Route path="/signin"  element={<SignIn />} />
             <Route path="/signup"  element={<SignUp />} />
-            <Route path="/about"   element={<About />} />
+            <Route path="/about"   element={<ErrorBoundary><About /></ErrorBoundary>} />
 
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard"          element={<Dashboard />} />
-              <Route path="/select-territory"   element={<TerritorySelect />} />
-              <Route path="/visit/:retailer_id" element={<VisitDetail />} />
-              <Route path="/log"                element={<PostVisitLog />} />
-              <Route path="/alerts"             element={<AlertFeed />} />
-              <Route path="/outcomes"           element={<Outcomes />} />
-              <Route path="/manager"            element={<Manager />} />
+              <Route path="/dashboard"          element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+              <Route path="/select-territory"   element={<ErrorBoundary><TerritorySelect /></ErrorBoundary>} />
+              <Route path="/visit/:retailer_id" element={<ErrorBoundary><VisitDetail /></ErrorBoundary>} />
+              <Route path="/log"                element={<ErrorBoundary><PostVisitLog /></ErrorBoundary>} />
+              <Route path="/alerts"             element={<ErrorBoundary><AlertFeed /></ErrorBoundary>} />
+              <Route path="/outcomes"           element={<ErrorBoundary><Outcomes /></ErrorBoundary>} />
+              <Route path="/manager"            element={<ErrorBoundary><Manager /></ErrorBoundary>} />
             </Route>
 
             {/* Catch-all */}
