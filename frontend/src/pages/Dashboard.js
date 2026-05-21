@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { MapPin, RefreshCw, AlertTriangle, WifiOff, CheckCircle, Zap, Package, Leaf } from "lucide-react";
+import { MapPin, RefreshCw, AlertTriangle, WifiOff, CheckCircle, Zap, Package } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import {
@@ -141,7 +141,6 @@ function Dashboard() {
   };
 
   const displayRecommendations = recommendations.length ? recommendations : (loading ? [] : FALLBACK_SHOPS);
-  const highPriority = displayRecommendations.filter(r => (r.priority_score || 0) > 0.8).length;
   const alertCount = displayRecommendations.filter(r => (r.priority_score || 0) > 0.6).length;
 
   return (

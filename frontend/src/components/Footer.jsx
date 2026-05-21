@@ -99,7 +99,7 @@ function Footer() {
           margin: "0 auto"
         }}
       >
-        © 2026 AgroNav Team · IITM Hackathon · Built with ❤️ for Indian farmers
+        © 2026 AgroNav Team · IITM Hackathon · Built with care for Indian farmers
       </div>
     </footer>
   );

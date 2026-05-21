@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Leaf, ArrowRight, Sparkles, MapPin, BookOpen, MessageCircle, Users, Globe, Menu } from 'lucide-react';
+import { Leaf, ArrowRight, Sparkles, MapPin, BookOpen, MessageCircle, Users, Globe, Menu, WifiOff, Zap, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Footer from '../components/Footer';
 import '../css/landing.css';
@@ -8,11 +8,8 @@ import '../css/landing.css';
 // --- Sub-Components ---
 
 function LeftPanel({ navigate, onOpenMenu, onScrollTo }) {
-  const { isAuthenticated, user } = useAuth();
-  
-  const repIdentity = isAuthenticated && user
-    ? `${user.name || "Rep"}${user.territory || user.district ? `, ${user.territory || user.district}` : ""}`
-    : "Syngenta Field Agent";
+  // eslint-disable-next-line no-unused-vars
+  const { isAuthenticated } = useAuth();
 
   return (
     <div className="panel-left">
@@ -58,32 +55,33 @@ function LeftPanel({ navigate, onOpenMenu, onScrollTo }) {
             </div>
           </div>
 
+          {/* Manager Portal button */}
+          <div 
+            className="liquid-glass hover-scale" 
+            style={{ borderRadius: 'var(--radius-pill)', padding: '10px 22px', display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'Poppins', fontWeight: 500, fontSize: '13px', color: 'var(--text-secondary)', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.12)' }}
+            onClick={() => navigate('/signin?role=manager')}
+          >
+            <Shield size={14} /> Manager Portal →
+          </div>
+
+          {/* 3-step how-it-works pills */}
           <div style={{ display: 'flex', flexDirection: 'row', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <div 
-              className="liquid-glass hover-scale" 
-              style={{ borderRadius: 'var(--radius-pill)', padding: '6px 16px', fontSize: '12px', fontFamily: 'Poppins', color: 'var(--text-secondary)', cursor: 'pointer' }}
-              onClick={() => onScrollTo('features')}
-            >
-              Priority Routing
+            <div className="liquid-glass" style={{ borderRadius: 'var(--radius-pill)', padding: '6px 16px', fontSize: '12px', fontFamily: 'Poppins', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(29,158,117,0.3)', color: '#1D9E75', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>1</span>
+              Morning: Get ranked visit plan
             </div>
-            <div 
-              className="liquid-glass hover-scale" 
-              style={{ borderRadius: 'var(--radius-pill)', padding: '6px 16px', fontSize: '12px', fontFamily: 'Poppins', color: 'var(--text-secondary)', cursor: 'pointer' }}
-              onClick={() => onScrollTo('nba-section')}
-            >
-              NBA Recommendations
+            <div className="liquid-glass" style={{ borderRadius: 'var(--radius-pill)', padding: '6px 16px', fontSize: '12px', fontFamily: 'Poppins', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(29,158,117,0.3)', color: '#1D9E75', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>2</span>
+              Field: AI tells you what to say
             </div>
-            <div 
-              className="liquid-glass hover-scale" 
-              style={{ borderRadius: 'var(--radius-pill)', padding: '6px 16px', fontSize: '12px', fontFamily: 'Poppins', color: 'var(--text-secondary)', cursor: 'pointer' }}
-              onClick={() => onScrollTo('offline-section')}
-            >
-              Offline First
+            <div className="liquid-glass" style={{ borderRadius: 'var(--radius-pill)', padding: '6px 16px', fontSize: '12px', fontFamily: 'Poppins', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(29,158,117,0.3)', color: '#1D9E75', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>3</span>
+              Evening: Log outcome, improve model
             </div>
           </div>
         </div>
 
-        {/* BOTTOM QUOTE */}
+        {/* BOTTOM — Trust banner */}
         <div style={{ padding: '20px 32px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: '8px', fontFamily: 'Poppins' }}>
             AI-GUIDED FIELD INTELLIGENCE
@@ -94,8 +92,14 @@ function LeftPanel({ navigate, onOpenMenu, onScrollTo }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px', marginTop: '10px' }}>
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.2)' }} />
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'Poppins' }}>{repIdentity}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'Poppins' }}>Trusted by field reps across India</div>
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.2)' }} />
+          </div>
+          {/* Avatar initials row */}
+          <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 10 }}>
+            {['AK', 'PS', 'RP', 'SD', 'VM'].map(init => (
+              <div key={init} className="liquid-glass" style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>{init}</div>
+            ))}
           </div>
         </div>
 
@@ -125,17 +129,17 @@ function RightPanel({ navigate, isAuthenticated, user, logout, showAccountDropdo
       {/* TOP BAR */}
       <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'auto', position: 'relative' }}>
         <div className="liquid-glass hover-scale" style={{ borderRadius: 'var(--radius-pill)', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div className="icon-circle" style={{ cursor: 'pointer' }} onClick={() => navigate('/alerts')}>
+          <div className="icon-circle" style={{ cursor: 'pointer' }} onClick={() => navigate('/alerts')} title="Alert Feed">
             <MessageCircle size={16} color="var(--text-primary)" />
           </div>
-          <div className="icon-circle" style={{ cursor: 'pointer' }} onClick={() => navigate('/manager')}>
+          <div className="icon-circle" style={{ cursor: 'pointer' }} onClick={() => navigate('/manager')} title="Manager Portal">
             <Users size={16} color="var(--text-primary)" />
           </div>
-          <div className="icon-circle" style={{ cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
+          <div className="icon-circle" style={{ cursor: 'pointer' }} onClick={() => navigate('/dashboard')} title="Today's Plan">
             <Globe size={16} color="var(--text-primary)" />
           </div>
           <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.2)' }} />
-          <ArrowRight size={16} color="var(--text-muted)" style={{ cursor: 'pointer' }} onClick={() => navigate('/dashboard')} />
+          <ArrowRight size={16} color="var(--text-muted)" style={{ cursor: 'pointer' }} onClick={() => navigate('/signin')} title="Sign In" />
         </div>
 
         <div style={{ position: 'relative' }}>
@@ -313,7 +317,7 @@ function Landing() {
             <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
               {/* Card 1 */}
               <div id="features-card" className="liquid-glass-strong" style={{ borderRadius: 'var(--radius-lg)', padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ fontSize: '32px' }}>📍</div>
+                <div><MapPin size={32} color="var(--color-primary, #1D9E75)" /></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Priority Routing</h3>
                   <span style={{ fontSize: '11px', background: 'rgba(29, 158, 117, 0.15)', color: 'var(--color-primary, #1D9E75)', padding: '4px 10px', borderRadius: '99px', fontWeight: 600 }}>AI-Ranked Daily Plan</span>
@@ -325,7 +329,7 @@ function Landing() {
 
               {/* Card 2 */}
               <div id="nba-section" className="liquid-glass-strong" style={{ borderRadius: 'var(--radius-lg)', padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ fontSize: '32px' }}>💡</div>
+                <div><Zap size={32} color="#FFD166" /></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Next Best Action</h3>
                   <span style={{ fontSize: '11px', background: 'rgba(255, 209, 102, 0.15)', color: '#FFD166', padding: '4px 10px', borderRadius: '99px', fontWeight: 600 }}>Gemini-Powered</span>
@@ -337,7 +341,7 @@ function Landing() {
 
               {/* Card 3 */}
               <div id="offline-section" className="liquid-glass-strong" style={{ borderRadius: 'var(--radius-lg)', padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ fontSize: '32px' }}>📶✕</div>
+                <div><WifiOff size={32} color="#ef4444" /></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Offline First</h3>
                   <span style={{ fontSize: '11px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', padding: '4px 10px', borderRadius: '99px', fontWeight: 600 }}>Works Without Internet</span>

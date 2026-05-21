@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { MapPin, Package, CheckCircle } from "lucide-react";
 import "../css/app.css";
 
 const scoreColor = (score) => {
@@ -38,7 +39,7 @@ function RecommendationCard({ rec, rank, onMarkVisited }) {
               {retailer_name}
             </div>
             <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>
-              📍 {tehsil}
+              <MapPin size={12} style={{ marginRight: 2 }} /> {tehsil}
             </div>
           </div>
         </div>
@@ -66,7 +67,7 @@ function RecommendationCard({ rec, rank, onMarkVisited }) {
         background: "rgba(29,158,117,0.12)", borderRadius: 99,
         padding: "5px 12px", marginBottom: 10, fontSize: 13, fontWeight: 500
       }}>
-        <span>📦</span>
+        <Package size={14} color="var(--color-primary, #1D9E75)" />
         <span style={{ color: "var(--text-primary)" }}>{product_recommended}</span>
       </div>
 
@@ -74,7 +75,7 @@ function RecommendationCard({ rec, rank, onMarkVisited }) {
       <ul className="reasons-list" style={{ marginBottom: 12 }}>
         {(reasons || []).slice(0, 3).map((r, i) => (
           <li key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ color: "#22c55e" }}>✓</span>
+            <CheckCircle size={13} color="var(--color-primary, #1D9E75)" style={{ flexShrink: 0 }} />
             <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>{r}</span>
           </li>
         ))}

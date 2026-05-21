@@ -16,7 +16,7 @@ if not JWT_SECRET:
     print(f"[auth] WARNING: No JWT_SECRET in .env — generated random secret (will change on restart)")
 
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRY_HOURS = 24
+JWT_EXPIRY_DAYS = 7
 
 # Password hashing using bcrypt directly (avoids passlib compatibility bugs)
 def hash_password(password: str) -> str:
@@ -39,13 +39,13 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def create_jwt(rep_id: str, email: str, name: str, territory: str = "Nalgonda") -> str:
-    """Create a JWT token with rep_id, email, name, territory, and 24h expiry."""
+    """Create a JWT token with rep_id, email, name, territory, and 7-day expiry."""
     payload = {
         "sub": rep_id,
         "email": email,
         "name": name,
         "territory": territory or "Nalgonda",
-        "exp": datetime.utcnow() + timedelta(hours=JWT_EXPIRY_HOURS),
+        "exp": datetime.utcnow() + timedelta(days=JWT_EXPIRY_DAYS),
         "iat": datetime.utcnow()
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)

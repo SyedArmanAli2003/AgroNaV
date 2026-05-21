@@ -23,8 +23,8 @@ function Toast({ message, type = "success", duration = 3000, onClose }) {
   const icons = {
     success: "✓ ",
     error:   "✗ ",
-    offline: "📶 ",
-    info:    "ℹ️ "
+    offline: "⚡ ",
+    info:    "i "
   };
 
   const color = colors[type] || colors.info;
