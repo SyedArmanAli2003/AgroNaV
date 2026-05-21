@@ -4,7 +4,10 @@ numpy>=1.24.0
 pyarrow>=14.0.0
 
 # ── ML — tabular ───────────────────────────────────────────────────────────────
-scikit-learn>=1.3.0
+# Pin sklearn to 1.6.1 to match Model 2 (.joblib saved with sklearn 1.6.1)
+scikit-learn==1.6.1
+xgboost>=3.0.0
+joblib>=1.3.0
 catboost>=1.2.0
 
 # ── Explainability ─────────────────────────────────────────────────────────────
