@@ -22,8 +22,11 @@ def get_model():
     """Singleton pattern: load CatBoost model once, reuse for all requests."""
     global _model
     if _model is None:
-        # Verify deployed.json agrees on the model filename before loading
-        deployed_path = REPO_ROOT / "models" / "deployed.json"
+        # Model lives at ml/model_1/models/ relative to repo root
+        ml_models_dir = REPO_ROOT / "ml" / "model_1" / "models"
+
+        # Check deployed.json for canonical model filename
+        deployed_path = ml_models_dir / "deployed.json"
         if deployed_path.exists():
             with open(deployed_path) as f:
                 deployed = json.load(f)
@@ -31,7 +34,7 @@ def get_model():
         else:
             model_file = "catboost_optuna_best.cbm"
 
-        model_path = REPO_ROOT / "models" / model_file
+        model_path = ml_models_dir / model_file
         _model = CatBoostClassifier()
         _model.load_model(str(model_path))
         print(f"[inference] CatBoost model loaded from {model_path}")

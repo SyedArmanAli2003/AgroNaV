@@ -22,7 +22,7 @@ async def debug_model():
         start = time.time()
 
         from services.inference import get_model
-        from src.config import FEATURE_COLS
+        from ml.model_1.src.config import FEATURE_COLS
         import pandas as pd, numpy as np
 
         model = get_model()
@@ -65,7 +65,7 @@ async def debug_model():
 async def debug_features():
     """Return the list of 28 feature columns the model uses."""
     try:
-        from src.config import FEATURE_COLS
+        from ml.model_1.src.config import FEATURE_COLS
         return {"feature_count": len(FEATURE_COLS), "features": FEATURE_COLS}
     except Exception as e:
         return {"error": str(e)}

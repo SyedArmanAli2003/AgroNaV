@@ -4,8 +4,6 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ ./
-# Empty string = same origin (frontend and backend share the Cloud Run service on port 8080)
-# For a separate backend deployment, set this to the backend's full URL.
 ARG REACT_APP_API_URL=""
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
 RUN npm run build
@@ -14,7 +12,7 @@ RUN npm run build
 FROM python:3.12-slim
 WORKDIR /app
 
-# Install system dependencies if any
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
@@ -23,18 +21,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application source
-COPY src/ /app/src/
-COPY models/ /app/models/
+# Copy ML source and trained models (backend imports from ml.model_1.*)
+COPY ml/ /app/ml/
+
+# Copy backend application
 COPY backend/ /app/backend/
-# Copy build files from Stage 1
+
+# Copy React build from Stage 1
 COPY --from=frontend-builder /app/frontend/build /app/frontend/build
 
 # Set working directory to backend
 WORKDIR /app/backend
 
-# Expose port
 EXPOSE 8080
-
-# Run with uvicorn
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
