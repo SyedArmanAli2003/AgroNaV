@@ -25,11 +25,10 @@ async def get_outcomes(
     """Return visit outcomes for the given rep, newer first."""
     try:
         async with db.execute(
-            """SELECT v.id, v.outlet_id, v.date, v.outcome, v.notes, v.synced,
-                      v.outcome_score, v.order_value,
-                      o.name as outlet_name
+            """SELECT v.id, v.outlet_id, v.retailer_id, v.retailer_name, v.date,
+                      v.outcome, v.notes, v.synced, v.outcome_score, v.order_value,
+                      v.product_discussed, v.visit_type
                FROM visit_logs v
-               LEFT JOIN outlets o ON v.outlet_id = o.id
                WHERE v.rep_id = ?
                ORDER BY v.id DESC
                LIMIT 50""",
@@ -39,10 +38,17 @@ async def get_outcomes(
 
         logs = []
         for row in rows:
+            # Prefer stored retailer_name; fallback to outlet join name or retailer_id
+            name = (row["retailer_name"] or "").strip()
+            if not name:
+                name = row["retailer_id"] or "Unknown Retailer"
             logs.append({
                 "id": row["id"],
                 "outlet_id": row["outlet_id"],
-                "outlet_name": row["outlet_name"] or "Unknown",
+                "retailer_id": row["retailer_id"],
+                "outlet_name": name,
+                "product_discussed": row["product_discussed"] or "",
+                "visit_type": row["visit_type"] or "",
                 "date": row["date"],
                 "outcome": row["outcome"],
                 "notes": row["notes"],
