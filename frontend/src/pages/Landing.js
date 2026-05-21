@@ -81,27 +81,6 @@ function LeftPanel({ navigate, onOpenMenu, onScrollTo }) {
           </div>
         </div>
 
-        {/* BOTTOM — Trust banner */}
-        <div style={{ padding: '20px 32px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--text-dim)', marginBottom: '8px', fontFamily: 'Poppins' }}>
-            AI-GUIDED FIELD INTELLIGENCE
-          </div>
-          <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'Poppins' }}>
-            <span>We bring intelligence to </span>
-            <span style={{ fontFamily: "'Source Serif 4', serif", fontStyle: 'italic', color: 'var(--text-primary)' }}>every field visit.</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px', marginTop: '10px' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.2)' }} />
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'Poppins' }}>Trusted by field reps across India</div>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.2)' }} />
-          </div>
-          {/* Avatar initials row */}
-          <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 10 }}>
-            {['AK', 'PS', 'RP', 'SD', 'VM'].map(init => (
-              <div key={init} className="liquid-glass" style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' }}>{init}</div>
-            ))}
-          </div>
-        </div>
 
       </div>
     </div>
@@ -341,7 +320,29 @@ function Landing() {
 
               {/* Card 3 — Dual ML Models */}
               <div className="liquid-glass-strong" style={{ borderRadius: 'var(--radius-lg)', padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div><span style={{ fontSize: '32px' }}>🤖</span></div>
+                <div>
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    {/* CPU chip — represents ML models */}
+                    <rect x="9" y="9" width="14" height="14" rx="2" stroke="#4ECDC4" strokeWidth="1.8" fill="none"/>
+                    <rect x="12" y="12" width="8" height="8" rx="1" fill="rgba(78,205,196,0.25)" stroke="#4ECDC4" strokeWidth="1.2"/>
+                    {/* Pins top/bottom */}
+                    <line x1="12" y1="9" x2="12" y2="6" stroke="#4ECDC4" strokeWidth="1.6" strokeLinecap="round"/>
+                    <line x1="16" y1="9" x2="16" y2="6" stroke="#4ECDC4" strokeWidth="1.6" strokeLinecap="round"/>
+                    <line x1="20" y1="9" x2="20" y2="6" stroke="#4ECDC4" strokeWidth="1.6" strokeLinecap="round"/>
+                    <line x1="12" y1="23" x2="12" y2="26" stroke="#4ECDC4" strokeWidth="1.6" strokeLinecap="round"/>
+                    <line x1="16" y1="23" x2="16" y2="26" stroke="#4ECDC4" strokeWidth="1.6" strokeLinecap="round"/>
+                    <line x1="20" y1="23" x2="20" y2="26" stroke="#4ECDC4" strokeWidth="1.6" strokeLinecap="round"/>
+                    {/* Pins left/right */}
+                    <line x1="9" y1="12" x2="6" y2="12" stroke="#4ECDC4" strokeWidth="1.6" strokeLinecap="round"/>
+                    <line x1="9" y1="16" x2="6" y2="16" stroke="#4ECDC4" strokeWidth="1.6" strokeLinecap="round"/>
+                    <line x1="9" y1="20" x2="6" y2="20" stroke="#4ECDC4" strokeWidth="1.6" strokeLinecap="round"/>
+                    <line x1="23" y1="12" x2="26" y2="12" stroke="#4ECDC4" strokeWidth="1.6" strokeLinecap="round"/>
+                    <line x1="23" y1="16" x2="26" y2="16" stroke="#4ECDC4" strokeWidth="1.6" strokeLinecap="round"/>
+                    <line x1="23" y1="20" x2="26" y2="20" stroke="#4ECDC4" strokeWidth="1.6" strokeLinecap="round"/>
+                    {/* Center dot */}
+                    <circle cx="16" cy="16" r="1.5" fill="#4ECDC4"/>
+                  </svg>
+                </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Dual AI Models</h3>
                   <span style={{ fontSize: '11px', background: 'rgba(78, 205, 196, 0.15)', color: '#4ECDC4', padding: '4px 10px', borderRadius: '99px', fontWeight: 600 }}>CatBoost + XGBoost</span>
