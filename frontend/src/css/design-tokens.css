@@ -1,0 +1,339 @@
+/* ================================================================
+   design-tokens.css — AgroNav Design System
+   Single source of truth for all design variables.
+   Import this in index.css. NEVER modify landing.css.
+   ================================================================ */
+
+:root {
+  /* Core backgrounds */
+  --bg-base: #0f1a14;
+  --bg-surface: rgba(255, 255, 255, 0.04);
+  --bg-surface-hover: rgba(255, 255, 255, 0.08);
+
+  /* Glass effects */
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-strong: rgba(255, 255, 255, 0.10);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-border-strong: rgba(255, 255, 255, 0.18);
+  --glass-blur: blur(20px);
+  --glass-blur-heavy: blur(32px);
+
+  /* Brand */
+  --color-primary: #1D9E75;
+  --color-primary-glow: rgba(29, 158, 117, 0.35);
+  --color-primary-dim: rgba(29, 158, 117, 0.15);
+
+  /* Semantic */
+  --color-urgent: #ef4444;
+  --color-urgent-dim: rgba(239, 68, 68, 0.15);
+  --color-warning: #f97316;
+  --color-warning-dim: rgba(249, 115, 22, 0.15);
+  --color-success: #22c55e;
+  --color-success-dim: rgba(34, 197, 94, 0.15);
+  --color-info: #3b82f6;
+  --color-info-dim: rgba(59, 130, 246, 0.15);
+
+  /* Text */
+  --text-primary: #f0f4f1;
+  --text-secondary: rgba(240, 244, 241, 0.65);
+  --text-muted: rgba(240, 244, 241, 0.35);
+
+  /* Typography */
+  --font-heading: 'Poppins', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Spacing / Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 99px;
+}
+
+/* ================================================================
+   Reusable Glass Cards
+   ================================================================ */
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.glass-card-strong {
+  background: var(--glass-bg-strong);
+  backdrop-filter: var(--glass-blur-heavy);
+  -webkit-backdrop-filter: var(--glass-blur-heavy);
+  border: 1px solid var(--glass-border-strong);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+/* ================================================================
+   Priority Pills — glowing, not flat
+   ================================================================ */
+
+.priority-pill {
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.priority-pill.urgent {
+  background: var(--color-urgent-dim);
+  color: var(--color-urgent);
+  border: 1px solid var(--color-urgent);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+}
+
+.priority-pill.important {
+  background: var(--color-warning-dim);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.3);
+}
+
+.priority-pill.routine {
+  background: var(--color-primary-dim);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  box-shadow: 0 0 12px var(--color-primary-glow);
+}
+
+/* Backward compat: .high / .medium / .low map to glowing pills */
+.priority-pill.high {
+  background: var(--color-urgent-dim);
+  color: var(--color-urgent);
+  border: 1px solid rgba(239, 68, 68, 0.48);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.34);
+}
+
+.priority-pill.medium {
+  background: var(--color-warning-dim);
+  color: var(--color-warning);
+  border: 1px solid rgba(249, 115, 22, 0.48);
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.30);
+}
+
+.priority-pill.low {
+  background: var(--color-success-dim);
+  color: var(--color-success);
+  border: 1px solid rgba(34, 197, 94, 0.46);
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.28);
+}
+
+/* ================================================================
+   Glass Input Fields
+   ================================================================ */
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  padding: 14px 16px;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.glass-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-dim);
+}
+
+.glass-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ================================================================
+   Primary CTA Button
+   ================================================================ */
+
+.btn-primary {
+  background: linear-gradient(135deg, #1D9E75, #15775a);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 14px 28px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  width: 100%;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 20px var(--color-primary-glow);
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 28px var(--color-primary-glow);
+}
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ================================================================
+   Toggle / Pill Button Group (visit type, outcome)
+   ================================================================ */
+
+.toggle-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toggle-btn {
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-btn:hover {
+  background: var(--glass-bg-strong);
+  color: var(--text-primary);
+}
+
+.toggle-btn.active {
+  background: var(--color-primary-dim);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: 0 0 12px var(--color-primary-glow);
+}
+
+/* Outcome-specific active colors */
+.toggle-btn.active-success {
+  background: var(--color-success-dim);
+  border-color: var(--color-success);
+  color: var(--color-success);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
+}
+
+.toggle-btn.active-warning {
+  background: var(--color-warning-dim);
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.3);
+}
+
+.toggle-btn.active-danger {
+  background: var(--color-urgent-dim);
+  border-color: var(--color-urgent);
+  color: var(--color-urgent);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+}
+
+/* ================================================================
+   Page Layout
+   ================================================================ */
+
+.page-container {
+  min-height: 100vh;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  padding-bottom: 80px;
+}
+
+/* Section labels */
+.section-label {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+/* ================================================================
+   Animations
+   ================================================================ */
+
+/* Shimmer skeleton loader */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* AI pulse animation (Zap icon on VisitDetail) */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px var(--color-primary));
+  }
+  50% {
+    opacity: 0.6;
+    filter: drop-shadow(0 0 12px var(--color-primary));
+  }
+}
+
+.ai-pulse {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Spinner */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ================================================================
+   Responsive Navbar Rules
+   Mobile (< 768px): ONLY bottom tab bar
+   Desktop (>= 768px): ONLY top nav bar
+   ================================================================ */
+
+.top-nav-links {
+  display: flex;
+}
+
+.bottom-tab-bar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .top-nav-links {
+    display: none !important;
+  }
+
+  .bottom-tab-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    height: 64px;
+    background: rgba(15, 26, 20, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--glass-border);
+    align-items: center;
+    justify-content: space-around;
+  }
+}

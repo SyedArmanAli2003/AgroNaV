@@ -1,26 +1,20 @@
+/* Google Fonts — Poppins for headings, Inter for body */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+/* Design system tokens */
+@import './css/design-tokens.css';
+
 :root {
   /* Brand */
   --green-primary:   #1D9E75;
   --green-light:     #E1F5EE;
   --green-dark:      #0F6E56;
 
-  /* Dark theme backgrounds */
-  --bg-base:         #0F1117;
-  --bg-surface:      #1A1D27;
+  /* Dark theme backgrounds (legacy compat) */
   --bg-card:         #1E2132;
   --bg-card-hover:   #252840;
-  --bg-glass:        rgba(255,255,255,0.04);
 
-  /* Text */
-  --text-primary:    #F0F2F8;
-  --text-secondary:  #8B90A7;
-  --text-muted:      #555A72;
-
-  /* Borders */
-  --border-subtle:   rgba(255,255,255,0.07);
-  --border-active:   rgba(29,158,117,0.5);
-
-  /* Priority colors */
+  /* Priority colors (legacy compat) */
   --high-bg:         rgba(220,53,69,0.15);
   --high-text:       #FF6B7A;
   --medium-bg:       rgba(255,193,7,0.12);
@@ -37,11 +31,9 @@
   --transition-med:  0.25s ease;
   --transition-slow: 0.4s ease;
 
-  /* Border radius */
-  --radius-sm:   8px;
-  --radius-md:   12px;
-  --radius-lg:   16px;
-  --radius-pill: 100px;
+  /* Border subtle (legacy compat) */
+  --border-subtle:   rgba(255,255,255,0.07);
+  --border-active:   rgba(29,158,117,0.5);
 }
 
 * {
@@ -52,7 +44,7 @@ body {
   margin: 0;
   background: var(--bg-base);
   color: var(--text-primary);
-  font-family: 'Outfit', 'Inter', sans-serif;
+  font-family: var(--font-body), 'Outfit', sans-serif;
   min-height: 100vh;
 }
 
@@ -90,10 +82,10 @@ body {
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--green-primary);
+  background: var(--color-primary);
 }
 
-/* Utility to override Bootstrap text colors globally on cards if needed */
+/* Utility to override text colors */
 .text-muted {
   color: var(--text-muted) !important;
 }
