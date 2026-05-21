@@ -48,6 +48,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[AgroNav] WARNING: SHAP explainer failed to init: {e}")
 
+    # 5. Warm up Model 2 (XGBoost ranking + IsolationForest anomaly)
+    try:
+        from services.model2_inference import get_ranking_model
+        get_ranking_model()
+        print("[AgroNav] Model 2 (XGBoost) loaded")
+    except Exception as e:
+        print(f"[AgroNav] WARNING: Model 2 failed to load: {e}")
+
     print("[AgroNav] API ready")
     yield
 
@@ -79,6 +87,10 @@ app.include_router(reco_router.router)
 app.include_router(visit_log_router.router)
 app.include_router(outcomes_router.router)
 app.include_router(debug_router.router)
+
+# Model inference router (Model 1 + Model 2 endpoints)
+from routers import model_inference as inference_router
+app.include_router(inference_router.router)
 
 # ── Legacy / compatibility routers ────────────────────────────────────────────
 from routers import outlets, visits, alerts, nba, sync, demo, recalibrate, manager

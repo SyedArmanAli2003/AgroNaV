@@ -86,38 +86,70 @@ async def get_recommendations(
             print(f"[recommendations] DB error: {e}")
             return {"rep_id": rep_id, "date": date, "recommendations": []}
 
+    # ── Try Model 1 first (CatBoost, AUC 0.79) ───────────────────────────────
+    model1_available = True
+    try:
+        from services.inference import predict_proba, get_model
+        get_model()  # raises if CatBoost failed to load
+    except Exception as e:
+        print(f"[recommendations] Model 1 unavailable: {e}. Will use Model 2.")
+        model1_available = False
+
     if not retailers:
         return {"rep_id": rep_id, "date": date, "recommendations": []}
 
-    # 2. For each (retailer × product) combo: build features and predict
+    # 2. Score retailers — Model 1 (CatBoost) or fallback to Model 2 (XGBoost)
     best_per_retailer = {}
 
-    for retailer in retailers:
-        best_prob = -1
-        best_product = None
-        best_features_df = None
+    if model1_available:
+        # ── Model 1 path: visit-level CatBoost scoring ──────────────────────
+        for retailer in retailers:
+            best_prob = -1
+            best_product = None
+            best_features_df = None
 
-        for product in SYNGENTA_PRODUCTS:
-            try:
-                features_df = build_features_sync(retailer, product, rep_id, date)
-                probs = predict_proba(features_df)
-                prob = probs[0]
+            for product in SYNGENTA_PRODUCTS:
+                try:
+                    features_df = build_features_sync(retailer, product, rep_id, date)
+                    probs = predict_proba(features_df)
+                    prob = probs[0]
+                    if prob > best_prob:
+                        best_prob = prob
+                        best_product = product
+                        best_features_df = features_df
+                except Exception:
+                    continue
 
-                if prob > best_prob:
-                    best_prob = prob
-                    best_product = product
-                    best_features_df = features_df
-            except Exception as e:
-                # Skip this combo on error, continue with others
-                continue
-
-        if best_product and best_features_df is not None:
-            best_per_retailer[retailer["retailer_id"]] = {
-                "retailer": retailer,
-                "product": best_product,
-                "probability": best_prob,
-                "features_df": best_features_df
-            }
+            if best_product and best_features_df is not None:
+                best_per_retailer[retailer["retailer_id"]] = {
+                    "retailer": retailer,
+                    "product": best_product,
+                    "probability": best_prob,
+                    "features_df": best_features_df,
+                    "model_used": "model1_catboost",
+                }
+    else:
+        # ── Model 2 fallback: XGBoost aggregate scoring ─────────────────────
+        print("[recommendations] Using Model 2 (XGBoost) as fallback scorer")
+        try:
+            from services.model2_inference import score_retailers_batch
+            import pandas as pd
+            ranked_m2 = score_retailers_batch(retailers, top_n=10)
+            for entry in ranked_m2:
+                rid = entry["retailer_id"]
+                retailer = next((r for r in retailers if r["retailer_id"] == rid), None)
+                if retailer:
+                    # Create a minimal DataFrame so SHAP reasons use fallback
+                    best_per_retailer[rid] = {
+                        "retailer": retailer,
+                        "product": "Ampligo 150 ZC",
+                        "probability": entry["priority_probability"],
+                        "features_df": None,
+                        "model_used": "model2_xgboost",
+                        "model2_triggers": entry.get("justification_triggers", []),
+                    }
+        except Exception as e:
+            print(f"[recommendations] Model 2 also failed: {e}")
 
     # 3. Sort by probability descending, take top 10
     sorted_retailers = sorted(
@@ -126,29 +158,44 @@ async def get_recommendations(
         reverse=True
     )[:10]
 
+
     # 4. Build response with SHAP reasons and NBA for each
     recommendations = []
     for rank, entry in enumerate(sorted_retailers, 1):
         retailer = entry["retailer"]
         features_df = entry["features_df"]
 
-        # SHAP reasons
-        try:
-            reasons = get_top3_reasons(features_df)
-        except Exception as e:
-            print(f"[recommendations] SHAP error for {retailer['retailer_id']}: {e}")
-            reasons = ["AI confidence signal detected", "Territory pattern match", "Seasonal timing"]
+        # SHAP reasons — use Model 2 triggers if features_df is None (Model 2 path)
+        if features_df is not None:
+            try:
+                reasons = get_top3_reasons(features_df)
+            except Exception as e:
+                print(f"[recommendations] SHAP error for {retailer['retailer_id']}: {e}")
+                reasons = entry.get("model2_triggers") or ["AI confidence signal detected", "Territory pattern match", "Seasonal timing"]
+        else:
+            reasons = entry.get("model2_triggers") or ["XGBoost priority signal", "Revenue trend detected", "Visit cadence signal"]
 
-        # NBA
-        outlet_context = {
-            "retailer_id": retailer["retailer_id"],
-            "outlet_name": retailer["retailer_name"],
-            "recommended_product": entry["product"],
-            "days_since_last_visit": int(features_df.iloc[0].get("days_since_last_visit", 0)),
-            "crop_growth_stage": "vegetative" if features_df.iloc[0].get("is_harvest_approaching", 0) == 0 else "maturity",
-            "active_pest_alerts": "bollworm" if features_df.iloc[0].get("is_critical_period", 0) == 1 else "",
-            "current_inventory": int(features_df.iloc[0].get("sku_qty_pre_visit", 0)),
-        }
+        # NBA outlet context
+        if features_df is not None:
+            outlet_context = {
+                "retailer_id": retailer["retailer_id"],
+                "outlet_name": retailer["retailer_name"],
+                "recommended_product": entry["product"],
+                "days_since_last_visit": int(features_df.iloc[0].get("days_since_last_visit", 0)),
+                "crop_growth_stage": "vegetative" if features_df.iloc[0].get("is_harvest_approaching", 0) == 0 else "maturity",
+                "active_pest_alerts": "bollworm" if features_df.iloc[0].get("is_critical_period", 0) == 1 else "",
+                "current_inventory": int(features_df.iloc[0].get("sku_qty_pre_visit", 0)),
+            }
+        else:
+            outlet_context = {
+                "retailer_id": retailer["retailer_id"],
+                "outlet_name": retailer["retailer_name"],
+                "recommended_product": entry["product"],
+                "days_since_last_visit": 7,
+                "crop_growth_stage": "vegetative",
+                "active_pest_alerts": "",
+                "current_inventory": 0,
+            }
         try:
             nba = await get_nba(outlet_context, db)
         except Exception as e:
@@ -169,11 +216,14 @@ async def get_recommendations(
             "product_recommended": entry["product"],
             "priority_score": round(entry["probability"], 4),
             "reasons": reasons,
-            "nba": nba
+            "nba": nba,
+            "model_used": entry.get("model_used", "model1_catboost"),
         })
 
+    active_model = "model1_catboost" if model1_available else "model2_xgboost"
     return {
         "rep_id": rep_id,
         "date": date,
+        "model_used": active_model,
         "recommendations": recommendations
     }

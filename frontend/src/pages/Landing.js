@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Leaf, ArrowRight, Sparkles, MapPin, BookOpen, MessageCircle, Users, Globe, Menu, WifiOff, Zap, Shield } from 'lucide-react';
+import { Leaf, ArrowRight, Sparkles, MapPin, BookOpen, MessageCircle, Users, Globe, Menu, Zap, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Footer from '../components/Footer';
 import '../css/landing.css';
@@ -339,15 +339,15 @@ function Landing() {
                 </p>
               </div>
 
-              {/* Card 3 */}
-              <div id="offline-section" className="liquid-glass-strong" style={{ borderRadius: 'var(--radius-lg)', padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div><WifiOff size={32} color="#ef4444" /></div>
+              {/* Card 3 — Dual ML Models */}
+              <div className="liquid-glass-strong" style={{ borderRadius: 'var(--radius-lg)', padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div><span style={{ fontSize: '32px' }}>🤖</span></div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Offline First</h3>
-                  <span style={{ fontSize: '11px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', padding: '4px 10px', borderRadius: '99px', fontWeight: 600 }}>Works Without Internet</span>
+                  <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Dual AI Models</h3>
+                  <span style={{ fontSize: '11px', background: 'rgba(78, 205, 196, 0.15)', color: '#4ECDC4', padding: '4px 10px', borderRadius: '99px', fontWeight: 600 }}>CatBoost + XGBoost</span>
                 </div>
                 <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-                  Rural India has no guarantee of internet. AgroNav downloads your full day plan at 7 AM. Log visits, outcomes, and orders without connectivity. Everything syncs when you're back in range.
+                  Two production ML models power visit intelligence: CatBoost (AUC 0.79) scores visit-level outcomes using 28 field signals. XGBoost ranks retailers by aggregate commercial signals. Each is the other's fallback.
                 </p>
               </div>
             </div>
@@ -377,7 +377,7 @@ function Landing() {
                 <div style={{ fontSize: '12px', color: 'var(--color-primary, #1D9E75)', fontWeight: 700 }}>STEP 2</div>
                 <h4 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Field Visit</h4>
                 <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
-                  Open the app. See your ranked list. Tap any outlet for the full AI recommendation: product, advice, and talking points. Works with zero internet.
+                  Open the app. See your ranked list. Tap any outlet for the full AI recommendation: product, SHAP-powered reasons, and Gemini-generated talking points.
                 </p>
               </div>
 
@@ -400,10 +400,10 @@ function Landing() {
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <h2 style={{ fontSize: 'clamp(28px, 4vw, 38px)', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>About AgroNav</h2>
                 <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-                  AgroNav was built for the IITM Syngenta Hackathon 2026 to solve a real problem: Syngenta's field reps in rural India make dozens of visit decisions every day with no data, no connectivity, and no guidance. We built a closed-loop AI system that turns visit outcomes into better recommendations — every single week.
+                  AgroNav was built for the IITM Syngenta Hackathon 2026 to solve a real problem: Syngenta's field reps in rural India make dozens of visit decisions every day with no data, no guidance, and no AI assistance. We built a closed-loop AI system that turns visit outcomes into better recommendations — every single week.
                 </p>
                 <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-                  The system combines a CatBoost classifier (AUC 0.79) trained on real visit history, SHAP-powered explanations, Gemini-generated coaching advice, and a fully offline React PWA — all working together so reps can make smarter visits even in areas with no signal.
+                  The system combines CatBoost (AUC 0.79) and XGBoost ML models trained on real Syngenta visit data, SHAP-powered explanations, Gemini + LLaMA-generated coaching advice, and a Manager portal — all working together so field reps make smarter, data-driven visits.
                 </p>
                 <div style={{ fontSize: '12px', color: 'var(--color-primary, #1D9E75)', fontWeight: 600, marginTop: '8px' }}>
                   Built by the AgroNav team — IITM Hackathon 2026
@@ -421,8 +421,8 @@ function Landing() {
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Model Features</div>
                 </div>
                 <div className="liquid-glass-strong" style={{ borderRadius: 'var(--radius-md)', padding: '24px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#FF6B7A' }}>Offline</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>First Design</div>
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#FF6B7A' }}>XGBoost</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Fallback Model</div>
                 </div>
                 <div className="liquid-glass-strong" style={{ borderRadius: 'var(--radius-md)', padding: '24px', textAlign: 'center' }}>
                   <div style={{ fontSize: '28px', fontWeight: 700, color: '#4ECDC4' }}>Gemini</div>
