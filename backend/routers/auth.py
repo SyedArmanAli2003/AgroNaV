@@ -127,3 +127,60 @@ async def update_territory(
     )
     await db.commit()
     return {"success": True, "message": "Territory updated"}
+
+
+class ProfileUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    district: Optional[str] = None
+    state: Optional[str] = None
+
+
+@router.patch("/api/rep/profile")
+async def update_profile(
+    req: ProfileUpdateRequest,
+    db=Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    """Update the authenticated rep's display name and/or territory."""
+    rep_id = current_user.get("sub")
+    if not rep_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    # Build dynamic update
+    fields, values = [], []
+    if req.name and req.name.strip():
+        fields.append("name=?")
+        values.append(req.name.strip())
+    if req.district:
+        fields.append("district=?")
+        values.append(req.district)
+    if req.state:
+        fields.append("state=?")
+        values.append(req.state)
+
+    if not fields:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+
+    values.append(rep_id)
+    await db.execute(f"UPDATE users SET {', '.join(fields)} WHERE rep_id=?", values)
+    await db.commit()
+
+    # Return updated user
+    async with db.execute(
+        "SELECT name, rep_id, email, role, district, state, territory_id FROM users WHERE rep_id=?",
+        (rep_id,)
+    ) as cursor:
+        updated = await cursor.fetchone()
+
+    return {
+        "success": True,
+        "user": {
+            "name": updated["name"],
+            "rep_id": updated["rep_id"],
+            "email": updated["email"],
+            "role": updated["role"],
+            "territory": updated["district"],
+            "district": updated["district"],
+            "state": updated["state"],
+        }
+    }

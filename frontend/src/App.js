@@ -23,6 +23,7 @@ const Outcomes        = lazy(() => import("./pages/Outcomes"));
 const About           = lazy(() => import("./pages/About"));
 const Manager         = lazy(() => import("./pages/Manager"));
 const UserGuide       = lazy(() => import("./pages/UserGuide"));
+const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
 
 // ---- Loading screen (no emoji) ----
 function LoadingScreen() {
@@ -85,6 +86,7 @@ function MainLayout() {
               <Route path="/alerts"             element={<ErrorBoundary><AlertFeed /></ErrorBoundary>} />
               <Route path="/outcomes"           element={<ErrorBoundary><Outcomes /></ErrorBoundary>} />
               <Route path="/manager"            element={<ErrorBoundary><Manager /></ErrorBoundary>} />
+              <Route path="/profile"            element={<ErrorBoundary><ProfileSettings /></ErrorBoundary>} />
             </Route>
 
             {/* Catch-all */}

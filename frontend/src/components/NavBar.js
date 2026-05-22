@@ -105,9 +105,10 @@ function NavBar() {
             {modelStatus === "checking" ? "AI..." : modelStatus === "live" ? "AI Live" : "AI Offline"}
           </div>
 
-          {/* User chip */}
+          {/* User chip — click to edit profile */}
           <div
-            onClick={() => navigate("/select-territory")}
+            onClick={() => navigate("/profile")}
+            title="Edit profile & territory"
             style={{
               fontSize: 12, color: "var(--text-secondary)", cursor: "pointer",
               padding: "6px 10px", borderRadius: 8, background: "var(--glass-bg)",

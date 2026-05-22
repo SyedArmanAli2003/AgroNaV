@@ -49,26 +49,63 @@ async def get_recommendations(
     if not date:
         date = date_type.today().isoformat()
 
-    # 1. Get retailers — first try the retailers table, then fall back to outlets
-    retailers = []
+    # 1. Lookup rep's territory from users table
+    rep_district = None
+    rep_state = None
     try:
         async with db.execute(
-            "SELECT * FROM retailers LIMIT 20"
+            "SELECT district, state, territory_id FROM users WHERE rep_id=?", (rep_id,)
         ) as cursor:
-            rows = await cursor.fetchall()
-            for row in rows:
-                retailers.append({
-                    "retailer_id": row["retailer_id"],
-                    "retailer_name": row["retailer_name"],
-                    "territory_id": row["territory_id"] or "TERR_001",
-                    "tehsil": row["tehsil"] or "Jalgaon",
-                    "state": row["state"] or "Maharashtra",
-                    "district": row["district"] or "Jalgaon"
-                })
+            rep_row = await cursor.fetchone()
+            if rep_row:
+                rep_district = rep_row["district"]
+                rep_state = rep_row["state"]
     except Exception:
         pass
 
-    # Fallback: use outlets table if retailers is empty
+    # 2. Get retailers — filter by rep's territory if available
+    retailers = []
+    try:
+        if rep_district:
+            async with db.execute(
+                "SELECT * FROM retailers WHERE LOWER(district)=LOWER(?) OR LOWER(tehsil)=LOWER(?) LIMIT 20",
+                (rep_district, rep_district)
+            ) as cursor:
+                rows = await cursor.fetchall()
+        else:
+            async with db.execute("SELECT * FROM retailers LIMIT 20") as cursor:
+                rows = await cursor.fetchall()
+
+        for row in rows:
+            retailers.append({
+                "retailer_id": row["retailer_id"],
+                "retailer_name": row["retailer_name"],
+                "territory_id": row["territory_id"] or "TERR_001",
+                "tehsil": row["tehsil"] or rep_district or "Jalgaon",
+                "state": row["state"] or rep_state or "Maharashtra",
+                "district": row["district"] or rep_district or "Jalgaon"
+            })
+    except Exception:
+        pass
+
+    # Fallback: if no territory-filtered results, try all retailers
+    if not retailers:
+        try:
+            async with db.execute("SELECT * FROM retailers LIMIT 20") as cursor:
+                rows = await cursor.fetchall()
+                for row in rows:
+                    retailers.append({
+                        "retailer_id": row["retailer_id"],
+                        "retailer_name": row["retailer_name"],
+                        "territory_id": row["territory_id"] or "TERR_001",
+                        "tehsil": row["tehsil"] or "Jalgaon",
+                        "state": row["state"] or "Maharashtra",
+                        "district": row["district"] or "Jalgaon"
+                    })
+        except Exception:
+            pass
+
+    # Last resort: outlets table
     if not retailers:
         try:
             async with db.execute("SELECT * FROM outlets ORDER BY id") as cursor:
@@ -78,9 +115,9 @@ async def get_recommendations(
                         "retailer_id": f"RTL_{row['id']:05d}",
                         "retailer_name": row["name"],
                         "territory_id": "TERR_001",
-                        "tehsil": row["district"] or "Nalgonda",
-                        "state": "Telangana",
-                        "district": row["district"] or "Nalgonda"
+                        "tehsil": rep_district or row["district"] or "Nalgonda",
+                        "state": rep_state or "Telangana",
+                        "district": rep_district or row["district"] or "Nalgonda"
                     })
         except Exception as e:
             print(f"[recommendations] DB error: {e}")

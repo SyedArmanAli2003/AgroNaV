@@ -90,6 +90,17 @@ export const updateTerritory = async (repId, state, district, territoryId = "") 
   return res.json();
 };
 
+// --- Profile (name + territory) ---
+export const updateProfile = async ({ name, district, state }) => {
+  const res = await fetch(`${BASE}/api/rep/profile`, {
+    method: "PATCH",
+    headers: authHeaders(),
+    body: JSON.stringify({ name, district, state })
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json(); // { success, user }
+};
+
 // --- Rep profile cache ---
 export const cacheRepProfile = (profile) => {
   localStorage.setItem("agronav_rep_profile", JSON.stringify({
