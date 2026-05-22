@@ -27,6 +27,10 @@ COPY ml/ /app/ml/
 # Copy backend application
 COPY backend/ /app/backend/
 
+# Copy Syngenta dataset CSVs (needed for DB seeding on first startup)
+# Stored at /app/ so DATASET_DIR in seed_demo.py can find them
+COPY ["Syngenta_IITM_Hackathon_2026_dataset (1)/", "/app/Syngenta_IITM_Hackathon_2026_dataset (1)/"]
+
 # Copy React build from Stage 1
 COPY --from=frontend-builder /app/frontend/build /app/frontend/build
 
