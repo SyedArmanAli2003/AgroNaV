@@ -555,9 +555,9 @@ The app ships with seeded demo accounts. Use these to explore without signing up
 
 | Name | Role | Contribution |
 |------|------|-------------|
-| **Syed Arman Ali** | Fullstack Developer | React frontend, FastAPI backend, Cloud Run deployment, ML API integration, auth system, UI/UX |
-| **Md Ehtesham Ansari** | Fullstack Developer | Frontend components, API services, UI implementation, visit logging system |
-| **Dweep** | AI/ML Engineer | Model 1 (CatBoost) training, Model 2 (XGBoost) training, SHAP integration, anomaly detection, feature engineering |
+| **Syed Arman Ali** | Fullstack Developer | React frontend, FastAPI backend, Cloud Run deployment, ML API integration, auth system, UI/UX ,Frontend components, API services, UI implementation, visit logging system |
+| **Md Ehtesham Ansari** | ML Model Developer |  Model 2 (XGBoost) training, SHAP integration, anomaly detection, feature engineering |
+| **Dweep** | ML Model devloper | Model 1 (CatBoost) training, SHAP integration, anomaly detection, feature engineering |
 | **Himanshu Sengar** | Project Manager | Product roadmap, requirements, coordination, presentation, demo scripting |
 
 ---
