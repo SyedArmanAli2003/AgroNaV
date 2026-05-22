@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS users (
   created_at    TEXT DEFAULT (datetime('now'))
 );
 
+
 CREATE TABLE IF NOT EXISTS retailers (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   retailer_id   TEXT UNIQUE NOT NULL,

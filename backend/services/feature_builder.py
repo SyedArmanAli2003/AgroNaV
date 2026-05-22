@@ -30,17 +30,29 @@ _DB_PATH = Path(__file__).resolve().parents[1] / "agronav.db"
 def _get_real_features(retailer_id: str, product: str, pred_date: str) -> dict:
     """
     Query real POS + inventory + visit_log data for this retailer.
+    Uses the dataset's end date (2026-03-29) as reference when the query
+    date is beyond the dataset range.
     Returns a dict of feature values (None if no data found).
     """
+    # Dataset covers Oct 2025 – Mar 2026; use dataset end as reference
+    DATASET_END = date(2026, 3, 29)
+
+    try:
+        ref_dt = date.fromisoformat(pred_date)
+        # If pred_date is beyond dataset, use dataset end for windowing
+        ref_dt = min(ref_dt, DATASET_END)
+    except Exception:
+        ref_dt = DATASET_END
+
     try:
         conn = sqlite3.connect(str(_DB_PATH))
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
 
-        pred_dt = date.fromisoformat(pred_date)
-        cutoff_30d = (pred_dt - timedelta(days=30)).isoformat()
-        cutoff_60d = (pred_dt - timedelta(days=60)).isoformat()
-        cutoff_14d = (pred_dt - timedelta(days=14)).isoformat()
+        cutoff_30d = (ref_dt - timedelta(days=30)).isoformat()
+        cutoff_60d = (ref_dt - timedelta(days=60)).isoformat()
+        cutoff_14d = (ref_dt - timedelta(days=14)).isoformat()
+        ref_str    = ref_dt.isoformat()
 
         # ── POS: revenue and qty last 30 days ──────────────────────────────
         c.execute("""
@@ -107,7 +119,7 @@ def _get_real_features(retailer_id: str, product: str, pred_date: str) -> dict:
             WHERE visit_tehsil = (
                 SELECT tehsil FROM retailers WHERE retailer_id=? LIMIT 1
             ) AND visit_date <= ?
-        """, (retailer_id, pred_date))
+        """, (retailer_id, ref_str))
         visit_row = dict(c.fetchone())
 
         conn.close()
@@ -118,17 +130,17 @@ def _get_real_features(retailer_id: str, product: str, pred_date: str) -> dict:
         revenue_prev= float(pos_prev.get("revenue_prev") or 0)
         units_prev  = float(pos_prev.get("units_prev") or 0)
 
-        # Days since last purchase
+        # Days since last purchase (from dataset end date)
         last_purchase = pos_30.get("last_purchase_date") or pos_all.get("last_date")
         if last_purchase:
-            days_since_purchase = max(0, (pred_dt - date.fromisoformat(last_purchase)).days)
+            days_since_purchase = max(0, (ref_dt - date.fromisoformat(last_purchase)).days)
         else:
             days_since_purchase = 90
 
         # Days since last visit
         last_visit = visit_row.get("last_visit_date")
         if last_visit:
-            days_since_last_visit = max(0, (pred_dt - date.fromisoformat(last_visit)).days)
+            days_since_last_visit = max(0, (ref_dt - date.fromisoformat(last_visit)).days)
         else:
             days_since_last_visit = None  # will be random fallback
 

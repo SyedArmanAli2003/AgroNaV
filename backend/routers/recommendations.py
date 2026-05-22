@@ -21,13 +21,18 @@ from services.feature_builder import build_features_sync
 
 router = APIRouter(tags=["recommendations"])
 
-# Syngenta product catalog — full list for scoring fallback
+# Syngenta product catalog — REAL SKUs from Syngenta IITM Hackathon 2026 dataset
+# These are exactly the products in retailer_pos.csv
 SYNGENTA_PRODUCTS = [
-    "Ampligo 150 ZC", "Tilt 250 EC", "Amistar Top",
-    "Curacron 500 EC", "Pegasus 500 SC", "Actara 25 WG",
-    "Cruiser 350 FS", "Revus 250 SC", "Score 250 EC",
-    "Proclaim 5 SG", "Karate Zeon", "Virtako 40 WG"
+    "Actara 25 WG", "Alto 5 SC", "Amistar 250 SC",
+    "Axial 50 EC", "Cruiser 350 FS", "Kavach 75 WP",
+    "Movondo", "Score 250 EC", "Tilt 250 EC",
+    "Topik 15 WP", "Vertimec 1.8 EC", "Vibrance Integral"
 ]
+
+# Latest date in the dataset — used as reference for feature computation
+# (dataset covers Oct 2025 – Apr 2026)
+DATASET_END_DATE = "2026-03-29"
 
 _DB_PATH = Path(__file__).resolve().parents[1] / "agronav.db"
 
