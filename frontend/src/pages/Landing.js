@@ -441,86 +441,127 @@ function Landing() {
               <p style={{ color: 'var(--text-secondary)', fontSize: '15px', maxWidth: 600, margin: '0 auto' }}>Everything you need to get the most out of your AI field assistant</p>
             </div>
 
-            {/* Two-column layout: Rep + Manager */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px' }}>
+            {/* SVG icon helpers */}
+            {(() => {
+              // Neon SVG icons — all 20×20 viewBox, stroke-based like MapPin/Zap/CPU
+              const RepIcon = () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2C8.69 2 6 4.69 6 8c0 5.25 6 13 6 13s6-7.75 6-13c0-3.31-2.69-6-6-6z"/><circle cx="12" cy="8" r="2.5"/>
+                </svg>
+              );
+              const ManagerIcon = () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFD166" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/>
+                </svg>
+              );
+              const stepIcons = {
+                // Rep steps
+                lock: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" strokeWidth="2" strokeLinecap="round"><rect x="5" y="11" width="14" height="11" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>,
+                list: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" strokeWidth="2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1.2"/><circle cx="3" cy="12" r="1.2"/><circle cx="3" cy="18" r="1.2"/></svg>,
+                search: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg>,
+                check: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>,
+                bell: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" strokeWidth="2" strokeLinecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>,
+                // Manager steps
+                key: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFD166" strokeWidth="2" strokeLinecap="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="M21 2l-9.6 9.6M15.5 7.5l3 3"/></svg>,
+                chart: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFD166" strokeWidth="2" strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+                cpu: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFD166" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="6" height="6"/><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="1"/><line x1="15" y1="4" x2="15" y2="1"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/></svg>,
+                map: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFD166" strokeWidth="2" strokeLinecap="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>,
+              };
 
-              {/* Rep Guide */}
-              <div className="liquid-glass-strong" style={{ borderRadius: 'var(--radius-lg)', padding: '32px 28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(29,158,117,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ fontSize: 20 }}>🌾</span>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>For Field Representatives</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Your daily AI-powered workflow</div>
-                  </div>
-                </div>
+              const repSteps = [
+                { step: '1', iconKey: 'lock',   title: 'Sign In & Set Your Territory', desc: 'Log in with your credentials. On first use, set your district/territory — AgroNav will only show retailers from your area.' },
+                { step: '2', iconKey: 'list',   title: "Open Today's Priority List", desc: 'The dashboard shows your top 10 outlets ranked by AI. Each card shows the outlet name, location, recommended product, and priority score (%).' },
+                { step: '3', iconKey: 'search', title: 'Read the Full Visit Brief', desc: 'Tap "View Full Brief" on any card to see SHAP-powered reasons why this outlet is ranked high, the product to pitch, and AI-generated talking points.' },
+                { step: '4', iconKey: 'check',  title: 'Mark Visited & Log the Outcome', desc: 'After the visit, tap "Mark Visited" then log the result — Order Placed, Interested, or Rejected. Your feedback trains the model for next week.' },
+                { step: '5', iconKey: 'bell',   title: 'Check Alerts', desc: 'Visit the Alerts tab to see live territory alerts — demand spikes, pest outbreak warnings, and stock-out risks detected by the anomaly model.' },
+              ];
 
-                {[
-                  { step: '1', icon: '🔐', title: 'Sign In & Set Your Territory', desc: 'Log in with your credentials. On first use, set your district/territory — AgroNav will only show retailers from your area.' },
-                  { step: '2', icon: '📋', title: 'Open Today\'s Priority List', desc: 'The dashboard shows your top 10 outlets ranked by AI. Each card shows the outlet name, location, recommended product, and priority score (%).' },
-                  { step: '3', icon: '🔍', title: 'Read the Full Visit Brief', desc: 'Tap "View Full Brief" on any card to see: SHAP-powered reasons why this outlet is ranked high, the product to pitch, and AI-generated talking points tailored to crop stage and pest alerts.' },
-                  { step: '4', icon: '✅', title: 'Mark Visited & Log the Outcome', desc: 'After the visit, tap "Mark Visited" then log the result — Order Placed, Interested, or Rejected. Add optional notes. Your feedback trains the model for next week.' },
-                  { step: '5', icon: '📊', title: 'Check Alerts', desc: 'Visit the Alerts tab to see live territory alerts — demand spikes, pest outbreak warnings, and stock-out risks detected by the anomaly model.' },
-                ].map(item => (
-                  <div key={item.step} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-                    <div style={{ minWidth: 28, height: 28, borderRadius: '50%', background: 'rgba(29,158,117,0.25)', border: '1px solid rgba(29,158,117,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: 'var(--color-primary, #1D9E75)', flexShrink: 0 }}>{item.step}</div>
-                    <div>
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>{item.icon} {item.title}</div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{item.desc}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              const managerSteps = [
+                { step: '1', iconKey: 'key',   title: 'Login as Manager/Admin', desc: 'Use your Manager or Admin credentials. You will be redirected to the Manager Portal — not the rep dashboard.' },
+                { step: '2', iconKey: 'chart', title: 'View Team KPIs', desc: 'See live stats: number of active retailers, reps, average AI score, and total visits this week across all territories.' },
+                { step: '3', iconKey: 'cpu',   title: 'Monitor AI Model Health', desc: 'Go to the AI Status tab to check both ML models — CatBoost (primary) and XGBoost (fallback). View AUC, inference speed, and feature count.' },
+                { step: '4', iconKey: 'map',   title: 'View Retailer & Rep Analytics', desc: 'Switch between Retailers and Reps tabs to see ranked outlet lists and per-rep performance metrics.' },
+              ];
 
-              {/* Manager Guide */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div className="liquid-glass-strong" style={{ borderRadius: 'var(--radius-lg)', padding: '32px 28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,209,102,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontSize: 20 }}>🏢</span>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>For Managers & Admins</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Team oversight and AI monitoring</div>
-                    </div>
-                  </div>
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '32px' }}>
 
-                  {[
-                    { step: '1', icon: '🔑', title: 'Login as Manager/Admin', desc: 'Use your Manager or Admin credentials. You will be redirected to the Manager Portal — not the rep dashboard.' },
-                    { step: '2', icon: '📈', title: 'View Team KPIs', desc: 'See live stats: number of active retailers, reps, average AI score, and total visits this week across all territories.' },
-                    { step: '3', icon: '🤖', title: 'Monitor AI Model Health', desc: 'Go to the AI Status tab to check both ML models — CatBoost (primary) and XGBoost (fallback). View AUC, inference speed, feature count, and model status.' },
-                    { step: '4', icon: '🗺️', title: 'View Retailer & Rep Analytics', desc: 'Switch between Retailers and Reps tabs to see ranked outlet lists and per-rep performance metrics.' },
-                  ].map(item => (
-                    <div key={item.step} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-                      <div style={{ minWidth: 28, height: 28, borderRadius: '50%', background: 'rgba(255,209,102,0.2)', border: '1px solid rgba(255,209,102,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: '#FFD166', flexShrink: 0 }}>{item.step}</div>
+                  {/* Rep Guide */}
+                  <div className="liquid-glass-strong" style={{ borderRadius: 'var(--radius-lg)', padding: '32px 28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+                      <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(29,158,117,0.15)', border: '1px solid rgba(29,158,117,0.3)', boxShadow: '0 0 12px rgba(29,158,117,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <RepIcon />
+                      </div>
                       <div>
-                        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>{item.icon} {item.title}</div>
-                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{item.desc}</div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>For Field Representatives</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Your daily AI-powered workflow</div>
                       </div>
                     </div>
-                  ))}
-                </div>
 
-                {/* Quick tip card */}
-                <div className="liquid-glass-strong" style={{ borderRadius: 'var(--radius-lg)', padding: '24px 28px', borderLeft: '3px solid var(--color-primary, #1D9E75)' }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-primary, #1D9E75)', marginBottom: 10 }}>💡 Quick Start Tips</div>
-                  <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {[
-                      'Use the Quick Demo Login on the Sign In page to explore without registering.',
-                      'Set your territory (district) after first login — this controls which retailers appear in your dashboard.',
-                      'The AI score (%) shown on each retailer card is the conversion probability predicted by ML models.',
-                      'SHAP reasons explain exactly why each retailer is ranked — not a black box.',
-                      'Log every visit outcome to improve next week\'s recommendations.',
-                    ].map((tip, i) => (
-                      <li key={i} style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{tip}</li>
+                    {repSteps.map(item => (
+                      <div key={item.step} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                        <div style={{ minWidth: 28, height: 28, borderRadius: '50%', background: 'rgba(29,158,117,0.2)', border: '1px solid rgba(29,158,117,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: '#1D9E75', flexShrink: 0 }}>{item.step}</div>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {stepIcons[item.iconKey]()} {item.title}
+                          </div>
+                          <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{item.desc}</div>
+                        </div>
+                      </div>
                     ))}
-                  </ul>
-                </div>
-              </div>
+                  </div>
 
-            </div>
+                  {/* Manager Guide + Tips */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div className="liquid-glass-strong" style={{ borderRadius: 'var(--radius-lg)', padding: '32px 28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,209,102,0.12)', border: '1px solid rgba(255,209,102,0.3)', boxShadow: '0 0 12px rgba(255,209,102,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <ManagerIcon />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>For Managers & Admins</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Team oversight and AI monitoring</div>
+                        </div>
+                      </div>
+
+                      {managerSteps.map(item => (
+                        <div key={item.step} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                          <div style={{ minWidth: 28, height: 28, borderRadius: '50%', background: 'rgba(255,209,102,0.15)', border: '1px solid rgba(255,209,102,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: '#FFD166', flexShrink: 0 }}>{item.step}</div>
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              {stepIcons[item.iconKey]()} {item.title}
+                            </div>
+                            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{item.desc}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Quick tip card */}
+                    <div className="liquid-glass-strong" style={{ borderRadius: 'var(--radius-lg)', padding: '24px 28px', borderLeft: '3px solid #1D9E75' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#1D9E75', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        Quick Start Tips
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {[
+                          'Use the Quick Demo Login on the Sign In page to explore without registering.',
+                          'Set your territory (district) after first login — this controls which retailers appear in your dashboard.',
+                          'The AI score (%) shown on each retailer card is the conversion probability predicted by ML models.',
+                          'SHAP reasons explain exactly why each retailer is ranked — not a black box.',
+                          "Log every visit outcome to improve next week's recommendations.",
+                        ].map((tip, i) => (
+                          <li key={i} style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{tip}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                </div>
+              );
+            })()}
           </section>
+
 
         </div>
 

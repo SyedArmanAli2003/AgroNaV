@@ -5,6 +5,7 @@
 
 import os
 import sys
+import sqlite3
 from pathlib import Path
 from fastapi import APIRouter, Depends, Query
 from db.database import get_db
@@ -20,13 +21,60 @@ from services.feature_builder import build_features_sync
 
 router = APIRouter(tags=["recommendations"])
 
-# Syngenta product catalog for scoring
+# Syngenta product catalog — full list for scoring fallback
 SYNGENTA_PRODUCTS = [
     "Ampligo 150 ZC", "Tilt 250 EC", "Amistar Top",
     "Curacron 500 EC", "Pegasus 500 SC", "Actara 25 WG",
     "Cruiser 350 FS", "Revus 250 SC", "Score 250 EC",
     "Proclaim 5 SG", "Karate Zeon", "Virtako 40 WG"
 ]
+
+_DB_PATH = Path(__file__).resolve().parents[1] / "agronav.db"
+
+
+def get_top_products_for_retailer(retailer_id: str, top_n: int = 4) -> list:
+    """
+    Query real POS data to get the most purchased SKU names for this retailer.
+    Falls back to full SYNGENTA_PRODUCTS catalog if no real data.
+    """
+    try:
+        conn = sqlite3.connect(str(_DB_PATH))
+        c = conn.cursor()
+        c.execute("""
+            SELECT sku_name, SUM(sku_qty) as total_qty
+            FROM retailer_pos
+            WHERE retailer_id=?
+            GROUP BY sku_name
+            ORDER BY total_qty DESC
+            LIMIT ?
+        """, (retailer_id, top_n))
+        rows = c.fetchall()
+        conn.close()
+        if rows:
+            return [r[0] for r in rows]
+    except Exception:
+        pass
+    return SYNGENTA_PRODUCTS
+
+
+def get_last_recommended_product(retailer_id: str, territory_id: str) -> str | None:
+    """
+    Get the most recently recommended product from historical visit log
+    for this retailer's territory.
+    """
+    try:
+        conn = sqlite3.connect(str(_DB_PATH))
+        c = conn.cursor()
+        c.execute("""
+            SELECT product_recommended FROM historical_visit_log
+            WHERE territory_id=?
+            ORDER BY visit_date DESC LIMIT 1
+        """, (territory_id,))
+        row = c.fetchone()
+        conn.close()
+        return row[0] if row else None
+    except Exception:
+        return None
 
 
 @router.get("/recommendations")
@@ -145,7 +193,11 @@ async def get_recommendations(
             best_product = None
             best_features_df = None
 
-            for product in SYNGENTA_PRODUCTS:
+            # Use real top-purchased products from POS data (faster + more accurate)
+            retailer_id_key = retailer["retailer_id"]
+            products_to_score = get_top_products_for_retailer(retailer_id_key, top_n=4)
+
+            for product in products_to_score:
                 try:
                     features_df = build_features_sync(retailer, product, rep_id, date)
                     probs = predict_proba(features_df)
