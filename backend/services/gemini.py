@@ -79,7 +79,7 @@ Return ONLY a JSON object, no explanation, no markdown fences:
 }}"""
 
         # Step 4: Call Gemini 1.5 Flash
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-2.0-flash")
         response = model.generate_content(prompt)
         text = response.text.strip()
 

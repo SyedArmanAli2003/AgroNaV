@@ -219,5 +219,35 @@ export const api = {
   demoReset: async () => {
     const res = await fetch(`${BASE}/api/demo/reset`, { headers: getAuthHeader() });
     return res.json();
-  }
+  },
+
+  // Competitive intelligence: Places API + LLM classification
+  analyzeCompetitor: async ({
+    retailer_id, outlet_name, district, tehsil = "",
+    lat = 17.3850, lng = 78.4867,
+    rep_text_input = "",
+    stock_days_remaining = 14, days_since_purchase = 7, crop_stage = "vegetative"
+  }) => {
+    const res = await fetch(`${BASE}/api/competitor/analyze`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        retailer_id, outlet_name, district, tehsil,
+        lat, lng, rep_text_input,
+        stock_days_remaining, days_since_purchase, crop_stage
+      })
+    });
+    return res.json();
+    // Returns: { threat_type, threat_level, competitor_name, at_risk_syngenta_products,
+    //            defensive_talking_point, immediate_action, escalate_to_manager,
+    //            opportunity_flag, nearby_stores, source, intel_id }
+  },
+
+  getCompetitorHistory: async (retailer_id, limit = 5) => {
+    const res = await fetch(
+      `${BASE}/api/competitor/history?retailer_id=${encodeURIComponent(retailer_id)}&limit=${limit}`,
+      { headers: getAuthHeader() }
+    );
+    return res.json();
+  },
 };

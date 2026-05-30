@@ -1,5 +1,5 @@
 # What it does: Next Best Action generation via 3-tier fallback
-#   Tier 1: Google Gemini (gemini-1.5-flash)
+#   Tier 1: Google Gemini (gemini-2.0-flash)
 #   Tier 2: OpenRouter (meta-llama/llama-3.3-70b-instruct)
 #   Tier 3: Rule-based deterministic fallback (works offline)
 # Input: Outlet context dict (now enriched with live weather + NDVI), async DB
@@ -91,7 +91,7 @@ async def get_nba(outlet_context: dict, db) -> dict:
             import google.generativeai as genai
             genai.configure(api_key=GEMINI_API_KEY)
             model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash",
+                model_name="gemini-2.0-flash",
                 system_instruction=NBA_SYSTEM_PROMPT
             )
             response = model.generate_content(user_prompt)

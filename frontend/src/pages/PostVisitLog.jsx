@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, Store, Megaphone, Users, CheckCircle, Handshake, XCircle, WifiOff } from "lucide-react";
+import { ChevronLeft, Store, Megaphone, Users, CheckCircle, Handshake, XCircle, WifiOff, Shield, AlertTriangle, TrendingUp } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { postVisitLog } from "../services/api";
+import { api, postVisitLog } from "../services/api";
 import { queueVisitLog } from "../services/offline";
 import { Select } from "../components/ui/Select";
 
@@ -40,6 +40,10 @@ function PostVisitLog() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState("");
+  // Competitor intelligence
+  const [compObs, setCompObs] = useState("");
+  const [compAnalyzing, setCompAnalyzing] = useState(false);
+  const [compResult, setCompResult] = useState(null);
 
   // Load retailers from cache + API fallback
   const loadRetailers = async () => {
@@ -118,6 +122,7 @@ function PostVisitLog() {
       product_discussed: product,
       outcome,
       notes,
+      competitor_observation: compObs || "",
       date: new Date().toISOString().split("T")[0],
       submitted_at: new Date().toISOString()
     };
@@ -206,6 +211,128 @@ function PostVisitLog() {
               );
             })}
           </div>
+        </div>
+
+        {/* Competitor Observation */}
+        <div className="glass-card">
+          <p className="section-label">
+            <Shield size={13} style={{ verticalAlign: "-1px", marginRight: 5 }} />
+            Competitor Observation <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>(optional)</span>
+          </p>
+          <textarea
+            id="competitor-observation"
+            className="glass-input"
+            value={compObs}
+            onChange={e => { setCompObs(e.target.value); setCompResult(null); }}
+            placeholder="e.g. Bayer rep was here yesterday, offering 10% discount on fungicide…"
+            rows={3}
+            style={{ resize: "vertical", marginBottom: 10 }}
+          />
+          <button
+            type="button"
+            id="analyze-threat-btn"
+            disabled={!compObs.trim() || compAnalyzing || !retailerId}
+            onClick={async () => {
+              setCompAnalyzing(true);
+              setCompResult(null);
+              try {
+                const selectedRec = (JSON.parse(localStorage.getItem("agronav_recommendations") || "{}").recommendations || [])
+                  .find(r => r.retailer_id === retailerId) || {};
+                const result = await api.analyzeCompetitor({
+                  retailer_id: retailerId,
+                  outlet_name: selectedRec.retailer_name || retailerId,
+                  district: selectedRec.district || localStorage.getItem("agronav_district") || "Jalgaon",
+                  tehsil: selectedRec.tehsil || "",
+                  rep_text_input: compObs,
+                  stock_days_remaining: selectedRec.stock_days_remaining || 14,
+                  days_since_purchase: selectedRec.days_since_last_visit || 7,
+                  crop_stage: selectedRec.crop_stage || "vegetative",
+                });
+                setCompResult(result);
+              } catch (e) {
+                setCompResult({ threat_type: "error", immediate_action: "Could not analyze. Please try again." });
+              } finally {
+                setCompAnalyzing(false);
+              }
+            }}
+            style={{
+              padding: "8px 20px", borderRadius: 99,
+              background: compObs.trim() && retailerId ? "var(--color-primary-dim)" : "transparent",
+              border: "1px solid var(--color-primary)",
+              color: "var(--color-primary)", fontSize: 12, fontWeight: 600,
+              cursor: compObs.trim() && retailerId ? "pointer" : "not-allowed",
+              opacity: compObs.trim() && retailerId ? 1 : 0.4,
+              fontFamily: "var(--font-body)"
+            }}
+          >
+            {compAnalyzing ? "Analyzing…" : "⚡ Analyze Threat"}
+          </button>
+
+          {/* Intel Result Card */}
+          {compResult && compResult.threat_type !== "none" && compResult.threat_type !== "error" && (
+            <div style={{
+              marginTop: 14, padding: "14px 16px", borderRadius: 10,
+              border: `1px solid ${compResult.threat_level === "HIGH" ? "var(--color-warning)" : "var(--color-primary)"}`,
+              background: compResult.threat_level === "HIGH" ? "rgba(245,158,11,0.07)" : "var(--glass-bg)",
+              animation: "toastIn 0.25s ease forwards",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                {compResult.opportunity_flag
+                  ? <TrendingUp size={14} color="var(--color-primary)" />
+                  : <AlertTriangle size={14} color={compResult.threat_level === "HIGH" ? "var(--color-warning)" : "var(--color-primary)"} />}
+                <span style={{
+                  fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em",
+                  color: compResult.opportunity_flag ? "var(--color-primary)" :
+                         compResult.threat_level === "HIGH" ? "var(--color-warning)" : "var(--color-primary)"
+                }}>
+                  {compResult.threat_type?.replace(/_/g, " ")} · {compResult.threat_level}
+                </span>
+                {compResult.escalate_to_manager && (
+                  <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--color-warning)", border: "1px solid var(--color-warning)", borderRadius: 99, padding: "2px 8px" }}>
+                    Escalate to Manager
+                  </span>
+                )}
+              </div>
+
+              {compResult.nearby_stores && compResult.nearby_stores !== "None detected" && (
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8, fontFamily: "monospace" }}>
+                  📍 Nearby: {compResult.nearby_stores}
+                </div>
+              )}
+
+              {compResult.defensive_talking_point && (
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Talking Point</div>
+                  <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>{compResult.defensive_talking_point}</div>
+                </div>
+              )}
+
+              {compResult.immediate_action && (
+                <div style={{ marginTop: 4, padding: "8px 12px", background: "var(--color-primary-dim)", borderRadius: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-primary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>Immediate Action</div>
+                  <div style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.5 }}>{compResult.immediate_action}</div>
+                </div>
+              )}
+
+              {compResult.at_risk_syngenta_products?.length > 0 && (
+                <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {compResult.at_risk_syngenta_products.map(sku => (
+                    <span key={sku} style={{ fontSize: 11, padding: "2px 10px", borderRadius: 99, background: "rgba(245,158,11,0.12)", color: "var(--color-warning)", border: "1px solid rgba(245,158,11,0.3)" }}>
+                      {sku}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ marginTop: 8, fontSize: 10, color: "var(--text-muted)" }}>via {compResult.source}</div>
+            </div>
+          )}
+
+          {compResult && compResult.threat_type === "none" && (
+            <div style={{ marginTop: 12, fontSize: 13, color: "var(--color-primary)", display: "flex", alignItems: "center", gap: 6 }}>
+              <CheckCircle size={14} /> No competitive threat detected in this observation.
+            </div>
+          )}
         </div>
 
         {/* Notes */}

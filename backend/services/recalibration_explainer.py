@@ -169,7 +169,7 @@ async def generate_recalibration_explanation(
             import google.generativeai as genai
             genai.configure(api_key=GEMINI_API_KEY)
             model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash",
+                model_name="gemini-2.0-flash",
                 system_instruction=_SYSTEM
             )
             resp  = model.generate_content(prompt)
@@ -178,7 +178,7 @@ async def generate_recalibration_explanation(
                 result = {
                     "line1": lines[0], "line2": lines[1], "line3": lines[2],
                     "full_text": "\n".join(lines[:3]),
-                    "source": "gemini-1.5-flash"
+                    "source": "gemini-2.0-flash"
                 }
         except Exception as exc:
             print(f"[recalib-explain] Gemini failed: {exc}")

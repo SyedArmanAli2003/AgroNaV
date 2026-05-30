@@ -42,6 +42,9 @@ async def init_tables():
             # alerts table: add outlet_name and timestamp columns if missing
             "ALTER TABLE alerts ADD COLUMN outlet_name TEXT",
             "ALTER TABLE alerts ADD COLUMN timestamp TEXT",
+            # visit_logs: add competitor_observation column
+            "ALTER TABLE visit_logs ADD COLUMN competitor_observation TEXT",
+            "ALTER TABLE visit_logs ADD COLUMN retailer_name TEXT",
         ]
         for sql in migrations:
             try:
@@ -111,6 +114,25 @@ CREATE TABLE IF NOT EXISTS weather_cache (
   created_at   TEXT DEFAULT (datetime('now')),
   UNIQUE(district, date)
 );
+
+CREATE TABLE IF NOT EXISTS competitor_intel (
+  id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+  retailer_id          TEXT NOT NULL,
+  date                 TEXT NOT NULL,
+  rep_observation      TEXT,
+  nearby_stores        TEXT,
+  threat_type          TEXT DEFAULT 'none',
+  threat_level         TEXT,
+  competitor_name      TEXT,
+  at_risk_skus         TEXT DEFAULT '[]',
+  defensive_tp         TEXT,
+  immediate_action     TEXT,
+  escalate_to_manager  INTEGER DEFAULT 0,
+  opportunity_flag     INTEGER DEFAULT 0,
+  created_at           TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_ci_retailer ON competitor_intel(retailer_id);
+CREATE INDEX IF NOT EXISTS idx_ci_date     ON competitor_intel(date);
 """)
         await db.commit()
 
