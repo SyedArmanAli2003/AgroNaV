@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import NBACard from "../components/NBACard";
 import { api, FALLBACK_NBA } from "../services/api";
 import { queueOutcome } from "../services/offline";
+import { Leaf, MessageSquare, AlertTriangle, Navigation, Clock } from "lucide-react";
 
 const PRIORITY_STYLE = {
   HIGH: { bg: "var(--high-bg)", color: "var(--high-text)" },
@@ -18,6 +19,8 @@ function Visit() {
   const [logged, setLogged] = useState(false);
   const [toast, setToast] = useState("");
   const [score, setScore] = useState(null);
+  const [farmerPlan, setFarmerPlan] = useState(null);
+  const [farmerLoading, setFarmerLoading] = useState(false);
 
   useEffect(() => {
     const cached = localStorage.getItem("agronav_daily");
@@ -103,6 +106,131 @@ function Visit() {
 
       {/* NBA Card */}
       {nba && <NBACard nba={nba} />}
+
+      {/* ── Farmer Intel Card ─────────────────────────────────── */}
+      <div style={{ marginTop: 16, marginBottom: 8 }}>
+        <button
+          id="farmer-intel-btn"
+          onClick={async () => {
+            if (farmerPlan) { setFarmerPlan(null); return; }
+            setFarmerLoading(true);
+            try {
+              await api.seedDemoFarmers();
+              const grower = {
+                grower_id:          `G_${outlet.id}`,
+                farmer_name:        outlet.owner_name || "Farmer",
+                village:            outlet.district   || "Village",
+                tehsil:             outlet.district   || "",
+                district:           outlet.district   || "Jalgaon",
+                farm_acres:         2.5,
+                crop_type:          (outlet.crop_stage || "").toLowerCase().includes("kharif") ? "cotton" : "soybean",
+                growth_stage:       outlet.crop_stage || "vegetative",
+                last_product:       outlet.last_visit_date ? "Tilt 250 EC" : null,
+                last_purchase_date: outlet.last_visit_date || null,
+              };
+              const plan = await api.getFarmerVisitPlan(grower);
+              setFarmerPlan(plan);
+            } catch (e) { console.error("[farmer-intel]", e); }
+            finally { setFarmerLoading(false); }
+          }}
+          style={{
+            width: "100%", padding: "10px", borderRadius: "var(--radius-pill)",
+            background: farmerPlan ? "transparent" : "rgba(29,158,117,0.1)",
+            border: "1px solid rgba(29,158,117,0.35)",
+            color: "#1D9E75", fontSize: 13, fontWeight: 600, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}
+        >
+          <Leaf size={14} />
+          {farmerLoading ? "Fetching farmer intel..." : farmerPlan ? "Hide Farmer Intel" : "Farmer Intel"}
+        </button>
+
+        {farmerPlan && (
+          <div style={{
+            marginTop: 12,
+            background: "var(--bg-card)", borderRadius: "var(--radius-md)",
+            border: "1px solid var(--border-subtle)", padding: 16,
+            animation: "toastIn 0.25s ease forwards",
+            borderLeft: `3px solid ${
+              farmerPlan.visit_type === "priority_visit"  ? "#ef4444" :
+              farmerPlan.visit_type === "warm_lead_visit" ? "#818CF8" :
+              farmerPlan.visit_type === "free_visit"      ? "#1D9E75" : "var(--border-subtle)"
+            }`
+          }}>
+            {/* Header row */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <span style={{
+                fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em",
+                padding: "3px 10px", borderRadius: 99, border: "1px solid currentColor",
+                color:
+                  farmerPlan.visit_type === "priority_visit"  ? "#ef4444" :
+                  farmerPlan.visit_type === "warm_lead_visit" ? "#818CF8" :
+                  farmerPlan.visit_type === "free_visit"      ? "#1D9E75" : "var(--text-muted)",
+                background:
+                  farmerPlan.visit_type === "priority_visit"  ? "rgba(239,68,68,0.1)" :
+                  farmerPlan.visit_type === "warm_lead_visit" ? "rgba(129,140,248,0.1)" :
+                  farmerPlan.visit_type === "free_visit"      ? "rgba(29,158,117,0.1)" : "rgba(100,116,139,0.1)",
+              }}>
+                {(farmerPlan.visit_type || "").replace(/_/g, " ")}
+              </span>
+              <span style={{ fontSize: 10, color: "var(--text-muted)" }}>via {farmerPlan.source}</span>
+            </div>
+
+            {/* Signal chips */}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+              {[
+                { icon: <Navigation size={10}/>, label: `${farmerPlan.distance_km}km from route`, show: farmerPlan.distance_km != null },
+                { icon: <Clock size={10}/>,       label: `${farmerPlan.detour_minutes}min detour`,  show: farmerPlan.detour_minutes != null },
+                { icon: <MessageSquare size={10}/>, label: `WhatsApp: ${farmerPlan.message_status}`, show: !!farmerPlan.message_status },
+              ].filter(s => s.show).map((s, i) => (
+                <span key={i} style={{ fontSize: 10, display: "flex", alignItems: "center", gap: 4,
+                  padding: "2px 8px", borderRadius: 99,
+                  background: "rgba(255,255,255,0.04)", border: "1px solid var(--border-subtle)",
+                  color: "var(--text-muted)" }}>{s.icon} {s.label}</span>
+              ))}
+            </div>
+
+            {/* Conversation starter */}
+            {farmerPlan.conversation_starter && (
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", marginBottom: 4 }}>Conversation Starter</div>
+                <div style={{ fontSize: 13, color: "var(--text-primary)", lineHeight: 1.5, fontStyle: "italic" }}>"{farmerPlan.conversation_starter}"</div>
+              </div>
+            )}
+
+            {/* Agronomic advice */}
+            {farmerPlan.agronomic_advice && (
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", marginBottom: 4 }}>Agronomic Advice</div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>{farmerPlan.agronomic_advice}</div>
+              </div>
+            )}
+
+            {/* Product + value */}
+            {farmerPlan.recommended_product && (
+              <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+                <div style={{ flex: 1, padding: "8px 12px", borderRadius: 8, background: "rgba(29,158,117,0.08)", border: "1px solid rgba(29,158,117,0.2)" }}>
+                  <div style={{ fontSize: 10, color: "#1D9E75", fontWeight: 700, textTransform: "uppercase", marginBottom: 2 }}>Recommend</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{farmerPlan.recommended_product}</div>
+                </div>
+                {farmerPlan.estimated_value && (
+                  <div style={{ flex: 1, padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid var(--border-subtle)" }}>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", marginBottom: 2 }}>Est. Value</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{farmerPlan.estimated_value}</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {farmerPlan.visit_type === "skip_today" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>
+                <AlertTriangle size={12} /> {farmerPlan.visit_reason}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
 
       {/* Outcome buttons */}
       <div className="mt-3">

@@ -45,6 +45,12 @@ async def init_tables():
             # visit_logs: add competitor_observation column
             "ALTER TABLE visit_logs ADD COLUMN competitor_observation TEXT",
             "ALTER TABLE visit_logs ADD COLUMN retailer_name TEXT",
+            # growers: geocoded columns
+            "ALTER TABLE growers ADD COLUMN lat REAL",
+            "ALTER TABLE growers ADD COLUMN lng REAL",
+            "ALTER TABLE growers ADD COLUMN geocoded_at TEXT",
+            "ALTER TABLE growers ADD COLUMN distance_km REAL",
+            "ALTER TABLE growers ADD COLUMN nearest_retailer_id TEXT",
         ]
         for sql in migrations:
             try:
@@ -133,6 +139,42 @@ CREATE TABLE IF NOT EXISTS competitor_intel (
 );
 CREATE INDEX IF NOT EXISTS idx_ci_retailer ON competitor_intel(retailer_id);
 CREATE INDEX IF NOT EXISTS idx_ci_date     ON competitor_intel(date);
+
+-- Gap 6: Farmer Visit Planner
+CREATE TABLE IF NOT EXISTS growers (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  grower_id           TEXT UNIQUE NOT NULL,
+  farmer_name         TEXT NOT NULL,
+  village             TEXT NOT NULL,
+  tehsil              TEXT,
+  district            TEXT NOT NULL,
+  state               TEXT DEFAULT 'Maharashtra',
+  farm_acres          REAL DEFAULT 2.0,
+  crop_type           TEXT DEFAULT 'cotton',
+  growth_stage        TEXT DEFAULT 'vegetative',
+  last_product        TEXT,
+  last_purchase_date  TEXT,
+  nearest_retailer_id TEXT,
+  distance_km         REAL,
+  lat                 REAL,
+  lng                 REAL,
+  geocoded_at         TEXT,
+  created_at          TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_growers_district ON growers(district);
+CREATE INDEX IF NOT EXISTS idx_growers_tehsil   ON growers(tehsil);
+
+CREATE TABLE IF NOT EXISTS whatsapp_campaigns (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  grower_id       TEXT NOT NULL,
+  campaign_name   TEXT,
+  message_status  TEXT DEFAULT 'sent',
+  sent_at         TEXT,
+  opened_at       TEXT,
+  clicked_at      TEXT,
+  created_at      TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_wa_grower ON whatsapp_campaigns(grower_id);
 """)
         await db.commit()
 

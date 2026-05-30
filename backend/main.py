@@ -116,6 +116,10 @@ app.include_router(route_router.router, tags=["route"])
 from routers import learning as learning_router
 app.include_router(learning_router.router, tags=["learning"])
 
+# Farmer visit planner router (Gap 6)
+from routers import farmers as farmers_router
+app.include_router(farmers_router.router, tags=["farmers"])
+
 # ── Serve React Frontend ───────────────────────────────────────────────────────
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse

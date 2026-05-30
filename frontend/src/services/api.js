@@ -305,4 +305,32 @@ export const api = {
     // Returns 9-field schema: {manager_alert, best_product_next_week, reps_needing_coaching,
     //   deprioritize_outlets, insight_summary, learning_action, source, raw_ctx}
   },
+
+  // Farmer Visit Planner (Gap 6)
+  getFarmerVisitPlan: async (grower) => {
+    const res = await fetch(`${BASE}/api/farmers/visit-plan`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(grower),
+    });
+    return res.json();
+    // Returns: {visit_type, recommended_product, agronomic_advice,
+    //           conversation_starter, visit_reason, estimated_value, source, ...}
+  },
+
+  seedDemoFarmers: async () => {
+    const res = await fetch(`${BASE}/api/farmers/seed-demo`, {
+      method: "POST",
+      headers: authHeaders(),
+    });
+    return res.json();
+  },
+
+  getFarmerList: async (district = "Jalgaon") => {
+    const res = await fetch(
+      `${BASE}/api/farmers/list?district=${encodeURIComponent(district)}`,
+      { headers: getAuthHeader() }
+    );
+    return res.json();
+  },
 };
