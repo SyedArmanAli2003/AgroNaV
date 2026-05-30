@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { MapPin, RefreshCw, AlertTriangle, WifiOff, CheckCircle, Zap, Package } from "lucide-react";
+import { MapPin, RefreshCw, AlertTriangle, WifiOff, CheckCircle, Zap, Package, CalendarDays, Clock, ChevronRight } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import WelcomeTour from "../components/onboarding/WelcomeTour";
@@ -43,6 +43,7 @@ function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [dashTab, setDashTab] = useState("today");
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [recalMsg, setRecalMsg] = useState("");
@@ -52,6 +53,11 @@ function Dashboard() {
   const [morningLoading, setMorningLoading] = useState(false);
   const [toast, setToast] = useState("");
   const [banner, setBanner] = useState(null);
+
+  // My Week state
+  const [weekPlan, setWeekPlan] = useState(null);
+  const [weekPlanLoading, setWeekPlanLoading] = useState(false);
+  const [weekPlanError, setWeekPlanError] = useState(null);
 
   const scoreColor = (score) => {
     if (score > 0.8) return "var(--color-urgent)";
@@ -160,6 +166,18 @@ function Dashboard() {
     }
   };
 
+  // Load weekly plan when "My Week" tab is first opened
+  useEffect(() => {
+    if (dashTab !== "week" || weekPlan !== null || weekPlanLoading) return;
+    const repId = authContext.user?.sub || authContext.user?.rep_id || "REP_0203";
+    setWeekPlanLoading(true);
+    setWeekPlanError(null);
+    api.getRepWeeklyPlan(repId)
+      .then(data => setWeekPlan(data?.plan || false))
+      .catch(() => setWeekPlanError("Could not load weekly plan"))
+      .finally(() => setWeekPlanLoading(false));
+  }, [dashTab]); // eslint-disable-line
+
   const displayRecommendations = recommendations.length ? recommendations : (loading ? [] : FALLBACK_SHOPS);
   const alertCount = displayRecommendations.filter(r => (r.priority_score || 0) > 0.6).length;
 
@@ -170,6 +188,26 @@ function Dashboard() {
     }}>
       <WelcomeTour userRole={authContext.user?.role || "rep"} />
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "20px 16px" }}>
+
+        {/* Tab bar: Today / My Week */}
+        <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "1px solid var(--glass-border)" }}>
+          {[["today", "Today's List"], ["week", "My Week"]].map(([key, label]) => (
+            <button key={key} onClick={() => setDashTab(key)} style={{
+              background: "none", border: "none", cursor: "pointer",
+              padding: "10px 18px", fontSize: 14, fontWeight: 600,
+              fontFamily: "var(--font-body)",
+              color: dashTab === key ? "var(--color-primary)" : "var(--text-muted)",
+              borderBottom: dashTab === key ? "2px solid var(--color-primary)" : "2px solid transparent",
+              display: "flex", alignItems: "center", gap: 6, transition: "all 0.15s"
+            }}>
+              {key === "week" && <CalendarDays size={14} />}
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── TODAY TAB ── */}
+        {dashTab === "today" && (<>
 
         {/* Page header */}
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 20 }}>
@@ -511,6 +549,139 @@ function Dashboard() {
             );
           })}
         </div>
+
+        </>)}
+
+        {/* ── MY WEEK TAB ── */}
+        {dashTab === "week" && (
+          <div>
+            <div style={{ marginBottom: 20 }}>
+              <h1 style={{ margin: "0 0 4px", fontSize: "clamp(20px,4vw,28px)", fontWeight: 600, fontFamily: "var(--font-heading)" }}>
+                My Week
+              </h1>
+              <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)" }}>
+                Your manager-approved visit plan for this week · Tap any outlet to see the full brief
+              </p>
+            </div>
+
+            {weekPlanLoading && (
+              <div className="glass-card" style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
+                <RefreshCw size={28} style={{ marginBottom: 12, opacity: 0.4, animation: "spin 1s linear infinite" }} />
+                <div>Loading your weekly plan...</div>
+              </div>
+            )}
+
+            {weekPlanError && (
+              <div className="glass-card" style={{ textAlign: "center", padding: 40, color: "var(--text-muted)", borderLeft: "3px solid var(--color-warning)" }}>
+                <AlertTriangle size={28} style={{ marginBottom: 12 }} color="var(--color-warning)" />
+                <div>{weekPlanError}</div>
+              </div>
+            )}
+
+            {!weekPlanLoading && !weekPlanError && weekPlan === false && (
+              <div className="glass-card" style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
+                <CalendarDays size={40} style={{ marginBottom: 12, opacity: 0.4 }} />
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>No approved plan for this week yet</div>
+                <div style={{ fontSize: 13 }}>Ask your manager to generate and approve a plan. It will appear here once approved.</div>
+              </div>
+            )}
+
+            {!weekPlanLoading && weekPlan && (() => {
+              const todayDay = weekPlan.today_day;
+              const days = ["monday","tuesday","wednesday","thursday","friday"];
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {/* Plan meta */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-primary)" }}>{weekPlan.week_label}</span>
+                    <span style={{ fontSize: 11, padding: "2px 9px", borderRadius: 99, background: "var(--color-primary-dim)", color: "var(--color-primary)", fontWeight: 700, textTransform: "uppercase" }}>{weekPlan.status}</span>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{weekPlan.week_start_date} → {weekPlan.week_end_date}</span>
+                  </div>
+
+                  {days.map(day => {
+                    const outlets = weekPlan.daily_split?.[day] || [];
+                    const isToday = day === todayDay;
+                    return (
+                      <div key={day} className={isToday ? "glass-card-strong" : "glass-card"} style={{
+                        borderLeft: isToday ? "3px solid var(--color-primary)" : undefined,
+                        padding: "16px 20px",
+                      }}>
+                        {/* Day header */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: outlets.length ? 14 : 0 }}>
+                          <Clock size={14} color={isToday ? "var(--color-primary)" : "var(--text-muted)"} />
+                          <span style={{ fontWeight: 700, fontSize: 14, textTransform: "capitalize", color: isToday ? "var(--color-primary)" : "var(--text-primary)" }}>
+                            {day}
+                          </span>
+                          {isToday && (
+                            <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99, background: "var(--color-primary-dim)", color: "var(--color-primary)", fontWeight: 700 }}>
+                              TODAY
+                            </span>
+                          )}
+                          <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-muted)" }}>
+                            {outlets.length} {outlets.length === 1 ? "visit" : "visits"}
+                          </span>
+                        </div>
+
+                        {outlets.length === 0 ? (
+                          <div style={{ fontSize: 13, color: "var(--text-muted)", fontStyle: "italic" }}>No visits planned</div>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            {outlets.map((o, idx) => (
+                              <div
+                                key={o.id || idx}
+                                style={{
+                                  display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12,
+                                  padding: "12px 14px", borderRadius: 10,
+                                  background: "var(--glass-bg)", border: "1px solid var(--glass-border)",
+                                  cursor: "pointer",
+                                }}
+                                onClick={() => navigate(`/visit/${o.id}`, { state: { retailer: { retailer_id: o.id, retailer_name: o.name, district: o.district } } })}
+                              >
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontWeight: 700, fontSize: 14, fontFamily: "var(--font-heading)", color: "var(--text-primary)", lineHeight: 1.3 }}>
+                                    {o.name || `Outlet #${o.id}`}
+                                  </div>
+                                  {o.district && (
+                                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+                                      <MapPin size={10} /> {o.district}
+                                    </div>
+                                  )}
+                                  {o.reasons?.[0] && (
+                                    <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 5, lineHeight: 1.4 }}>
+                                      <CheckCircle size={11} color="var(--color-primary)" style={{ verticalAlign: "-1px", marginRight: 4 }} />
+                                      {o.reasons[0]}
+                                    </div>
+                                  )}
+                                </div>
+                                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+                                  <span style={{
+                                    fontSize: 11, padding: "2px 9px", borderRadius: 99, fontWeight: 700,
+                                    background: o.label === "HIGH" ? "rgba(239,68,68,0.1)" : o.label === "MEDIUM" ? "rgba(245,158,11,0.1)" : "var(--color-primary-dim)",
+                                    color: o.label === "HIGH" ? "#ef4444" : o.label === "MEDIUM" ? "var(--color-warning)" : "var(--color-primary)",
+                                  }}>{o.label}</span>
+                                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{o.score}/100</span>
+                                  {isToday && (
+                                    <button
+                                      className="btn-primary"
+                                      style={{ fontSize: 11, padding: "5px 10px" }}
+                                      onClick={e => { e.stopPropagation(); navigate("/log", { state: { retailer: { retailer_id: o.id, retailer_name: o.name } } }); }}
+                                    >
+                                      Mark Visited
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
         {/* Toast */}
         {toast && (

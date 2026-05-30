@@ -117,6 +117,20 @@ CREATE TABLE IF NOT EXISTS nba_responses (
   UNIQUE(retailer_id, date)
 );
 
+CREATE TABLE IF NOT EXISTS weekly_plans (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  rep_id            TEXT NOT NULL,
+  week_label        TEXT NOT NULL,
+  week_start_date   TEXT NOT NULL,
+  week_end_date     TEXT NOT NULL,
+  assigned_outlets  TEXT NOT NULL DEFAULT '[]',
+  daily_split       TEXT NOT NULL DEFAULT '{}',
+  status            TEXT NOT NULL DEFAULT 'pending',
+  created_by        TEXT,
+  created_at        TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_wp_rep_week ON weekly_plans(rep_id, week_start_date);
+
 -- Weather cache: Open-Meteo response per district per day.
 -- Prevents duplicate API calls when multiple reps work the same district.
 -- has_pest_alert here is the weather-derived flag (1 = fungal/heat rule triggered).

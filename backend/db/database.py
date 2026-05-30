@@ -58,6 +58,25 @@ async def init_tables():
             except Exception:
                 pass  # column already exists
 
+        # ── weekly_plans table (added for weekly visit plan feature) ─────────
+        await db.execute("""
+CREATE TABLE IF NOT EXISTS weekly_plans (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  rep_id            TEXT NOT NULL,
+  week_label        TEXT NOT NULL,
+  week_start_date   TEXT NOT NULL,
+  week_end_date     TEXT NOT NULL,
+  assigned_outlets  TEXT NOT NULL DEFAULT '[]',
+  daily_split       TEXT NOT NULL DEFAULT '{}',
+  status            TEXT NOT NULL DEFAULT 'pending',
+  created_by        TEXT,
+  created_at        TEXT DEFAULT (datetime('now'))
+)""")
+        try:
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_wp_rep_week ON weekly_plans(rep_id, week_start_date)")
+        except Exception:
+            pass
+
         # ── Create real-data tables if missing ───────────────────────────────
         await db.executescript("""
 CREATE TABLE IF NOT EXISTS retailer_pos (

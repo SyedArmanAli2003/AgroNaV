@@ -120,6 +120,14 @@ app.include_router(learning_router.router, tags=["learning"])
 from routers import farmers as farmers_router
 app.include_router(farmers_router.router, tags=["farmers"])
 
+# Weekly visit plan router (manager plan generation + rep view)
+from routers import weekly_plan as weekly_plan_router
+app.include_router(weekly_plan_router.router, tags=["weekly-plan"])
+
+# Role-aware AI chatbot router
+from routers import chat as chat_router
+app.include_router(chat_router.router, tags=["chat"])
+
 # ── Serve React Frontend ───────────────────────────────────────────────────────
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse

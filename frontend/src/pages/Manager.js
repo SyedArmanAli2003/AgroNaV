@@ -3,7 +3,8 @@ import {
   IndianRupee, TrendingUp, Users, RefreshCw,
   UserPlus, Download, Map, Store, PlusCircle,
   ToggleLeft, ToggleRight, CheckCircle, X, Cpu, Zap,
-  BarChart2, BookOpen, AlertTriangle, ArrowUpRight, ArrowDownRight, Award
+  BarChart2, BookOpen, AlertTriangle, ArrowUpRight, ArrowDownRight, Award,
+  CalendarDays, Play, ThumbsUp, Clock, ChevronDown, ChevronRight
 } from "lucide-react";
 import { api } from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -52,6 +53,12 @@ function Manager() {
   const [weeklyStats, setWeeklyStats]     = useState(null);
   const [weeklyLearning, setWeeklyLearning] = useState(null);
   const [learningLoading, setLearningLoading] = useState(false);
+
+  // Weekly Plans state
+  const [weeklyPlans, setWeeklyPlans] = useState({});        // keyed by rep_id
+  const [planGenerating, setPlanGenerating] = useState(null); // rep_id being generated
+  const [planApproving, setPlanApproving] = useState(null);   // plan_id being approved
+  const [planExpanded, setPlanExpanded] = useState({});       // { planId: true/false }
 
   // Modal state
   const [addRetailerOpen, setAddRetailerOpen] = useState(false);
@@ -158,8 +165,48 @@ function Manager() {
     setSaving(false);
   };
 
-  const TABS = ["retailers", "reps", "learning", "model", "heatmap"];
-  const TAB_LABELS = { retailers: "Retailers", reps: "My Team", learning: "Weekly Learning", model: "AI Status", heatmap: "Territory" };
+  // ── Weekly Plan helpers ──
+  const handleGeneratePlan = async (rep_id) => {
+    setPlanGenerating(rep_id);
+    try {
+      const monday = new Date();
+      monday.setDate(monday.getDate() - monday.getDay() + 1);
+      const week_start_date = monday.toISOString().split("T")[0];
+      const res = await api.generateWeeklyPlan(rep_id, week_start_date, user?.rep_id || "manager");
+      if (res.success) {
+        setWeeklyPlans(prev => ({ ...prev, [rep_id]: res.plan }));
+        setPlanExpanded(prev => ({ ...prev, [res.plan.id]: true }));
+        showToast(`Plan generated for ${rep_id}`);
+      } else {
+        showToast(res.error || "Failed to generate plan");
+      }
+    } catch {
+      showToast("Failed to generate plan");
+    }
+    setPlanGenerating(null);
+  };
+
+  const handleApprovePlan = async (plan_id, rep_id) => {
+    setPlanApproving(plan_id);
+    try {
+      const res = await api.approveWeeklyPlan(plan_id);
+      if (res.success) {
+        setWeeklyPlans(prev => ({
+          ...prev,
+          [rep_id]: { ...(prev[rep_id] || {}), status: "approved" }
+        }));
+        showToast("Plan approved — rep can now see their week");
+      } else {
+        showToast(res.error || "Approval failed");
+      }
+    } catch {
+      showToast("Approval failed");
+    }
+    setPlanApproving(null);
+  };
+
+  const TABS = ["retailers", "reps", "plans", "learning", "model", "heatmap"];
+  const TAB_LABELS = { retailers: "Retailers", reps: "My Team", plans: "Weekly Plans", learning: "Weekly Learning", model: "AI Status", heatmap: "Territory" };
 
   return (
     <div className="page-container page-enter" style={{ padding: "20px 16px 100px" }}>
@@ -308,6 +355,139 @@ function Manager() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── WEEKLY PLANS TAB ── */}
+        {tab === "plans" && (
+          <div>
+            <div style={{ marginBottom: 20 }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600, fontFamily: "var(--font-heading)", display: "flex", alignItems: "center", gap: 8 }}>
+                <CalendarDays size={18} color="var(--color-primary)" /> Weekly Visit Plans
+              </h2>
+              <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>
+                Generate and approve a 5-day visit plan for each rep. Reps see their approved plan under "My Week".
+              </p>
+            </div>
+
+            {reps.length === 0 ? (
+              <div className="glass-card" style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
+                <Users size={40} style={{ marginBottom: 12, opacity: 0.4 }} />
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>No reps in your team yet</div>
+                <div style={{ fontSize: 13 }}>Add reps under "My Team" first.</div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {reps.map(rep => {
+                  const plan = weeklyPlans[rep.rep_id];
+                  const isExpanded = plan ? !!planExpanded[plan.id] : false;
+                  const statusColor = {
+                    pending:  "var(--color-warning)",
+                    approved: "var(--color-primary)",
+                    active:   "var(--color-success, #22c55e)",
+                  }[plan?.status] || "var(--text-muted)";
+
+                  return (
+                    <div key={rep.rep_id} className="glass-card-strong" style={{ padding: 20 }}>
+                      {/* Rep header row */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: plan ? 16 : 0 }}>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 15, fontFamily: "var(--font-heading)" }}>{rep.name}</div>
+                          <div style={{ fontSize: 12, color: "var(--text-muted)", fontFamily: "monospace", marginTop: 2 }}>{rep.rep_id} · {rep.territory_id || rep.district || "—"}</div>
+                        </div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          {plan && (
+                            <>
+                              <span style={{
+                                fontSize: 11, padding: "3px 10px", borderRadius: 99, fontWeight: 700,
+                                background: `${statusColor}22`, color: statusColor,
+                                border: `1px solid ${statusColor}55`, textTransform: "uppercase"
+                              }}>{plan.status}</span>
+                              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{plan.week_label}</span>
+                              {plan.status === "pending" && (
+                                <button
+                                  className="btn-primary"
+                                  style={{ width: "auto", padding: "8px 14px", fontSize: 12, opacity: planApproving === plan.id ? 0.6 : 1, display: "flex", alignItems: "center", gap: 5 }}
+                                  disabled={planApproving === plan.id}
+                                  onClick={() => handleApprovePlan(plan.id, rep.rep_id)}
+                                >
+                                  <ThumbsUp size={12} />
+                                  {planApproving === plan.id ? "Approving..." : "Approve Plan"}
+                                </button>
+                              )}
+                              {plan.status === "approved" && (
+                                <span style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 4, color: "var(--color-primary)" }}>
+                                  <CheckCircle size={13} /> Approved — rep can see this
+                                </span>
+                              )}
+                              <button
+                                onClick={() => setPlanExpanded(prev => ({ ...prev, [plan.id]: !isExpanded }))}
+                                style={{ background: "none", border: "1px solid var(--glass-border)", borderRadius: 6, padding: "6px 10px", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}
+                              >
+                                {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                {isExpanded ? "Hide" : "View"} Plan
+                              </button>
+                            </>
+                          )}
+                          <button
+                            style={{ padding: "8px 14px", borderRadius: 99, border: "1px solid var(--glass-border)", background: "var(--glass-bg)", color: "var(--text-secondary)", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5, opacity: planGenerating === rep.rep_id ? 0.6 : 1 }}
+                            disabled={planGenerating === rep.rep_id}
+                            onClick={() => handleGeneratePlan(rep.rep_id)}
+                          >
+                            <Play size={12} />
+                            {planGenerating === rep.rep_id ? "Generating..." : plan ? "Regenerate Plan" : "Generate Plan"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Plan day-by-day breakdown */}
+                      {plan && isExpanded && (
+                        <div style={{ marginTop: 4 }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+                            {["monday","tuesday","wednesday","thursday","friday"].map(day => {
+                              const outlets = plan.daily_split?.[day] || [];
+                              return (
+                                <div key={day} style={{ background: "var(--glass-bg)", borderRadius: 10, border: "1px solid var(--glass-border)", padding: "12px 14px" }}>
+                                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--color-primary)", marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+                                    <Clock size={11} /> {day}
+                                    <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--text-muted)", fontWeight: 400 }}>{outlets.length} visits</span>
+                                  </div>
+                                  {outlets.length === 0 ? (
+                                    <div style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>No visits</div>
+                                  ) : (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                      {outlets.map((o, i) => (
+                                        <div key={o.id || i} style={{ fontSize: 12 }}>
+                                          <div style={{ fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.3 }}>{o.name || `Outlet #${o.id}`}</div>
+                                          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
+                                            <span style={{
+                                              fontSize: 10, padding: "1px 7px", borderRadius: 99, fontWeight: 700,
+                                              background: o.label === "HIGH" ? "rgba(239,68,68,0.1)" : o.label === "MEDIUM" ? "rgba(245,158,11,0.1)" : "var(--color-primary-dim)",
+                                              color: o.label === "HIGH" ? "#ef4444" : o.label === "MEDIUM" ? "var(--color-warning)" : "var(--color-primary)",
+                                            }}>{o.label}</span>
+                                            <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{o.score}/100</span>
+                                          </div>
+                                          {o.reasons?.[0] && (
+                                            <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2, lineHeight: 1.4 }}>{o.reasons[0]}</div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div style={{ marginTop: 10, fontSize: 12, color: "var(--text-muted)" }}>
+                            {plan.total_outlets || "—"} outlets assigned · Mon–Tue: top priority · Wed: mid · Thu–Fri: remaining
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

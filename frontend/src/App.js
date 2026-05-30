@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from "rea
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import NavBar from "./components/NavBar";
 import ErrorBoundary from "./components/ErrorBoundary";
+import ChatBot from "./components/ChatBot";
 import { Leaf } from "lucide-react";
 import "./index.css";
 import "./css/landing.css";
@@ -94,6 +95,8 @@ function MainLayout() {
           </Routes>
         </Suspense>
       </div>
+      {/* Floating AI chatbot — visible on all authenticated pages */}
+      {!isPublic && <ChatBot />}
     </>
   );
 }

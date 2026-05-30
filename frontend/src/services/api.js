@@ -318,6 +318,57 @@ export const api = {
     //           conversation_starter, visit_reason, estimated_value, source, ...}
   },
 
+  // Weekly visit plans (manager generates, rep views)
+  generateWeeklyPlan: async (rep_id, week_start_date, manager_id = "manager") => {
+    const res = await fetch(`${BASE}/api/manager/weekly-plan/generate`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ rep_id, week_start_date, manager_id }),
+    });
+    return res.json();
+    // Returns: { success, plan: { id, rep_id, week_label, week_start_date, week_end_date,
+    //   status, total_outlets, daily_split: { monday: [...], ... } } }
+  },
+
+  approveWeeklyPlan: async (plan_id) => {
+    const res = await fetch(`${BASE}/api/manager/weekly-plan/approve`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ plan_id }),
+    });
+    return res.json();
+    // Returns: { success, plan_id, status: "approved" }
+  },
+
+  getRepWeeklyPlan: async (rep_id) => {
+    const res = await fetch(
+      `${BASE}/api/rep/weekly-plan?rep_id=${encodeURIComponent(rep_id)}`,
+      { headers: getAuthHeader() }
+    );
+    return res.json();
+    // Returns: { plan: { id, rep_id, week_label, daily_split, status, today_day } | null }
+  },
+
+  listWeeklyPlans: async (rep_id = null) => {
+    const qs = rep_id ? `?rep_id=${encodeURIComponent(rep_id)}` : "";
+    const res = await fetch(`${BASE}/api/manager/weekly-plans${qs}`, {
+      headers: getAuthHeader()
+    });
+    return res.json();
+    // Returns: { plans: [...] }
+  },
+
+  // Role-aware AI chatbot
+  sendChatMessage: async (message, role, user_id, name = "there", context = null) => {
+    const res = await fetch(`${BASE}/api/chat`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ message, role, user_id, name, context }),
+    });
+    return res.json();
+    // Returns: { reply: string, context: {...} }
+  },
+
   seedDemoFarmers: async () => {
     const res = await fetch(`${BASE}/api/farmers/seed-demo`, {
       method: "POST",
