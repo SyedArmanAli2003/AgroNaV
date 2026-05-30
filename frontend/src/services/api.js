@@ -164,8 +164,8 @@ export const api = {
     return res.json();
   },
 
-  getAlerts: async () => {
-    const res = await fetch(`${BASE}/api/alerts`, { headers: getAuthHeader() });
+  getAlerts: async (district = "Jalgaon") => {
+    const res = await fetch(`${BASE}/api/alerts?district=${encodeURIComponent(district)}`, { headers: getAuthHeader() });
     return res.json();
   },
 
@@ -173,6 +173,24 @@ export const api = {
     await fetch(`${BASE}/api/alerts/${id}/dismiss`, {
       method: "POST", headers: getAuthHeader()
     });
+  },
+
+  detectAnomaly: async (district, { category, weatherRisk, competitorStockout } = {}) => {
+    const params = new URLSearchParams({ district });
+    if (category) params.append("category", category);
+    if (weatherRisk) params.append("weather_risk", weatherRisk);
+    if (competitorStockout) params.append("competitor_stockout", "true");
+    const res = await fetch(`${BASE}/api/alerts/detect?${params}`, {
+      method: "POST", headers: getAuthHeader()
+    });
+    return res.json();
+  },
+
+  detectAllDistricts: async (topN = 5) => {
+    const res = await fetch(`${BASE}/api/alerts/detect-all?top_n=${topN}`, {
+      method: "POST", headers: getAuthHeader()
+    });
+    return res.json();
   },
 
   getWeeklyStats: async () => {

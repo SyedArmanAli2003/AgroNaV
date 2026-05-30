@@ -39,6 +39,9 @@ async def init_tables():
             "ALTER TABLE users ADD COLUMN territory_id TEXT",
             "ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'rep'",
             "ALTER TABLE users ADD COLUMN manager_id INTEGER",
+            # alerts table: add outlet_name and timestamp columns if missing
+            "ALTER TABLE alerts ADD COLUMN outlet_name TEXT",
+            "ALTER TABLE alerts ADD COLUMN timestamp TEXT",
         ]
         for sql in migrations:
             try:
