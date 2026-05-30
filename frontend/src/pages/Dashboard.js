@@ -46,6 +46,8 @@ function Dashboard() {
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [recalMsg, setRecalMsg] = useState("");
+  const [recalLoading, setRecalLoading] = useState(false);
+  const [explainPanel, setExplainPanel] = useState(null);
   const [toast, setToast] = useState("");
   const [banner, setBanner] = useState(null);
 
@@ -124,21 +126,36 @@ function Dashboard() {
   }, [authContext, navigate, location.state]);
 
   const handleRecalibrate = async () => {
-    setRecalMsg("Syncing...");
+    setRecalLoading(true);
+    setRecalMsg("Recalibrating...");
+    setExplainPanel(null);
     try {
-      await api.recalibrate();
       const repId = authContext.user?.sub || authContext.user?.rep_id || "REP_0203";
+      // Call the explain endpoint — gets score update + 3-line manager narrative
+      const result = await api.recalibrateWithExplain(repId, 30);
+
+      // Show explanation panel
+      if (result?.explanation) {
+        setExplainPanel(result.explanation);
+      }
+
+      // Refresh recommendations list
       const todayStr = new Date().toISOString().split("T")[0];
       const freshData = await getRecommendations(repId, todayStr);
       if (freshData?.recommendations) {
         setRecommendations(freshData.recommendations.sort((a, b) => a.rank - b.rank));
         cacheRecommendations(freshData);
       }
-      setRecalMsg("Rankings updated");
+
+      const movedUp   = result?.moved_up?.length   || 0;
+      const movedDown = result?.moved_down?.length  || 0;
+      setRecalMsg(`Updated • ${movedUp} up, ${movedDown} down`);
     } catch {
       setRecalMsg("Could not recalibrate");
+    } finally {
+      setRecalLoading(false);
+      setTimeout(() => setRecalMsg(""), 5000);
     }
-    setTimeout(() => setRecalMsg(""), 3000);
   };
 
   const displayRecommendations = recommendations.length ? recommendations : (loading ? [] : FALLBACK_SHOPS);
@@ -167,9 +184,15 @@ function Dashboard() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {recalMsg && <span style={{ color: "var(--color-primary)", fontSize: 13, fontWeight: 600 }}>{recalMsg}</span>}
-            <button className="btn-primary" style={{ width: "auto", padding: "10px 20px", fontSize: 13 }} onClick={handleRecalibrate}>
-              <RefreshCw size={14} style={{ marginRight: 6, verticalAlign: "-2px" }} />
-              Recalibrate
+            <button
+              id="recalibrate-btn"
+              className="btn-primary"
+              style={{ width: "auto", padding: "10px 20px", fontSize: 13, opacity: recalLoading ? 0.7 : 1 }}
+              onClick={handleRecalibrate}
+              disabled={recalLoading}
+            >
+              <RefreshCw size={14} style={{ marginRight: 6, verticalAlign: "-2px", animation: recalLoading ? "spin 1s linear infinite" : "none" }} />
+              {recalLoading ? "Updating..." : "Recalibrate"}
             </button>
           </div>
         </div>
@@ -192,6 +215,49 @@ function Dashboard() {
             </div>
           ))}
         </div>
+
+        {/* Recalibration explanation panel */}
+        {explainPanel && (
+          <div
+            id="recalibration-explanation"
+            className="glass-card"
+            style={{
+              marginBottom: 16,
+              borderLeft: "3px solid var(--color-primary)",
+              padding: "16px 20px",
+              animation: "toastIn 0.3s ease forwards",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-primary)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                <Zap size={12} style={{ verticalAlign: "-1px", marginRight: 4 }} />
+                AI Recalibration Brief
+              </span>
+              <span style={{ fontSize: 10, color: "var(--text-muted)" }}>via {explainPanel.source}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[explainPanel.line1, explainPanel.line2, explainPanel.line3].map((line, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <span style={{
+                    flexShrink: 0, width: 22, height: 22, borderRadius: "50%",
+                    background: "var(--color-primary-dim)", border: "1px solid var(--color-primary)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 10, fontWeight: 700, color: "var(--color-primary)", marginTop: 1
+                  }}>{i + 1}</span>
+                  <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5, fontFamily: "var(--font-body)" }}>
+                    {line}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setExplainPanel(null)}
+              style={{ marginTop: 12, background: "transparent", border: "none", fontSize: 11, color: "var(--text-muted)", cursor: "pointer", padding: 0 }}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         {/* Offline banner */}
         {banner && (

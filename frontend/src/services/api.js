@@ -157,11 +157,22 @@ export const api = {
     return res.json();
   },
 
-  recalibrate: async () => {
-    const res = await fetch(`${BASE}/api/recalibrate?rep_id=1`, {
+  recalibrate: async (repId = "REP_0001") => {
+    const id = repId || localStorage.getItem("agronav_rep_id") || "REP_0001";
+    const res = await fetch(`${BASE}/api/recalibrate?rep_id=${id}`, {
       method: "POST", headers: getAuthHeader()
     });
     return res.json();
+  },
+
+  recalibrateWithExplain: async (repId, days = 30) => {
+    const id = repId || localStorage.getItem("agronav_rep_id") || "REP_0001";
+    const res = await fetch(
+      `${BASE}/api/recalibrate/explain?rep_id=${encodeURIComponent(id)}&days=${days}`,
+      { method: "POST", headers: getAuthHeader() }
+    );
+    return res.json();
+    // Returns: { updated_outlets, moved_up, moved_down, stats, explanation: {line1, line2, line3, full_text, source} }
   },
 
   getAlerts: async (district = "Jalgaon") => {
