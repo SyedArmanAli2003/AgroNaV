@@ -112,6 +112,10 @@ app.include_router(competitor_router.router, tags=["competitor"])
 from routers import route as route_router
 app.include_router(route_router.router, tags=["route"])
 
+# Weekly outcome learning router
+from routers import learning as learning_router
+app.include_router(learning_router.router, tags=["learning"])
+
 # ── Serve React Frontend ───────────────────────────────────────────────────────
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse

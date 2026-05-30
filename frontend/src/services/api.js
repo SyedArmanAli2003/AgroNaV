@@ -285,4 +285,24 @@ export const api = {
     });
     return res.json();
   },
+
+  // Weekly outcome learning (Gap 5)
+  getWeeklyStats: async (district = "Jalgaon", state = "Maharashtra") => {
+    const res = await fetch(
+      `${BASE}/api/learning/weekly-stats?district=${encodeURIComponent(district)}&state=${encodeURIComponent(state)}`,
+      { headers: getAuthHeader() }
+    );
+    return res.json();
+    // Returns: {week_label, total_visits, sales_pct, orders_pct, product_rows, rep_rows, ...}
+  },
+
+  getWeeklyLearning: async (district = "Jalgaon", state = "Maharashtra") => {
+    const res = await fetch(
+      `${BASE}/api/learning/weekly-analysis?district=${encodeURIComponent(district)}&state=${encodeURIComponent(state)}`,
+      { method: "POST", headers: authHeaders() }
+    );
+    return res.json();
+    // Returns 9-field schema: {manager_alert, best_product_next_week, reps_needing_coaching,
+    //   deprioritize_outlets, insight_summary, learning_action, source, raw_ctx}
+  },
 };

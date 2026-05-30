@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   IndianRupee, TrendingUp, Users, RefreshCw,
   UserPlus, Download, Map, Store, PlusCircle,
-  ToggleLeft, ToggleRight, CheckCircle, X, Cpu, Zap
+  ToggleLeft, ToggleRight, CheckCircle, X, Cpu, Zap,
+  BarChart2, BookOpen, AlertTriangle, ArrowUpRight, ArrowDownRight, Award
 } from "lucide-react";
 import { api } from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -48,6 +49,9 @@ function Manager() {
   const [reps, setReps] = useState([]);
   const [modelInfo, setModelInfo] = useState(null);
   const [tab, setTab] = useState("retailers");
+  const [weeklyStats, setWeeklyStats]     = useState(null);
+  const [weeklyLearning, setWeeklyLearning] = useState(null);
+  const [learningLoading, setLearningLoading] = useState(false);
 
   // Modal state
   const [addRetailerOpen, setAddRetailerOpen] = useState(false);
@@ -86,6 +90,10 @@ function Manager() {
       .then(r => r.json())
       .then(setModelInfo)
       .catch(() => {});
+
+    // Weekly stats (fast, no LLM)
+    const dist = user?.district || "Jalgaon";
+    api.getWeeklyStats(dist, "Maharashtra").then(setWeeklyStats).catch(() => {});
   }, []); // eslint-disable-line
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -150,8 +158,8 @@ function Manager() {
     setSaving(false);
   };
 
-  const TABS = ["retailers", "reps", "model", "heatmap"];
-  const TAB_LABELS = { retailers: "Retailers", reps: "My Team", model: "AI Status", heatmap: "Territory" };
+  const TABS = ["retailers", "reps", "learning", "model", "heatmap"];
+  const TAB_LABELS = { retailers: "Retailers", reps: "My Team", learning: "Weekly Learning", model: "AI Status", heatmap: "Territory" };
 
   return (
     <div className="page-container page-enter" style={{ padding: "20px 16px 100px" }}>
@@ -300,6 +308,163 @@ function Manager() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── WEEKLY LEARNING TAB ── */}
+        {tab === "learning" && (
+          <div>
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600, fontFamily: "var(--font-heading)", display: "flex", alignItems: "center", gap: 8 }}>
+                  <BarChart2 size={18} color="var(--color-primary)" /> Weekly Outcome Learning
+                </h2>
+                <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>
+                  {weeklyStats ? `${weeklyStats.week_label} · ${weeklyStats.total_visits} visits analysed` : "Loading weekly data..."}
+                </p>
+              </div>
+              <button
+                id="run-weekly-learning-btn"
+                className="btn-primary"
+                style={{ width: "auto", padding: "10px 18px", fontSize: 12, opacity: learningLoading ? 0.7 : 1 }}
+                disabled={learningLoading}
+                onClick={async () => {
+                  setLearningLoading(true);
+                  setWeeklyLearning(null);
+                  try {
+                    const dist  = user?.district || "Jalgaon";
+                    const state = user?.state    || "Maharashtra";
+                    const data  = await api.getWeeklyLearning(dist, state);
+                    setWeeklyLearning(data);
+                  } catch (e) { console.error(e); }
+                  finally { setLearningLoading(false); }
+                }}
+              >
+                <BookOpen size={13} style={{ marginRight: 5, verticalAlign: "-1px" }} />
+                {learningLoading ? "Analysing..." : "Run AI Analysis"}
+              </button>
+            </div>
+
+            {/* Conversion KPI strip */}
+            {weeklyStats && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, marginBottom: 20 }}>
+                {[
+                  { label: "Total Visits",     value: weeklyStats.total_visits,       color: "var(--color-primary)" },
+                  { label: "Sales Rate",       value: `${weeklyStats.sales_pct}%`,    color: "var(--color-success, #22c55e)" },
+                  { label: "Orders Rate",      value: `${weeklyStats.orders_pct}%`,   color: "var(--color-warning)" },
+                  { label: "No Outcome",       value: `${weeklyStats.no_outcome_pct}%`, color: weeklyStats.no_outcome_pct > 40 ? "#ef4444" : "var(--text-muted)" },
+                  { label: "vs Last Week",     value: weeklyStats.delta,              color: String(weeklyStats.delta).startsWith("+") ? "var(--color-success, #22c55e)" : "#ef4444" },
+                ].map((c, i) => (
+                  <div key={i} className="glass-card-strong" style={{ padding: "14px 12px", textAlign: "center" }}>
+                    <div style={{ fontSize: 22, fontWeight: 700, fontFamily: "var(--font-heading)", color: c.color }}>{c.value}</div>
+                    <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 4 }}>{c.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Product pitch table */}
+            {weeklyStats?.product_rows?.length > 0 && (
+              <div className="glass-card" style={{ marginBottom: 16 }}>
+                <p style={{ margin: "0 0 12px", fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Products Pitched vs Accepted</p>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid var(--glass-border)" }}>
+                        {["Product", "Pitched", "Accepted", "Rate"].map(h => (
+                          <th key={h} style={{ textAlign: "left", padding: "8px 10px", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {weeklyStats.product_rows.map((r, i) => (
+                        <tr key={i} style={{ borderBottom: "1px solid var(--glass-border)" }}>
+                          <td style={{ padding: "10px", fontWeight: 600 }}>{r.product}</td>
+                          <td style={{ padding: "10px", color: "var(--text-secondary)" }}>{r.pitched}</td>
+                          <td style={{ padding: "10px", color: "var(--color-primary)" }}>{r.accepted}</td>
+                          <td style={{ padding: "10px" }}>
+                            <span style={{
+                              padding: "2px 10px", borderRadius: 99, fontSize: 11, fontWeight: 700,
+                              background: r.rate >= 40 ? "rgba(34,197,94,0.1)" : r.rate >= 20 ? "var(--color-primary-dim)" : "rgba(239,68,68,0.1)",
+                              color:      r.rate >= 40 ? "#22c55e"              : r.rate >= 20 ? "var(--color-primary)"   : "#ef4444"
+                            }}>{r.rate}%</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* AI Analysis panel */}
+            {weeklyLearning && (
+              <div style={{ display: "grid", gap: 14, animation: "toastIn 0.3s ease forwards" }}>
+
+                {/* Manager Alert */}
+                {weeklyLearning.manager_alert && (
+                  <div className="glass-card" style={{ borderLeft: "3px solid var(--color-warning)", display: "flex", alignItems: "flex-start", gap: 12 }}>
+                    <AlertTriangle size={16} color="var(--color-warning)" style={{ flexShrink: 0, marginTop: 2 }} />
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-warning)", marginBottom: 4 }}>Manager Alert</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{weeklyLearning.manager_alert}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Insight + Action row */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div className="glass-card">
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", marginBottom: 8 }}>Insight Summary</div>
+                    <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>{weeklyLearning.insight_summary}</p>
+                  </div>
+                  <div className="glass-card" style={{ borderLeft: "3px solid var(--color-primary)" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-primary)", marginBottom: 8 }}>Learning Action</div>
+                    <p style={{ margin: 0, fontSize: 13, color: "var(--text-primary)", lineHeight: 1.6, fontWeight: 500 }}>{weeklyLearning.learning_action}</p>
+                  </div>
+                </div>
+
+                {/* Best product + Reps coaching row */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div className="glass-card">
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                      <Award size={14} color="var(--color-primary)" />
+                      <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Best Product Next Week</span>
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: "var(--color-primary)", fontFamily: "var(--font-heading)", marginBottom: 6 }}>{weeklyLearning.best_product_next_week}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{weeklyLearning.best_product_reason}</div>
+                  </div>
+
+                  <div className="glass-card">
+                    <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: weeklyLearning.reps_needing_coaching?.length > 0 ? "#ef4444" : "var(--text-muted)", marginBottom: 8 }}>
+                      Reps Needing Coaching ({weeklyLearning.reps_needing_coaching?.length || 0})
+                    </div>
+                    {weeklyLearning.reps_needing_coaching?.length > 0 ? (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {weeklyLearning.reps_needing_coaching.map(r => (
+                          <span key={r} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 99, background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", fontFamily: "monospace" }}>{r}</span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--color-primary)" }}>
+                        <CheckCircle size={14} /> All reps above 30% threshold
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Source badge */}
+                <div style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "right" }}>via {weeklyLearning.source}</div>
+              </div>
+            )}
+
+            {!weeklyStats && (
+              <div className="glass-card" style={{ textAlign: "center", padding: 48, color: "var(--text-muted)" }}>
+                <BarChart2 size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
+                <div>Loading weekly stats...</div>
               </div>
             )}
           </div>
