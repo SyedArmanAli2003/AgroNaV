@@ -1,7 +1,8 @@
-# What it does: Next Best Action generation via 3-tier fallback
-#   Tier 1: Google Gemini (gemini-2.0-flash)
+# What it does: Next Best Action generation via 4-tier fallback
+#   Tier 1: NVIDIA GLM-5.1 (z-ai/glm-5.1 via integrate.api.nvidia.com)
 #   Tier 2: OpenRouter (meta-llama/llama-3.3-70b-instruct)
-#   Tier 3: Rule-based deterministic fallback (works offline)
+#   Tier 3: Google Gemini (gemini-2.0-flash)
+#   Tier 4: Rule-based deterministic fallback (works offline)
 # Input: Outlet context dict (now enriched with live weather + NDVI), async DB
 # Output: NBA dict with product_to_pitch, agronomic_advice, talking_points, etc.
 # Called by: routers/recommendations.py
@@ -10,8 +11,9 @@ import os
 import json
 from datetime import date
 
-GEMINI_API_KEY    = os.getenv("GEMINI_API_KEY", "")
+GEMINI_API_KEY     = os.getenv("GEMINI_API_KEY", "")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+NVIDIA_API_KEY     = os.getenv("NVIDIA_API_KEY", "")
 
 # ── Enriched prompt — mirrors the judge-facing template exactly ───────────────
 # All {placeholders} are filled from outlet_context before the API call,
@@ -62,7 +64,7 @@ async def get_nba(outlet_context: dict, db) -> dict:
     """
     Returns Next Best Action for an outlet.
     Checks SQLite cache first (by retailer_id + today's date).
-    Falls back through Gemini → OpenRouter → rule-based.
+    Falls back through NVIDIA GLM-5.1 → OpenRouter LLaMA → Gemini → rule-based.
     Weather/NDVI signals are part of the cache key via today's date
     (refreshed daily so stale weather never persists > 24 h).
     """
@@ -85,27 +87,35 @@ async def get_nba(outlet_context: dict, db) -> dict:
     user_prompt = _build_user_prompt(outlet_context)
     result = None
 
-    # 3. Try Gemini first
-    if GEMINI_API_KEY and not GEMINI_API_KEY.startswith("your_"):
+    # 3. Tier 1 — NVIDIA GLM-5.1
+    if NVIDIA_API_KEY and not NVIDIA_API_KEY.startswith("your_"):
         try:
-            import google.generativeai as genai
-            genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel(
-                model_name="gemini-2.0-flash",
-                system_instruction=NBA_SYSTEM_PROMPT
+            from openai import OpenAI
+            nvidia_client = OpenAI(
+                base_url="https://integrate.api.nvidia.com/v1",
+                api_key=NVIDIA_API_KEY,
             )
-            response = model.generate_content(user_prompt)
-            text = response.text.strip()
+            response = nvidia_client.chat.completions.create(
+                model="z-ai/glm-5.1",
+                messages=[
+                    {"role": "system", "content": NBA_SYSTEM_PROMPT},
+                    {"role": "user",   "content": user_prompt}
+                ],
+                temperature=0.3,
+                max_tokens=1000,
+                stream=False,
+            )
+            text = response.choices[0].message.content.strip()
             text = text.replace("```json", "").replace("```", "").strip()
             result = json.loads(text)
             required = ["product_to_pitch", "agronomic_advice", "talking_points", "one_line_summary"]
             if not all(k in result for k in required):
-                print("[NBA] Gemini response missing keys, trying next tier")
+                print("[NBA] NVIDIA GLM response missing keys, trying next tier")
                 result = None
         except Exception as e:
-            print(f"[NBA] Gemini failed: {e}. Trying OpenRouter...")
+            print(f"[NBA] NVIDIA GLM failed: {e}")
 
-    # 4. Try OpenRouter (LLaMA) if Gemini failed
+    # 4. Tier 2 — OpenRouter LLaMA 3.3
     if result is None and OPENROUTER_API_KEY and not OPENROUTER_API_KEY.startswith("your_"):
         try:
             from openai import OpenAI
@@ -120,19 +130,39 @@ async def get_nba(outlet_context: dict, db) -> dict:
                     {"role": "user",   "content": user_prompt}
                 ],
                 temperature=0.3,
-                max_tokens=600
+                max_tokens=600,
             )
             text = response.choices[0].message.content.strip()
             text = text.replace("```json", "").replace("```", "").strip()
             result = json.loads(text)
         except Exception as e:
-            print(f"[NBA] OpenRouter failed: {e}. Using rule-based fallback.")
+            print(f"[NBA] OpenRouter failed: {e}. Trying Gemini...")
 
-    # 5. Rule-based fallback (always works, no API needed)
+    # 5. Tier 3 — Google Gemini
+    if result is None and GEMINI_API_KEY and not GEMINI_API_KEY.startswith("your_"):
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=GEMINI_API_KEY)
+            model = genai.GenerativeModel(
+                model_name="gemini-2.0-flash",
+                system_instruction=NBA_SYSTEM_PROMPT
+            )
+            response = model.generate_content(user_prompt)
+            text = response.text.strip()
+            text = text.replace("```json", "").replace("```", "").strip()
+            result = json.loads(text)
+            required = ["product_to_pitch", "agronomic_advice", "talking_points", "one_line_summary"]
+            if not all(k in result for k in required):
+                print("[NBA] Gemini response missing keys, using rule-based fallback")
+                result = None
+        except Exception as e:
+            print(f"[NBA] Gemini failed: {e}. Using rule-based fallback.")
+
+    # 6. Tier 4 — Rule-based fallback (always works, no API needed)
     if result is None:
         result = _rule_based_nba(outlet_context)
 
-    # 6. Cache result in nba_responses
+    # 7. Cache result in nba_responses
     try:
         await db.execute(
             "INSERT OR REPLACE INTO nba_responses (retailer_id, date, response_json) VALUES (?,?,?)",
