@@ -93,6 +93,21 @@ CREATE TABLE IF NOT EXISTS reps_territory (
   district       TEXT,
   tehsil_list    TEXT
 );
+
+CREATE TABLE IF NOT EXISTS weather_cache (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  district     TEXT NOT NULL,
+  date         TEXT NOT NULL,
+  rainfall_mm  REAL DEFAULT 0,
+  temp_c       REAL DEFAULT 32,
+  humidity_pct REAL DEFAULT 60,
+  weather_risk TEXT DEFAULT 'normal',
+  ndvi_value   REAL DEFAULT 0.41,
+  ndvi_label   TEXT DEFAULT 'moderate crop stress',
+  source       TEXT DEFAULT 'open-meteo-live',
+  created_at   TEXT DEFAULT (datetime('now')),
+  UNIQUE(district, date)
+);
 """)
         await db.commit()
 

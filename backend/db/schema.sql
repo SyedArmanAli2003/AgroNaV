@@ -116,3 +116,22 @@ CREATE TABLE IF NOT EXISTS nba_responses (
   created_at  TEXT DEFAULT (datetime('now')),
   UNIQUE(retailer_id, date)
 );
+
+-- Weather cache: Open-Meteo response per district per day.
+-- Prevents duplicate API calls when multiple reps work the same district.
+-- has_pest_alert here is the weather-derived flag (1 = fungal/heat rule triggered).
+-- In production the IMD Agrimet RSS poller also writes here nightly.
+CREATE TABLE IF NOT EXISTS weather_cache (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  district     TEXT NOT NULL,
+  date         TEXT NOT NULL,
+  rainfall_mm  REAL DEFAULT 0,
+  temp_c       REAL DEFAULT 32,
+  humidity_pct REAL DEFAULT 60,
+  weather_risk TEXT DEFAULT 'normal',
+  ndvi_value   REAL DEFAULT 0.41,
+  ndvi_label   TEXT DEFAULT 'moderate crop stress',
+  source       TEXT DEFAULT 'open-meteo-live',
+  created_at   TEXT DEFAULT (datetime('now')),
+  UNIQUE(district, date)
+);
