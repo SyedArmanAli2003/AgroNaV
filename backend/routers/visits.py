@@ -33,13 +33,29 @@ async def log_outcome(outcome: OutcomeLog, db=Depends(get_db)):
             outcome.result, order_value, rejection_reason
         )
 
+        retailer_id = str(outcome.outlet_id)
+        retailer_name = ""
+        try:
+            async with db.execute(
+                "SELECT name FROM outlets WHERE id = ?", (outcome.outlet_id,)
+            ) as cur:
+                row = await cur.fetchone()
+                if row:
+                    retailer_name = row["name"] or ""
+        except Exception:
+            pass
+
         await db.execute(
             """INSERT INTO visit_logs
-               (outlet_id, rep_id, date, outcome, notes, synced, outcome_score, order_value, rejection_reason)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               (outlet_id, rep_id, date, outcome, notes, synced, outcome_score, order_value, rejection_reason,
+                retailer_id, retailer_name, product_discussed, visit_type)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (outcome.outlet_id, getattr(outcome, 'rep_id', 1), today,
              outcome.result, outcome.notes or "", 1,
-             outcome_score, order_value, rejection_reason)
+             outcome_score, order_value, rejection_reason,
+             retailer_id, retailer_name,
+             getattr(outcome, 'product_discussed', '') or '',
+             getattr(outcome, 'visit_type', 'standard') or 'standard')
         )
         await db.commit()
         return {"success": True, "outcome_score": outcome_score}
