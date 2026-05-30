@@ -50,7 +50,7 @@ class OutcomeLog(BaseModel):
     retailer_id: Optional[str] = None
     retailer_name: Optional[str] = None
     product_discussed: Optional[str] = None
-    visit_type: Optional[str] = "standard"
+    visit_type: Optional[str] = "retailer_meeting"
 
 
 class Alert(BaseModel):

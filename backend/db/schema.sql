@@ -105,6 +105,9 @@ CREATE TABLE IF NOT EXISTS retailers (
   contact_name  TEXT,
   phone         TEXT,
   is_active     INTEGER DEFAULT 1,
+  lat           REAL,
+  lng           REAL,
+  geocoded_at   TEXT,
   created_at    TEXT DEFAULT (datetime('now'))
 );
 
@@ -149,3 +152,28 @@ CREATE TABLE IF NOT EXISTS weather_cache (
   created_at   TEXT DEFAULT (datetime('now')),
   UNIQUE(district, date)
 );
+
+-- Competitive intelligence: one row per retailer per day of analysed threat.
+-- Legacy columns (rep_observation, nearby_stores, at_risk_skus, defensive_tp) are
+-- added by the database.py migrations so the older analyze_competitor_threat()
+-- persist/history code keeps working alongside the newer column set below.
+CREATE TABLE IF NOT EXISTS competitor_intel (
+  id                        INTEGER PRIMARY KEY AUTOINCREMENT,
+  retailer_id               TEXT NOT NULL,
+  rep_id                    TEXT,
+  date                      TEXT NOT NULL,
+  threat_type               TEXT,
+  threat_level              TEXT,
+  competitor_name           TEXT,
+  at_risk_products          TEXT,
+  defensive_talking_point   TEXT,
+  immediate_action          TEXT,
+  escalate_to_manager       INTEGER DEFAULT 0,
+  opportunity_flag          INTEGER DEFAULT 0,
+  rep_raw_observation       TEXT,
+  nearby_stores_detected    TEXT,
+  source                    TEXT DEFAULT 'llm',
+  created_at                TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_competitor_retailer
+  ON competitor_intel(retailer_id, date);

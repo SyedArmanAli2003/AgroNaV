@@ -42,15 +42,50 @@ async def init_tables():
             # alerts table: add outlet_name and timestamp columns if missing
             "ALTER TABLE alerts ADD COLUMN outlet_name TEXT",
             "ALTER TABLE alerts ADD COLUMN timestamp TEXT",
-            # visit_logs: add competitor_observation column
+            # visit_logs: add columns referenced by visit_log.py / visits.py /
+            # outcomes.py so older DBs created before these columns existed work.
             "ALTER TABLE visit_logs ADD COLUMN competitor_observation TEXT",
             "ALTER TABLE visit_logs ADD COLUMN retailer_name TEXT",
+            "ALTER TABLE visit_logs ADD COLUMN retailer_id TEXT",
+            "ALTER TABLE visit_logs ADD COLUMN visit_type TEXT",
+            "ALTER TABLE visit_logs ADD COLUMN product_discussed TEXT",
+            "ALTER TABLE visit_logs ADD COLUMN order_value INTEGER DEFAULT 0",
+            "ALTER TABLE visit_logs ADD COLUMN outcome_score INTEGER DEFAULT 0",
+            "ALTER TABLE visit_logs ADD COLUMN rejection_reason TEXT",
+            "ALTER TABLE visit_logs ADD COLUMN submitted_at TEXT",
             # growers: geocoded columns
             "ALTER TABLE growers ADD COLUMN lat REAL",
             "ALTER TABLE growers ADD COLUMN lng REAL",
             "ALTER TABLE growers ADD COLUMN geocoded_at TEXT",
             "ALTER TABLE growers ADD COLUMN distance_km REAL",
             "ALTER TABLE growers ADD COLUMN nearest_retailer_id TEXT",
+            # BUG 2 — retailers: geocoding columns (safe if already present)
+            "ALTER TABLE retailers ADD COLUMN lat REAL",
+            "ALTER TABLE retailers ADD COLUMN lng REAL",
+            "ALTER TABLE retailers ADD COLUMN geocoded_at TEXT",
+            # BUG 1 — competitor_intel: add the newer column set to pre-existing DBs
+            "ALTER TABLE competitor_intel ADD COLUMN rep_id TEXT",
+            "ALTER TABLE competitor_intel ADD COLUMN at_risk_products TEXT",
+            "ALTER TABLE competitor_intel ADD COLUMN defensive_talking_point TEXT",
+            "ALTER TABLE competitor_intel ADD COLUMN immediate_action TEXT",
+            "ALTER TABLE competitor_intel ADD COLUMN escalate_to_manager INTEGER DEFAULT 0",
+            "ALTER TABLE competitor_intel ADD COLUMN opportunity_flag INTEGER DEFAULT 0",
+            "ALTER TABLE competitor_intel ADD COLUMN rep_raw_observation TEXT",
+            "ALTER TABLE competitor_intel ADD COLUMN nearby_stores_detected TEXT",
+            "ALTER TABLE competitor_intel ADD COLUMN source TEXT DEFAULT 'llm'",
+            "ALTER TABLE competitor_intel ADD COLUMN threat_type TEXT",
+            "ALTER TABLE competitor_intel ADD COLUMN threat_level TEXT",
+            "ALTER TABLE competitor_intel ADD COLUMN competitor_name TEXT",
+            # BUG 1 — competitor_intel: keep legacy columns for fresh DBs created
+            # from the new schema.sql so analyze_competitor_threat()/get_history work
+            "ALTER TABLE competitor_intel ADD COLUMN rep_observation TEXT",
+            "ALTER TABLE competitor_intel ADD COLUMN nearby_stores TEXT",
+            "ALTER TABLE competitor_intel ADD COLUMN at_risk_skus TEXT DEFAULT '[]'",
+            "ALTER TABLE competitor_intel ADD COLUMN defensive_tp TEXT",
+            # BUG 7 — ensure weather_cache (district,date) is unique on older DBs
+            # so INSERT OR REPLACE dedups correctly (no-op if rows already unique).
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_weather_cache_district_date "
+            "ON weather_cache(district, date)",
         ]
         for sql in migrations:
             try:

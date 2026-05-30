@@ -130,6 +130,87 @@ class WeatherContext(TypedDict):
     source: str              # "open-meteo-live" or "fallback"
 
 
+# ── Weather cache helpers (own DB connection — callers don't pass db) ─────────
+_CACHE_COLS = ("rainfall_mm", "temp_c", "humidity_pct",
+               "weather_risk", "ndvi_value", "ndvi_label")
+
+
+async def _read_weather_cache(district_key: str):
+    """Return today's cached row for the district as a dict, or None."""
+    import aiosqlite
+    from db.database import DB_PATH
+    try:
+        async with aiosqlite.connect(DB_PATH) as conn:
+            conn.row_factory = aiosqlite.Row
+            async with conn.execute(
+                "SELECT * FROM weather_cache WHERE district=? AND date=date('now')",
+                (district_key,)
+            ) as cur:
+                row = await cur.fetchone()
+        return dict(row) if row else None
+    except Exception as exc:
+        print(f"[weather] cache read failed for '{district_key}': {exc}")
+        return None
+
+
+async def _write_weather_cache(district_key: str, wx: "WeatherContext") -> None:
+    """Persist a freshly fetched WeatherContext for today (INSERT OR REPLACE)."""
+    import aiosqlite
+    from db.database import DB_PATH
+    try:
+        async with aiosqlite.connect(DB_PATH) as conn:
+            await conn.execute(
+                """INSERT OR REPLACE INTO weather_cache
+                   (district, date, rainfall_mm, temp_c, humidity_pct,
+                    weather_risk, ndvi_value, ndvi_label, source)
+                   VALUES (?, date('now'), ?, ?, ?, ?, ?, ?, ?)""",
+                (district_key, wx["rainfall_mm"], wx["temp_c"], wx["humidity_pct"],
+                 wx["weather_risk"], wx["ndvi_value"], wx["ndvi_label"], wx["source"])
+            )
+            await conn.commit()
+    except Exception as exc:
+        print(f"[weather] cache write failed for '{district_key}': {exc}")
+
+
+def _read_weather_cache_sync(district_key: str):
+    """Synchronous cache read for get_weather_context_sync()."""
+    import sqlite3
+    from db.database import DB_PATH
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cur = conn.execute(
+            "SELECT * FROM weather_cache WHERE district=? AND date=date('now')",
+            (district_key,)
+        )
+        row = cur.fetchone()
+        conn.close()
+        return dict(row) if row else None
+    except Exception as exc:
+        print(f"[weather-sync] cache read failed for '{district_key}': {exc}")
+        return None
+
+
+def _write_weather_cache_sync(district_key: str, wx: "WeatherContext") -> None:
+    """Synchronous cache write for get_weather_context_sync()."""
+    import sqlite3
+    from db.database import DB_PATH
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute(
+            """INSERT OR REPLACE INTO weather_cache
+               (district, date, rainfall_mm, temp_c, humidity_pct,
+                weather_risk, ndvi_value, ndvi_label, source)
+               VALUES (?, date('now'), ?, ?, ?, ?, ?, ?, ?)""",
+            (district_key, wx["rainfall_mm"], wx["temp_c"], wx["humidity_pct"],
+             wx["weather_risk"], wx["ndvi_value"], wx["ndvi_label"], wx["source"])
+        )
+        conn.commit()
+        conn.close()
+    except Exception as exc:
+        print(f"[weather-sync] cache write failed for '{district_key}': {exc}")
+
+
 # ── Main public function ──────────────────────────────────────────────────────
 async def get_weather_context(district: str) -> WeatherContext:
     """
@@ -145,6 +226,22 @@ async def get_weather_context(district: str) -> WeatherContext:
     district_key = district.strip().lower() if district else "default"
     lat, lng = DISTRICT_COORDS.get(district_key, DISTRICT_COORDS["default"])
     ndvi_value, ndvi_label = _ndvi_for_district(district_key)
+
+    # Step A: serve from today's cache if present — skip the Open-Meteo call.
+    cached = await _read_weather_cache(district_key)
+    if cached:
+        print(f"[weather] cache hit for '{district_key}'")
+        return WeatherContext(
+            lat=lat,
+            lng=lng,
+            rainfall_mm=cached.get("rainfall_mm", 0.0),
+            temp_c=cached.get("temp_c", 32.0),
+            humidity_pct=cached.get("humidity_pct", 60.0),
+            weather_risk=cached.get("weather_risk", "normal"),
+            ndvi_value=cached.get("ndvi_value", ndvi_value),
+            ndvi_label=cached.get("ndvi_label", ndvi_label),
+            source="cache",
+        )
 
     url = (
         f"https://api.open-meteo.com/v1/forecast"
@@ -171,7 +268,9 @@ async def get_weather_context(district: str) -> WeatherContext:
         risk         = _classify_weather_risk(rainfall_mm, temp_c, humidity_pct)
         source       = "open-meteo-live"
 
-        print(f"[weather] {district} → {rainfall_mm}mm rain | {temp_c}°C | {humidity_pct}% RH | risk={risk}")
+        # ASCII-only — non-ASCII chars crash print() on Windows cp1252 stdout,
+        # which would otherwise be caught as a (false) Open-Meteo failure.
+        print(f"[weather] {district} -> {rainfall_mm}mm rain | {temp_c}C | {humidity_pct}% RH | risk={risk}")
 
     except Exception as exc:
         # Graceful fallback — values still feed the prompt honestly
@@ -180,7 +279,7 @@ async def get_weather_context(district: str) -> WeatherContext:
         risk = "normal (offline fallback)"
         source = "fallback"
 
-    return WeatherContext(
+    wx = WeatherContext(
         lat=lat,
         lng=lng,
         rainfall_mm=rainfall_mm,
@@ -191,6 +290,12 @@ async def get_weather_context(district: str) -> WeatherContext:
         ndvi_label=ndvi_label,
         source=source,
     )
+
+    # Step B: cache only successful live fetches (not the offline fallback).
+    if source == "open-meteo-live":
+        await _write_weather_cache(district_key, wx)
+
+    return wx
 
 
 # ── Synchronous version for feature_builder (non-async context) ───────────────
@@ -203,6 +308,21 @@ def get_weather_context_sync(district: str) -> WeatherContext:
     district_key = district.strip().lower() if district else "default"
     lat, lng = DISTRICT_COORDS.get(district_key, DISTRICT_COORDS["default"])
     ndvi_value, ndvi_label = _ndvi_for_district(district_key)
+
+    # Step A: serve from today's cache if present — skip the Open-Meteo call.
+    cached = _read_weather_cache_sync(district_key)
+    if cached:
+        print(f"[weather-sync] cache hit for '{district_key}'")
+        return WeatherContext(
+            lat=lat, lng=lng,
+            rainfall_mm=cached.get("rainfall_mm", 0.0),
+            temp_c=cached.get("temp_c", 32.0),
+            humidity_pct=cached.get("humidity_pct", 60.0),
+            weather_risk=cached.get("weather_risk", "normal"),
+            ndvi_value=cached.get("ndvi_value", ndvi_value),
+            ndvi_label=cached.get("ndvi_label", ndvi_label),
+            source="cache",
+        )
 
     url = (
         f"https://api.open-meteo.com/v1/forecast"
@@ -233,12 +353,18 @@ def get_weather_context_sync(district: str) -> WeatherContext:
         risk = "normal (offline fallback)"
         source = "fallback"
 
-    return WeatherContext(
+    wx = WeatherContext(
         lat=lat, lng=lng,
         rainfall_mm=rainfall_mm, temp_c=temp_c, humidity_pct=humidity_pct,
         weather_risk=risk, ndvi_value=ndvi_value, ndvi_label=ndvi_label,
         source=source,
     )
+
+    # Step B: cache only successful live fetches (not the offline fallback).
+    if source == "open-meteo-live":
+        _write_weather_cache_sync(district_key, wx)
+
+    return wx
 
 
 # ── Pest alert helper (called from recommendations router) ────────────────────

@@ -478,3 +478,112 @@ async def analyze_competitor_threat(
             "intel_id": None, "nearby_stores": "error", "source": "error",
             "is_error": True, "error": str(exc),
         }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 6. FIRE-AND-FORGET ENTRY POINT (called from visit_log on competitor_observation)
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def analyze_competitor_observation(
+    retailer_id: str,
+    rep_id: str,
+    rep_text: str,
+    db=None,
+) -> dict:
+    """
+    Lightweight wrapper used by POST /visit_log when a rep types a competitor
+    observation. Scheduled via asyncio.create_task() and NOT awaited, so the
+    visit-log response is never delayed.
+
+    Because the caller's request-scoped `db` connection is closed as soon as the
+    request returns, this opens its OWN short-lived connection for all DB work.
+    The `db` parameter is accepted for signature compatibility but not used for
+    writes. Never raises — logs and returns on any error.
+    """
+    import aiosqlite
+    from db.database import DB_PATH
+
+    try:
+        # Look up retailer context for a richer classification (best-effort).
+        outlet_name, district, tehsil = retailer_id, "", ""
+        lat, lng = 17.3850, 78.4867  # Hyderabad centroid default
+        try:
+            async with aiosqlite.connect(DB_PATH) as conn:
+                conn.row_factory = aiosqlite.Row
+                async with conn.execute(
+                    """SELECT retailer_name, district, tehsil, lat, lng
+                       FROM retailers WHERE retailer_id = ?""",
+                    (retailer_id,)
+                ) as cur:
+                    row = await cur.fetchone()
+                if row:
+                    outlet_name = row["retailer_name"] or retailer_id
+                    district = row["district"] or ""
+                    tehsil = row["tehsil"] or ""
+                    if row["lat"] is not None and row["lng"] is not None:
+                        lat, lng = float(row["lat"]), float(row["lng"])
+        except Exception as exc:
+            print(f"[competitor] observation lookup failed: {exc}")
+
+        # Step 1: nearby stores (best-effort)
+        nearby_stores = await _get_nearby_stores(lat, lng, radius_m=2000)
+
+        # Step 2 + 3: classify
+        result, source = await _classify_with_llm(
+            rep_text=rep_text,
+            nearby_stores=nearby_stores,
+            outlet_name=outlet_name,
+            district=district,
+            tehsil=tehsil,
+            stock_days=14,
+            days_since_purchase=7,
+            crop_stage="vegetative",
+        )
+
+        # Step 4: persist using the newer column set (own connection)
+        today = date.today().isoformat()
+        now = datetime.now().isoformat(timespec="seconds")
+        try:
+            async with aiosqlite.connect(DB_PATH) as conn:
+                await conn.execute(
+                    """INSERT INTO competitor_intel
+                       (retailer_id, rep_id, date, threat_type, threat_level,
+                        competitor_name, at_risk_products, defensive_talking_point,
+                        immediate_action, escalate_to_manager, opportunity_flag,
+                        rep_raw_observation, nearby_stores_detected, source, created_at,
+                        rep_observation, nearby_stores, at_risk_skus, defensive_tp)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    (
+                        retailer_id, rep_id, today,
+                        result.get("threat_type", "none"),
+                        result.get("threat_level") or "",
+                        result.get("competitor_name") or "",
+                        json.dumps(result.get("at_risk_syngenta_products") or []),
+                        result.get("defensive_talking_point") or "",
+                        result.get("immediate_action") or "",
+                        int(bool(result.get("escalate_to_manager"))),
+                        int(bool(result.get("opportunity_flag"))),
+                        rep_text or "",
+                        nearby_stores,
+                        source,
+                        now,
+                        # legacy columns (mirror values so get_history keeps working)
+                        rep_text or "",
+                        nearby_stores,
+                        json.dumps(result.get("at_risk_syngenta_products") or []),
+                        result.get("defensive_talking_point") or "",
+                    )
+                )
+                await conn.commit()
+        except Exception as exc:
+            print(f"[competitor] observation persist failed: {exc}")
+
+        print(
+            f"[competitor] observation ({retailer_id} by {rep_id}): "
+            f"threat={result.get('threat_type')} source={source}"
+        )
+        return {**result, "source": source}
+
+    except Exception as exc:
+        print(f"[competitor] analyze_competitor_observation FAILED: {exc}")
+        return {"threat_type": "none", "source": "error", "is_error": True, "error": str(exc)}

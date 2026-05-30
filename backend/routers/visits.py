@@ -12,6 +12,21 @@ from datetime import datetime
 router = APIRouter()
 
 
+# Frontend label → system-standard outcome value. Already-normalized values
+# ("sale"/"order"/"none") pass through unchanged.
+_OUTCOME_MAP = {
+    "Order placed": "sale",
+    "Interested":   "order",
+    "Rejected":     "none",
+}
+
+
+def _normalize_result(raw):
+    if raw in ("sale", "order", "none"):
+        return raw
+    return _OUTCOME_MAP.get(raw, None)
+
+
 @router.post("/log")
 async def log_outcome(outcome: OutcomeLog, db=Depends(get_db)):
     """Log a visit outcome for an outlet.
@@ -22,28 +37,38 @@ async def log_outcome(outcome: OutcomeLog, db=Depends(get_db)):
     # Called by: Frontend Visit.vue, mobile VisitScreen
     """
     try:
-        # Validate result
-        if outcome.result not in ("sale", "order", "none"):
-            return {"success": False, "error": "Result must be 'sale', 'order', or 'none'"}
+        # Normalize result first (accepts frontend labels AND sale/order/none)
+        result = _normalize_result(outcome.result)
+        if result is None:
+            return {"success": False,
+                    "error": "Result must be 'sale', 'order', 'none' "
+                             "(or 'Order placed'/'Interested'/'Rejected')"}
 
         today = datetime.now().strftime("%Y-%m-%d")
         order_value = getattr(outcome, 'order_value', 0) or 0
         rejection_reason = getattr(outcome, 'rejection_reason', None)
         outcome_score = calculate_outcome_score(
-            outcome.result, order_value, rejection_reason
+            result, order_value, rejection_reason
         )
 
-        retailer_id = str(outcome.outlet_id)
-        retailer_name = ""
-        try:
-            async with db.execute(
-                "SELECT name FROM outlets WHERE id = ?", (outcome.outlet_id,)
-            ) as cur:
-                row = await cur.fetchone()
-                if row:
-                    retailer_name = row["name"] or ""
-        except Exception:
-            pass
+        # retailer_id: use provided value, else fall back to outlet_id
+        retailer_id = getattr(outcome, 'retailer_id', None) or str(outcome.outlet_id)
+
+        # retailer_name: prefer provided value, else look it up, else ""
+        retailer_name = getattr(outcome, 'retailer_name', None) or ""
+        if not retailer_name:
+            try:
+                async with db.execute(
+                    "SELECT name FROM outlets WHERE id = ?", (outcome.outlet_id,)
+                ) as cur:
+                    row = await cur.fetchone()
+                    if row:
+                        retailer_name = row["name"] or ""
+            except Exception:
+                pass
+
+        product_discussed = getattr(outcome, 'product_discussed', '') or ''
+        visit_type = getattr(outcome, 'visit_type', None) or 'retailer_meeting'
 
         await db.execute(
             """INSERT INTO visit_logs
@@ -51,11 +76,10 @@ async def log_outcome(outcome: OutcomeLog, db=Depends(get_db)):
                 retailer_id, retailer_name, product_discussed, visit_type)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (outcome.outlet_id, getattr(outcome, 'rep_id', 1), today,
-             outcome.result, outcome.notes or "", 1,
+             result, outcome.notes or "", 1,
              outcome_score, order_value, rejection_reason,
              retailer_id, retailer_name,
-             getattr(outcome, 'product_discussed', '') or '',
-             getattr(outcome, 'visit_type', 'standard') or 'standard')
+             product_discussed, visit_type)
         )
         await db.commit()
         return {"success": True, "outcome_score": outcome_score}
