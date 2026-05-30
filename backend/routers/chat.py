@@ -273,14 +273,16 @@ def _greeting(role: str, name: str, ctx: dict) -> str:
 
 # ── LLM call with fallback ────────────────────────────────────────────────────
 
-def _call_glm(system: str, message: str):
+def _call_glm_sync(system: str, message: str):
+    """Blocking NVIDIA NIM call — must be run in a thread via asyncio.to_thread."""
     if not NVIDIA_API_KEY or NVIDIA_API_KEY.startswith("your_"):
         return None
     try:
         from openai import OpenAI
         client = OpenAI(
             base_url="https://integrate.api.nvidia.com/v1",
-            api_key=NVIDIA_API_KEY
+            api_key=NVIDIA_API_KEY,
+            timeout=12.0,
         )
         resp = client.chat.completions.create(
             model="z-ai/glm-5.1",
@@ -295,6 +297,19 @@ def _call_glm(system: str, message: str):
         return resp.choices[0].message.content.strip()
     except Exception as e:
         print(f"[chat] GLM call failed: {e}")
+        return None
+
+
+async def _call_glm(system: str, message: str):
+    """Non-blocking wrapper — runs sync OpenAI client in a thread pool."""
+    import asyncio
+    try:
+        return await asyncio.wait_for(
+            asyncio.to_thread(_call_glm_sync, system, message),
+            timeout=14.0
+        )
+    except Exception as e:
+        print(f"[chat] GLM async wrapper failed: {e}")
         return None
 
 
@@ -353,6 +368,6 @@ async def chat(body: dict, db=Depends(get_db)):
         return {"reply": "Please send a message.", "context": ctx}
 
     system = _system_prompt(role, ctx)
-    reply = _call_glm(system, message) or _fallback_reply(role, ctx)
+    reply = await _call_glm(system, message) or _fallback_reply(role, ctx)
 
     return {"reply": reply, "context": ctx}
