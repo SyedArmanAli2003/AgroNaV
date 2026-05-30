@@ -154,7 +154,7 @@ try:
             return {}
 
     before = rec_scores()
-    r = httpx.post(f"{BASE}/api/recalibrate?rep_id=REP_0001", timeout=90)
+    r = httpx.post(f"{BASE}/api/recalibrate", timeout=90)  # int rep_id=1 default
     j = r.json()
     updated = j.get("updated_outlets", []) if isinstance(j, dict) else []
     after = rec_scores()

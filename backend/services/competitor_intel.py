@@ -525,20 +525,28 @@ async def analyze_competitor_observation(
         except Exception as exc:
             print(f"[competitor] observation lookup failed: {exc}")
 
-        # Step 1: nearby stores (best-effort)
+        # Step 1: nearby stores (best-effort, truly async httpx)
         nearby_stores = await _get_nearby_stores(lat, lng, radius_m=2000)
 
-        # Step 2 + 3: classify
-        result, source = await _classify_with_llm(
-            rep_text=rep_text,
-            nearby_stores=nearby_stores,
-            outlet_name=outlet_name,
-            district=district,
-            tehsil=tehsil,
-            stock_days=14,
-            days_since_purchase=7,
-            crop_stage="vegetative",
-        )
+        # Step 2 + 3: classify. _classify_with_llm calls SYNCHRONOUS LLM clients
+        # (Gemini / OpenRouter) with no timeout, which would block the event loop.
+        # Since this runs as a fire-and-forget task, offload it to a worker thread
+        # so the server stays responsive to other requests while it works.
+        import asyncio
+
+        def _classify_blocking():
+            return asyncio.run(_classify_with_llm(
+                rep_text=rep_text,
+                nearby_stores=nearby_stores,
+                outlet_name=outlet_name,
+                district=district,
+                tehsil=tehsil,
+                stock_days=14,
+                days_since_purchase=7,
+                crop_stage="vegetative",
+            ))
+
+        result, source = await asyncio.to_thread(_classify_blocking)
 
         # Step 4: persist using the newer column set (own connection)
         today = date.today().isoformat()
