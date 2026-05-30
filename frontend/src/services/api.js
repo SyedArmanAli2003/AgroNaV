@@ -250,4 +250,39 @@ export const api = {
     );
     return res.json();
   },
+
+  // Route optimization + morning briefing
+  getMorningBrief: async (repId, { repLat, repLng, topN = 6, district } = {}) => {
+    const id = repId || localStorage.getItem("agronav_rep_id") || "REP_0001";
+    const body = {
+      rep_id:   id,
+      top_n:    topN,
+      ...(repLat  != null && { rep_lat: repLat }),
+      ...(repLng  != null && { rep_lng: repLng }),
+      ...(district      && { district }),
+    };
+    const res = await fetch(`${BASE}/api/route/morning-brief`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    });
+    return res.json();
+    // Returns: { briefing: {line1, line2, line3, full_text, source},
+    //            route: {ordered_outlet_list, total_km, total_minutes, outlet_count, route_source},
+    //            weather: {...}, top_alert: str }
+  },
+
+  getRouteOptimized: async (repId, { repLat, repLng, topN = 6 } = {}) => {
+    const id = repId || localStorage.getItem("agronav_rep_id") || "REP_0001";
+    const body = { rep_id: id, top_n: topN,
+      ...(repLat != null && { rep_lat: repLat }),
+      ...(repLng != null && { rep_lng: repLng }),
+    };
+    const res = await fetch(`${BASE}/api/route/optimize`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  },
 };

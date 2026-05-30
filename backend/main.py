@@ -108,6 +108,10 @@ app.include_router(manager.router,    prefix="/api",            tags=["manager"]
 from routers import competitor as competitor_router
 app.include_router(competitor_router.router, tags=["competitor"])
 
+# Route optimization + morning briefing router
+from routers import route as route_router
+app.include_router(route_router.router, tags=["route"])
+
 # ── Serve React Frontend ───────────────────────────────────────────────────────
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse

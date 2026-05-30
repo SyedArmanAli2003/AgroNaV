@@ -48,6 +48,8 @@ function Dashboard() {
   const [recalMsg, setRecalMsg] = useState("");
   const [recalLoading, setRecalLoading] = useState(false);
   const [explainPanel, setExplainPanel] = useState(null);
+  const [morningBrief, setMorningBrief] = useState(null);
+  const [morningLoading, setMorningLoading] = useState(false);
   const [toast, setToast] = useState("");
   const [banner, setBanner] = useState(null);
 
@@ -185,6 +187,39 @@ function Dashboard() {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {recalMsg && <span style={{ color: "var(--color-primary)", fontSize: 13, fontWeight: 600 }}>{recalMsg}</span>}
             <button
+              id="morning-brief-btn"
+              className="btn-primary"
+              style={{ width: "auto", padding: "10px 18px", fontSize: 12, opacity: morningLoading ? 0.7 : 1,
+                background: "linear-gradient(135deg, var(--color-primary), #0e7a55)" }}
+              onClick={async () => {
+                setMorningLoading(true);
+                setMorningBrief(null);
+                try {
+                  const repId = authContext.user?.sub || authContext.user?.rep_id || "REP_0203";
+                  const district = authContext.user?.district || localStorage.getItem("agronav_district");
+                  // Request GPS if available
+                  let repLat, repLng;
+                  try {
+                    const pos = await new Promise((res, rej) =>
+                      navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 })
+                    );
+                    repLat = pos.coords.latitude;
+                    repLng = pos.coords.longitude;
+                  } catch { /* use district centroid */ }
+                  const data = await api.getMorningBrief(repId, { repLat, repLng, district, topN: 6 });
+                  if (data?.briefing) setMorningBrief(data);
+                } catch (e) {
+                  console.error("[morning-brief]", e);
+                } finally {
+                  setMorningLoading(false);
+                }
+              }}
+              disabled={morningLoading}
+            >
+              <MapPin size={13} style={{ marginRight: 5, verticalAlign: "-1px" }} />
+              {morningLoading ? "Planning route..." : "Today's Route"}
+            </button>
+            <button
               id="recalibrate-btn"
               className="btn-primary"
               style={{ width: "auto", padding: "10px 20px", fontSize: 13, opacity: recalLoading ? 0.7 : 1 }}
@@ -215,6 +250,104 @@ function Dashboard() {
             </div>
           ))}
         </div>
+
+        {/* Morning Route Briefing Panel */}
+        {morningBrief && (
+          <div
+            id="morning-briefing-panel"
+            className="glass-card"
+            style={{
+              marginBottom: 16,
+              borderLeft: "3px solid var(--color-primary)",
+              padding: "18px 20px",
+              animation: "toastIn 0.3s ease forwards",
+            }}
+          >
+            {/* Header row */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-primary)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                <MapPin size={12} style={{ verticalAlign: "-1px", marginRight: 4 }} />
+                Morning Route Brief
+              </span>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {morningBrief.weather?.weather_risk && (
+                  <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99,
+                    background: morningBrief.weather.weather_risk.includes("fungal") || morningBrief.weather.weather_risk.includes("heat")
+                      ? "rgba(245,158,11,0.15)" : "var(--color-primary-dim)",
+                    color: morningBrief.weather.weather_risk.includes("fungal") || morningBrief.weather.weather_risk.includes("heat")
+                      ? "var(--color-warning)" : "var(--color-primary)",
+                    border: "1px solid currentColor",
+                  }}>
+                    ☁ {morningBrief.weather.rainfall_mm}mm · {morningBrief.weather.temp_c}°C
+                  </span>
+                )}
+                <span style={{ fontSize: 10, color: "var(--text-muted)" }}>via {morningBrief.briefing?.source}</span>
+              </div>
+            </div>
+
+            {/* 3-sentence briefing */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
+              {[morningBrief.briefing?.line1, morningBrief.briefing?.line2, morningBrief.briefing?.line3].map((line, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <span style={{
+                    flexShrink: 0, width: 22, height: 22, borderRadius: "50%",
+                    background: "var(--color-primary-dim)", border: "1px solid var(--color-primary)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 10, fontWeight: 700, color: "var(--color-primary)", marginTop: 1
+                  }}>{i + 1}</span>
+                  <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5, fontFamily: "var(--font-body)" }}>
+                    {line}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Route stats strip */}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+              {[
+                { label: "Stops",    value: morningBrief.route?.outlet_count },
+                { label: "Distance", value: `${morningBrief.route?.total_km}km` },
+                { label: "Drive",    value: `${morningBrief.route?.total_minutes}min` },
+                { label: "Source",   value: morningBrief.route?.route_source === "google-routes" ? "Google Routes ✓" : "Priority sort" },
+              ].map((s, i) => (
+                <div key={i} style={{
+                  flex: "1 0 100px", padding: "8px 12px", borderRadius: 8,
+                  background: "var(--glass-bg)", border: "1px solid var(--glass-border)",
+                  textAlign: "center"
+                }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)", fontFamily: "var(--font-heading)" }}>{s.value}</div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 2 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Ordered stop list */}
+            {morningBrief.route?.ordered_outlet_list && (
+              <div style={{
+                background: "var(--glass-bg)", borderRadius: 8,
+                padding: "10px 14px", fontFamily: "monospace",
+                fontSize: 11, color: "var(--text-muted)", lineHeight: 1.7,
+                whiteSpace: "pre-wrap", marginBottom: 10,
+                border: "1px solid var(--glass-border)",
+              }}>
+                {morningBrief.route.ordered_outlet_list}
+              </div>
+            )}
+
+            {morningBrief.top_alert && morningBrief.top_alert !== "No alerts today" && (
+              <div style={{ fontSize: 12, color: "var(--color-warning)", display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                <AlertTriangle size={12} /> {morningBrief.top_alert}
+              </div>
+            )}
+
+            <button
+              onClick={() => setMorningBrief(null)}
+              style={{ background: "transparent", border: "none", fontSize: 11, color: "var(--text-muted)", cursor: "pointer", padding: 0 }}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         {/* Recalibration explanation panel */}
         {explainPanel && (
