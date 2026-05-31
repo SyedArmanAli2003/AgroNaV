@@ -416,7 +416,7 @@ async def chat(body: dict, db=Depends(get_db)):
     role      = str(body.get("role", "rep")).lower()
     user_id   = str(body.get("user_id", "")).strip()
     user_name = str(body.get("name", "there")).strip() or "there"
-    model_id  = str(body.get("model", "gemini-flash")).strip()  # Default: gemini-flash (most reliable)
+    model_id  = str(body.get("model", "llama-3.3")).strip()  # Default: llama-3.3
     extra_ctx = body.get("context") or {}
 
     if role not in ("rep", "manager", "admin"):

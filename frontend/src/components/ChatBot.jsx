@@ -7,8 +7,8 @@ const PANEL_W = 360;
 const PANEL_H = 480;
 
 const MODELS = [
-  { id: "gemini-flash", label: "Gemini Flash", provider: "Google" },
-  { id: "llama-3.3",    label: "Llama 3.3",    provider: "NVIDIA NIM" },
+  { id: "llama-3.3",    label: "Llama 3.3",    provider: "Meta" },
+  { id: "gemini-flash", label: "Gemini 2.5 Flash", provider: "Google" },
   { id: "glm-5.1",      label: "GLM-5.1",       provider: "NVIDIA NIM" },
 ];
 
@@ -19,8 +19,8 @@ export default function ChatBot() {
   const [input, setInput]         = useState("");
   const [loading, setLoading]     = useState(false);
   const [greeted, setGreeted]     = useState(false);
-  const [model, setModel]         = useState("gemini-flash");
-  const [modelUsed, setModelUsed] = useState("gemini-flash");  // actual model that responded
+  const [model, setModel]         = useState("llama-3.3");
+  const [modelUsed, setModelUsed] = useState("llama-3.3");  // actual model that responded
   const [modelOpen, setModelOpen] = useState(false);
   const bottomRef = useRef(null);
 
