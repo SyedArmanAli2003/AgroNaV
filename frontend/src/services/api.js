@@ -384,4 +384,45 @@ export const api = {
     );
     return res.json();
   },
+
+  // ── Admin-controlled rep/manager creation ─────────────────────────────────
+  createRep: async ({ name, email, password, district, territory, phone }) => {
+    const res = await fetch(`${BASE}/api/manager/create-rep`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ name, email, password, district, territory, phone }),
+    });
+    return res.json();
+    // Returns: { success, message, rep: {...}, login_credentials: {email, password, rep_id} }
+    // HTTP 409 if email already exists
+  },
+
+  createManager: async ({ name, email, password, district, territory, phone }) => {
+    const res = await fetch(`${BASE}/api/admin/create-manager`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ name, email, password, district, territory, phone }),
+    });
+    return res.json();
+    // Returns: { success, message, manager: {...}, login_credentials: {email, password, rep_id} }
+    // HTTP 409 if email already exists; HTTP 403 if caller is not admin
+  },
+
+  // ── District list (for dropdowns) ─────────────────────────────────────────
+  getDistricts: async () => {
+    try {
+      const res = await fetch(`${BASE}/api/manager/districts`, { headers: getAuthHeader() });
+      if (!res.ok) throw new Error();
+      return res.json();
+    } catch {
+      // Fallback static list covering Maharashtra + AP territories in dataset
+      return {
+        districts: [
+          "Jalgaon","Aurangabad","Nashik","Pune","Ahmednagar",
+          "Nalgonda","Guntur","Krishna","Kurnool","Warangal",
+          "Vidisha","Bhopal","Indore","Ujjain","Jabalpur"
+        ]
+      };
+    }
+  },
 };

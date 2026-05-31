@@ -71,26 +71,47 @@ async def seed_demo_data(db):
     """Seed demo users and real Syngenta retailers if DB is empty. Idempotent."""
     import bcrypt as _bcrypt
 
-    # ── Check if already seeded ──────────────────────────────────────────────
+    # ── Always ensure demo accounts exist (upsert) ───────────────────────────
+    # These are the accounts shown on the SignIn page demo buttons.
+    # We DELETE + INSERT so password/role is always fresh even on existing DBs.
     try:
-        async with db.execute("SELECT COUNT(*) as c FROM users") as cursor:
-            row = await cursor.fetchone()
-            if row and row["c"] > 0:
-                # Users exist — just make sure real retailers are there too
-                async with db.execute("SELECT COUNT(*) as c FROM retailers") as rc:
-                    rrow = await rc.fetchone()
-                    if rrow and rrow["c"] >= 1000:
-                        print("[seed] DB already seeded — skipping")
-                        return
-                    # Users exist but retailers not loaded — seed retailers only
-                    print("[seed] Users found but retailers missing — seeding retailers")
-                    await _seed_all_tables(db)
-                    return
+        for u in DEMO_USERS:
+            pw_hash = _bcrypt.hashpw(u["password"].encode(), _bcrypt.gensalt()).decode()
+            # Check if already exists with correct role
+            async with db.execute("SELECT id, role FROM users WHERE email=?", (u["email"],)) as cur:
+                existing = await cur.fetchone()
+            if existing and existing["role"] == u["role"]:
+                # Already seeded correctly — skip bcrypt re-hash for speed
+                pass
+            else:
+                # Insert or replace demo account
+                await db.execute("DELETE FROM users WHERE email=?", (u["email"],))
+                await db.execute(
+                    """INSERT INTO users
+                       (email, password_hash, name, rep_id, role,
+                        district, state, territory_id, manager_id)
+                       VALUES (?,?,?,?,?,?,?,?,?)""",
+                    (u["email"], pw_hash, u["name"], u["rep_id"], u.get("role", "rep"),
+                     u.get("district"), u.get("state"), u.get("territory_id"),
+                     u.get("manager_id"))
+                )
+        await db.commit()
+        print(f"[seed] {len(DEMO_USERS)} demo accounts ensured (rep / manager / admin)")
     except Exception as e:
-        print(f"[seed] Could not check users table: {e}")
+        print(f"[seed] Demo account seed error: {e}")
+
+    # ── Check if real retailers are seeded ───────────────────────────────────
+    try:
+        async with db.execute("SELECT COUNT(*) as c FROM retailers") as rc:
+            rrow = await rc.fetchone()
+            if rrow and rrow["c"] >= 1000:
+                print("[seed] Real retailers already loaded — startup complete")
+                return
+    except Exception as e:
+        print(f"[seed] Retailers check error: {e}")
         return
 
-    print("[seed] Fresh DB — seeding demo users + real dataset...")
+    print("[seed] Loading real Syngenta dataset...")
 
     # ── Ensure extra columns exist ───────────────────────────────────────────
     for col_sql in [
@@ -106,25 +127,6 @@ async def seed_demo_data(db):
             await db.execute(col_sql)
         except Exception:
             pass  # column already exists
-
-    # ── Seed demo users ──────────────────────────────────────────────────────
-    for u in DEMO_USERS:
-        pw_hash = _bcrypt.hashpw(u["password"].encode(), _bcrypt.gensalt()).decode()
-        try:
-            await db.execute(
-                """INSERT OR IGNORE INTO users
-                   (email, password_hash, name, rep_id, role,
-                    district, state, territory_id, manager_id)
-                   VALUES (?,?,?,?,?,?,?,?,?)""",
-                (u["email"], pw_hash, u["name"], u["rep_id"], u.get("role", "rep"),
-                 u.get("district"), u.get("state"), u.get("territory_id"),
-                 u.get("manager_id"))
-            )
-        except Exception as e:
-            print(f"[seed] User insert error for {u['email']}: {e}")
-
-    await db.commit()
-    print(f"[seed] {len(DEMO_USERS)} demo users seeded")
 
     # ── Seed all real data tables ────────────────────────────────────────────
     await _seed_all_tables(db)

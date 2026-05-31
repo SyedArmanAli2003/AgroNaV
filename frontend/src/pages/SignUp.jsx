@@ -1,222 +1,114 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { Leaf, Eye, EyeOff, AlertTriangle } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-import { signup as apiSignup } from "../services/api";
+import React from "react";
+import { Link } from "react-router-dom";
+import { Leaf, Lock, ArrowLeft, ShieldCheck } from "lucide-react";
 import "../css/auth.css";
 import "../css/landing.css";
 
+/**
+ * SignUp — Registration is invite-only / admin-controlled.
+ * Public self-signup is disabled on the backend (POST /signup → 403).
+ * This page explains the flow and directs users back to Sign In.
+ */
 function SignUp() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [repId, setRepId] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
-  const [showPw, setShowPw] = useState(false);
-  const [role, setRole] = useState("rep");
-  const [managerCode, setManagerCode] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-
-    if (password !== confirmPw) {
-      setError("Passwords do not match");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return;
-    }
-    if (role === "manager" && !managerCode) {
-      setError("Manager code is required for manager accounts");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const data = await apiSignup(name, email, repId, password);
-      if (data.token) {
-        login(data.token);
-        navigate("/dashboard");
-      } else {
-        setError(data.detail || "Sign up failed. Please try again.");
-      }
-    } catch (err) {
-      setError(err.message || "Sign up failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="auth-page">
-      <div className="auth-card">
+      <div className="auth-card" style={{ maxWidth: 480 }}>
+
         {/* Logo */}
         <div className="auth-logo">
           <Leaf size={24} color="var(--color-primary, #1D9E75)" />
           <span className="auth-logo-text">AgroNav</span>
         </div>
 
-        {/* Heading */}
-        <h1 className="auth-heading">Create Account</h1>
-        <p className="auth-subheading">
-          Join AgroNav to unlock AI-guided field intelligence
-        </p>
-
-        {/* Error */}
-        {error && (
-          <div className="auth-error" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <AlertTriangle size={16} />
-            {error}
-          </div>
-        )}
-
-        {/* Form */}
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="auth-input-group">
-            <label className="auth-label">Full Name</label>
-            <input
-              id="signup-name"
-              className="auth-input"
-              type="text"
-              placeholder="Enter your full name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              autoComplete="name"
-            />
+        {/* Lock icon + heading */}
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "center",
+          textAlign: "center", padding: "8px 0 24px"
+        }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: "50%",
+            background: "rgba(29,158,117,0.12)",
+            border: "1px solid rgba(29,158,117,0.3)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            marginBottom: 16
+          }}>
+            <Lock size={28} color="var(--color-primary, #1D9E75)" />
           </div>
 
-          <div className="auth-input-group">
-            <label className="auth-label">Email Address</label>
-            <input
-              id="signup-email"
-              className="auth-input"
-              type="email"
-              placeholder="you@syngenta.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
-          </div>
+          <h1 className="auth-heading" style={{ marginBottom: 8 }}>
+            Registration Closed
+          </h1>
+          <p className="auth-subheading" style={{ marginBottom: 0 }}>
+            AgroNav accounts are created by your manager or admin.
+            <br />Self-registration is not available.
+          </p>
+        </div>
 
-          <div className="auth-input-group">
-            <label className="auth-label">Rep ID</label>
-            <input
-              id="signup-repid"
-              className="auth-input"
-              type="text"
-              placeholder="REP_0203 — ask your manager"
-              value={repId}
-              onChange={(e) => setRepId(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="auth-input-group">
-            <label className="auth-label">Password</label>
-            <div style={{ position: "relative" }}>
-              <input
-                id="signup-password"
-                className="auth-input"
-                type={showPw ? "text" : "password"}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                autoComplete="new-password"
-                style={{ paddingRight: 44 }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPw(!showPw)}
-                style={{
-                  position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
-                  background: "none", border: "none", cursor: "pointer",
-                  color: "var(--text-muted)", padding: 4
-                }}
-                tabIndex={-1}
-              >
-                {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+        {/* Info steps */}
+        <div style={{
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid var(--glass-border)",
+          borderRadius: 12, padding: "18px 20px", marginBottom: 24
+        }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 14 }}>
+            How to get access
+          </p>
+          {[
+            { icon: "1", text: "Contact your Syngenta area manager" },
+            { icon: "2", text: "They create your account via the Manager Portal" },
+            { icon: "3", text: "You receive your Rep ID, email & temporary password" },
+            { icon: "4", text: "Sign in and start your field visits" },
+          ].map(step => (
+            <div key={step.icon} style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 10 }}>
+              <div style={{
+                minWidth: 22, height: 22, borderRadius: "50%",
+                background: "rgba(29,158,117,0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11, fontWeight: 700, color: "var(--color-primary, #1D9E75)", flexShrink: 0
+              }}>
+                {step.icon}
+              </div>
+              <span style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                {step.text}
+              </span>
             </div>
-          </div>
+          ))}
+        </div>
 
-          <div className="auth-input-group">
-            <label className="auth-label">Confirm Password</label>
-            <input
-              id="signup-confirm"
-              className="auth-input"
-              type={showPw ? "text" : "password"}
-              placeholder="••••••••"
-              value={confirmPw}
-              onChange={(e) => setConfirmPw(e.target.value)}
-              required
-              minLength={6}
-              autoComplete="new-password"
-            />
-          </div>
+        {/* Manager info badge */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10, padding: "12px 16px",
+          background: "rgba(59,130,246,0.07)", border: "1px solid rgba(59,130,246,0.2)",
+          borderRadius: 10, marginBottom: 24
+        }}>
+          <ShieldCheck size={18} color="#3b82f6" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+            <strong style={{ color: "#3b82f6" }}>Managers & Admins:</strong> Create rep accounts from the{" "}
+            <strong>Manager Portal → ➕ Create Rep</strong> tab.
+          </span>
+        </div>
 
-          {/* Role toggle */}
-          <div className="auth-input-group">
-            <label className="auth-label">Account Type</label>
-            <div className="toggle-group">
-              <button
-                type="button"
-                className={`toggle-btn ${role === "rep" ? "active" : ""}`}
-                onClick={() => setRole("rep")}
-              >
-                Field Rep
-              </button>
-              <button
-                type="button"
-                className={`toggle-btn ${role === "manager" ? "active" : ""}`}
-                onClick={() => setRole("manager")}
-              >
-                Area Manager
-              </button>
-            </div>
-          </div>
+        {/* Back to sign in */}
+        <Link
+          to="/signin"
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            width: "100%", padding: "13px",
+            background: "var(--color-primary, #1D9E75)",
+            color: "#fff", borderRadius: 12, textDecoration: "none",
+            fontSize: 15, fontWeight: 600, fontFamily: "var(--font-body)",
+            transition: "opacity 0.15s", boxSizing: "border-box"
+          }}
+          onMouseOver={e => e.currentTarget.style.opacity = "0.88"}
+          onMouseOut={e => e.currentTarget.style.opacity = "1"}
+        >
+          <ArrowLeft size={16} />
+          Back to Sign In
+        </Link>
 
-          {/* Manager code (only if manager selected) */}
-          {role === "manager" && (
-            <div className="auth-input-group">
-              <label className="auth-label">Manager Code</label>
-              <input
-                className="auth-input"
-                type="text"
-                placeholder="Enter manager access code"
-                value={managerCode}
-                onChange={(e) => setManagerCode(e.target.value)}
-                required
-              />
-              <small style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 4, display: "block" }}>
-                Get this from your regional head
-              </small>
-            </div>
-          )}
-
-          <button
-            id="signup-submit"
-            className="auth-btn-primary"
-            type="submit"
-            disabled={loading}
-          >
-            {loading ? "Creating Account..." : "Create Account"}
-          </button>
-        </form>
-
-        {/* Footer */}
-        <div className="auth-footer">
-          Already have an account?{" "}
-          <Link to="/signin">Sign In</Link>
+        {/* Tagline */}
+        <div style={{ textAlign: "center", marginTop: 20, fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-body)" }}>
+          Syngenta Field Force Intelligence · IITM Hackathon 2026
         </div>
       </div>
     </div>

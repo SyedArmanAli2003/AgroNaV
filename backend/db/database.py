@@ -86,6 +86,8 @@ async def init_tables():
             # so INSERT OR REPLACE dedups correctly (no-op if rows already unique).
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_weather_cache_district_date "
             "ON weather_cache(district, date)",
+            # User management: phone number for new reps
+            "ALTER TABLE users ADD COLUMN phone TEXT",
         ]
         for sql in migrations:
             try:

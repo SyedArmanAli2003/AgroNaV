@@ -127,8 +127,8 @@ function SignIn() {
 
         {/* Footer links */}
         <div className="auth-footer">
-          Don't have an account?{" "}
-          <Link to="/signup">Create one</Link>
+          No account yet?{" "}
+          <Link to="/signup" style={{ color: "var(--text-muted)", textDecoration: "underline" }}>How to get access</Link>
         </div>
         {!isManagerLogin && (
           <div style={{ textAlign: "center", marginTop: 12 }}>
@@ -151,9 +151,9 @@ function SignIn() {
           <div style={{ textAlign: "center", fontSize: 11, color: "var(--text-muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Try a demo account</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
             {[
-              { label: "Rep", email: "rep@agronav.com", pw: "Rep1234!", color: "var(--color-primary)" },
+              { label: "Rep",     email: "rep@agronav.com",     pw: "Rep1234!",     color: "var(--color-primary)" },
               { label: "Manager", email: "manager@agronav.com", pw: "Manager1234!", color: "#3b82f6" },
-              { label: "Admin", email: "admin@agronav.com", pw: "Admin1234!", color: "#7c3aed" },
+              { label: "Admin",   email: "admin@agronav.com",   pw: "Admin1234!",   color: "#7c3aed" },
             ].map(d => (
               <button key={d.label} type="button" onClick={() => { setIdentifier(d.email); setPassword(d.pw); }} style={{ padding: "6px 14px", borderRadius: 99, border: `1px solid ${d.color}`, background: "transparent", color: d.color, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)" }}>
                 {d.label}

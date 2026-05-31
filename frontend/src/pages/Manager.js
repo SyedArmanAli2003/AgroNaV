@@ -70,6 +70,19 @@ function Manager() {
   const [newRep, setNewRep] = useState({ name: "", email: "", rep_id: "", password: "" });
   const [saving, setSaving] = useState(false);
 
+  // ── Create Rep tab state ─────────────────────────────────────────────────────
+  const [createRepForm, setCreateRepForm] = useState({
+    name: "", email: "", password: "", district: "", territory: "", phone: ""
+  });
+  const [createRepSaving, setCreateRepSaving]   = useState(false);
+  const [createRepResult, setCreateRepResult]   = useState(null);   // success payload
+  const [createRepError,  setCreateRepError]    = useState("");
+  const [districts, setDistricts]               = useState([
+    "Jalgaon","Aurangabad","Nashik","Pune","Ahmednagar",
+    "Nalgonda","Guntur","Krishna","Kurnool","Warangal",
+    "Vidisha","Bhopal","Indore","Ujjain","Jabalpur"
+  ]);
+
   const token = localStorage.getItem("agronav_token");
   const authHeader = { Authorization: `Bearer ${token}` };
 
@@ -142,21 +155,29 @@ function Manager() {
     loadData();
   };
 
-  // ── Add Rep Submit ──
+  // ── Add Rep Submit ── (calls authenticated manager endpoint, NOT public /signup)
   const handleAddRep = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch("/signup", {
+      const res = await fetch("/api/manager/create-rep", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...newRep, role: "rep", manager_id: null })
+        headers: { ...authHeader, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newRep.name,
+          email: newRep.email,
+          password: newRep.password,
+          district: newRep.district || "Jalgaon",
+          territory: newRep.territory || "",
+          phone: newRep.phone || ""
+        })
       });
       const d = await res.json();
-      if (d.token) {
-        showToast(`Rep "${newRep.name}" created`);
+      if (d.success) {
+        const creds = d.login_credentials || {};
+        showToast(`Rep "${d.rep?.name}" created — ID: ${creds.rep_id}`);
         setAddRepOpen(false);
-        setNewRep({ name: "", email: "", rep_id: "", password: "" });
+        setNewRep({ name: "", email: "", rep_id: "", password: "", district: "", territory: "", phone: "" });
         loadData();
       } else {
         showToast(d.detail || "Failed to create rep");
@@ -205,8 +226,29 @@ function Manager() {
     setPlanApproving(null);
   };
 
-  const TABS = ["retailers", "reps", "plans", "learning", "model", "heatmap"];
-  const TAB_LABELS = { retailers: "Retailers", reps: "My Team", plans: "Weekly Plans", learning: "Weekly Learning", model: "AI Status", heatmap: "Territory" };
+  // ── Create Rep submit ────────────────────────────────────────────────────────
+  const submitCreateRep = async (e) => {
+    e.preventDefault();
+    setCreateRepSaving(true);
+    setCreateRepError("");
+    setCreateRepResult(null);
+    try {
+      const res = await api.createRep(createRepForm);
+      if (res.success) {
+        setCreateRepResult(res);
+        setCreateRepForm({ name: "", email: "", password: "", district: "", territory: "", phone: "" });
+        loadData(); // refresh rep count
+      } else {
+        setCreateRepError(res.detail || res.message || "Failed to create rep");
+      }
+    } catch (err) {
+      setCreateRepError("Network error — backend may be restarting");
+    }
+    setCreateRepSaving(false);
+  };
+
+  const TABS = ["retailers", "reps", "plans", "create-rep", "learning", "model", "heatmap"];
+  const TAB_LABELS = { retailers: "Retailers", reps: "My Team", plans: "Weekly Plans", "create-rep": "➕ Create Rep", learning: "Weekly Learning", model: "AI Status", heatmap: "Territory" };
 
   return (
     <div className="page-container page-enter" style={{ padding: "20px 16px 100px" }}>
@@ -690,6 +732,120 @@ function Manager() {
                 <Cpu size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
                 <div>Loading model status...</div>
               </div>
+            )}
+          </div>
+        )}
+
+        {/* ── CREATE REP TAB ── */}
+        {tab === "create-rep" && (
+          <div style={{ maxWidth: 600 }}>
+            <h2 style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 600, fontFamily: "var(--font-heading)", display: "flex", alignItems: "center", gap: 8 }}>
+              <UserPlus size={20} /> Create Rep Account
+            </h2>
+            <p style={{ margin: "0 0 24px", fontSize: 13, color: "var(--text-secondary)" }}>
+              Public registration is closed. Use this form to onboard new field reps. Their credentials will appear below — share them securely.
+            </p>
+
+            {/* Success card */}
+            {createRepResult && (
+              <div id="create-rep-success" style={{
+                marginBottom: 24, padding: 20, borderRadius: "var(--radius-md)",
+                background: "rgba(29,158,117,0.08)", border: "1px solid rgba(29,158,117,0.35)",
+                borderLeft: "3px solid #1D9E75",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                  <CheckCircle size={18} color="#1D9E75" />
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "#1D9E75" }}>
+                    Rep created — {createRepResult.rep?.name}
+                  </span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {[
+                    ["Rep ID",    createRepResult.login_credentials?.rep_id],
+                    ["Email",     createRepResult.login_credentials?.email],
+                    ["Password",  createRepResult.login_credentials?.password],
+                    ["District",  createRepResult.rep?.district],
+                    ["Territory", createRepResult.rep?.territory],
+                    ["Phone",     createRepResult.rep?.phone || "—"],
+                  ].map(([label, val]) => (
+                    <div key={label} style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(0,0,0,0.15)", border: "1px solid var(--border-subtle)" }}>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>{label}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", wordBreak: "break-all" }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+                <p style={{ margin: "12px 0 0", fontSize: 11, color: "var(--text-muted)" }}>
+                  ⚠️ Share these credentials securely. The rep should change the password after first login.
+                </p>
+                <button onClick={() => setCreateRepResult(null)} style={{ marginTop: 12, background: "none", border: "1px solid rgba(29,158,117,0.4)", borderRadius: 99, padding: "6px 16px", color: "#1D9E75", fontSize: 12, cursor: "pointer" }}>
+                  Create Another Rep
+                </button>
+              </div>
+            )}
+
+            {/* Error alert */}
+            {createRepError && (
+              <div style={{ marginBottom: 16, padding: "12px 16px", borderRadius: 8, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
+                <AlertTriangle size={14} /> {createRepError}
+              </div>
+            )}
+
+            {/* Form */}
+            {!createRepResult && (
+              <form id="create-rep-form" onSubmit={submitCreateRep} className="glass-card" style={{ padding: 24 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <div className="auth-input-group" style={{ gridColumn: "1/-1" }}>
+                    <label className="auth-label" htmlFor="cr-name">Full Name *</label>
+                    <input id="cr-name" className="glass-input auth-input" required placeholder="e.g. Ramesh Patil"
+                      value={createRepForm.name}
+                      onChange={e => setCreateRepForm(p => ({ ...p, name: e.target.value }))} />
+                  </div>
+                  <div className="auth-input-group">
+                    <label className="auth-label" htmlFor="cr-email">Email Address *</label>
+                    <input id="cr-email" type="email" className="glass-input auth-input" required placeholder="rep@syngenta.com"
+                      value={createRepForm.email}
+                      onChange={e => setCreateRepForm(p => ({ ...p, email: e.target.value }))} />
+                  </div>
+                  <div className="auth-input-group">
+                    <label className="auth-label" htmlFor="cr-phone">Phone</label>
+                    <input id="cr-phone" className="glass-input auth-input" placeholder="+91 9876543210"
+                      value={createRepForm.phone}
+                      onChange={e => setCreateRepForm(p => ({ ...p, phone: e.target.value }))} />
+                  </div>
+                  <div className="auth-input-group">
+                    <label className="auth-label" htmlFor="cr-pw">Temporary Password *</label>
+                    <input id="cr-pw" type="text" className="glass-input auth-input" required placeholder="Min 6 chars"
+                      value={createRepForm.password}
+                      onChange={e => setCreateRepForm(p => ({ ...p, password: e.target.value }))} />
+                  </div>
+                  <div className="auth-input-group">
+                    <label className="auth-label" htmlFor="cr-district">District *</label>
+                    <select id="cr-district" className="glass-input auth-input" required
+                      value={createRepForm.district}
+                      onChange={e => setCreateRepForm(p => ({ ...p, district: e.target.value }))}
+                      style={{ cursor: "pointer" }}>
+                      <option value="">— Select district —</option>
+                      {districts.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                  <div className="auth-input-group">
+                    <label className="auth-label" htmlFor="cr-territory">Territory / Tehsil</label>
+                    <input id="cr-territory" className="glass-input auth-input" placeholder="e.g. Amalner"
+                      value={createRepForm.territory}
+                      onChange={e => setCreateRepForm(p => ({ ...p, territory: e.target.value }))} />
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid var(--border-subtle)", fontSize: 12, color: "var(--text-muted)" }}>
+                  <strong style={{ color: "var(--text-secondary)" }}>Role:</strong> Field Representative (rep) — can log visits, view recommendations, and see their daily route.
+                  A unique Rep ID will be auto-generated (e.g. REP_A3F2C1).
+                </div>
+
+                <button id="cr-submit" type="submit" className="btn-primary" disabled={createRepSaving}
+                  style={{ marginTop: 20, width: "100%", padding: "13px", fontSize: 14 }}>
+                  {createRepSaving ? "Creating account…" : "Create Rep Account"}
+                </button>
+              </form>
             )}
           </div>
         )}

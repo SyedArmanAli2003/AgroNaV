@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from db.database import get_db
-from auth import require_manager, require_any, get_current_user
+from auth import require_manager, require_admin, require_any, get_current_user
 
 router = APIRouter(tags=["manager"])
 
@@ -35,9 +35,21 @@ class RetailerUpdate(BaseModel):
 class RepCreate(BaseModel):
     name: str
     email: str
-    rep_id: Optional[str] = None
     password: str
-    territory_id: Optional[str] = None
+    district: Optional[str] = "Jalgaon"
+    territory: Optional[str] = None
+    phone: Optional[str] = None
+    rep_id: Optional[str] = None   # auto-generated if not supplied
+
+
+class ManagerCreate(BaseModel):
+    name: str
+    email: str
+    password: str
+    district: Optional[str] = "Jalgaon"
+    territory: Optional[str] = None
+    phone: Optional[str] = None
+    rep_id: Optional[str] = None   # auto-generated if not supplied
 
 
 # ── KPIs ──────────────────────────────────────────────────────────────────────
@@ -127,12 +139,21 @@ async def get_retailers(
     if not mgr:
         return {"retailers": []}
 
-    # Return retailers for this manager's territory (or by manager_id)
-    async with db.execute(
-        "SELECT * FROM retailers WHERE (manager_id=? OR territory_id=?) ORDER BY created_at DESC",
-        (mgr["id"], mgr["territory_id"] or "TERR_001")
-    ) as cursor:
-        rows = await cursor.fetchall()
+    # Return retailers for this manager's territory
+    # manager_id column may not exist in older DBs — fallback to territory only
+    try:
+        async with db.execute(
+            "SELECT * FROM retailers WHERE (manager_id=? OR territory_id=?) ORDER BY retailer_id LIMIT 200",
+            (mgr["id"], mgr["territory_id"] or "TERR_001")
+        ) as cursor:
+            rows = await cursor.fetchall()
+    except Exception:
+        # Fallback: territory only (no manager_id column)
+        async with db.execute(
+            "SELECT * FROM retailers WHERE territory_id=? ORDER BY retailer_id LIMIT 200",
+            (mgr["territory_id"] or "TERR_001",)
+        ) as cursor:
+            rows = await cursor.fetchall()
 
     return {"retailers": [dict(r) for r in rows]}
 
@@ -267,7 +288,133 @@ async def assign_territory(
     return {"success": True, "message": f"Territory {territory_id} assigned to {rep_id}"}
 
 
-# ── Debug / Seed Status ────────────────────────────────────────────────────────
+# ── Create Rep (manager-only) ──────────────────────────────────────────────────
+
+@router.post("/manager/create-rep")
+async def create_rep(
+    data: RepCreate,
+    current_user=Depends(require_manager),
+    db=Depends(get_db)
+):
+    """
+    Create a new rep account.
+    Only accessible by role=manager or role=admin.
+    Returns rep credentials so the manager can share them securely.
+    """
+    from auth import hash_password, create_jwt
+
+    # 409 if email already taken
+    async with db.execute("SELECT id FROM users WHERE email=?", (data.email,)) as cur:
+        if await cur.fetchone():
+            raise HTTPException(status_code=409, detail="Rep already exists with that email")
+
+    # Auto-generate rep_id if not provided
+    rep_id = data.rep_id or f"REP_{uuid.uuid4().hex[:6].upper()}"
+
+    # Ensure generated rep_id is unique
+    async with db.execute("SELECT id FROM users WHERE rep_id=?", (rep_id,)) as cur:
+        if await cur.fetchone():
+            rep_id = f"REP_{uuid.uuid4().hex[:8].upper()}"
+
+    pw_hash = hash_password(data.password)
+    district = data.district or "Jalgaon"
+    territory_id = data.territory or district
+
+    # Get manager's DB id so we can link the rep
+    manager_rep_id = current_user.get("sub")
+    async with db.execute("SELECT id FROM users WHERE rep_id=?", (manager_rep_id,)) as cur:
+        mgr_row = await cur.fetchone()
+    manager_db_id = mgr_row["id"] if mgr_row else None
+
+    await db.execute(
+        """INSERT INTO users
+           (email, password_hash, name, rep_id, role, district, state, territory_id, manager_id, phone)
+           VALUES (?,?,?,?,?,?,?,?,?,?)""",
+        (data.email, pw_hash, data.name, rep_id, "rep",
+         district, "Maharashtra", territory_id, manager_db_id, data.phone)
+    )
+    await db.commit()
+
+    return {
+        "success": True,
+        "message": f"Rep '{data.name}' created successfully",
+        "rep": {
+            "rep_id":    rep_id,
+            "name":      data.name,
+            "email":     data.email,
+            "role":      "rep",
+            "district":  district,
+            "territory": territory_id,
+            "phone":     data.phone,
+        },
+        "login_credentials": {
+            "email":    data.email,
+            "password": data.password,   # plaintext — share with rep, they should change it
+            "rep_id":   rep_id,
+        }
+    }
+
+
+# ── Create Manager (admin-only) ────────────────────────────────────────────────
+
+@router.post("/admin/create-manager")
+async def create_manager(
+    data: ManagerCreate,
+    current_user=Depends(require_admin),
+    db=Depends(get_db)
+):
+    """
+    Create a new manager account.
+    Only accessible by role=admin.
+    Returns manager credentials so the admin can share them.
+    """
+    from auth import hash_password
+
+    # 409 if email already taken
+    async with db.execute("SELECT id FROM users WHERE email=?", (data.email,)) as cur:
+        if await cur.fetchone():
+            raise HTTPException(status_code=409, detail="Manager already exists with that email")
+
+    rep_id = data.rep_id or f"MGR_{uuid.uuid4().hex[:6].upper()}"
+
+    async with db.execute("SELECT id FROM users WHERE rep_id=?", (rep_id,)) as cur:
+        if await cur.fetchone():
+            rep_id = f"MGR_{uuid.uuid4().hex[:8].upper()}"
+
+    pw_hash = hash_password(data.password)
+    district = data.district or "Jalgaon"
+    territory_id = data.territory or district
+
+    await db.execute(
+        """INSERT INTO users
+           (email, password_hash, name, rep_id, role, district, state, territory_id)
+           VALUES (?,?,?,?,?,?,?,?)""",
+        (data.email, pw_hash, data.name, rep_id, "manager",
+         district, "Maharashtra", territory_id)
+    )
+    await db.commit()
+
+    return {
+        "success": True,
+        "message": f"Manager '{data.name}' created successfully",
+        "manager": {
+            "rep_id":    rep_id,
+            "name":      data.name,
+            "email":     data.email,
+            "role":      "manager",
+            "district":  district,
+            "territory": territory_id,
+            "phone":     data.phone,
+        },
+        "login_credentials": {
+            "email":    data.email,
+            "password": data.password,
+            "rep_id":   rep_id,
+        }
+    }
+
+
+
 
 @router.get("/debug/seed-status")
 async def seed_status(db=Depends(get_db)):
@@ -284,3 +431,23 @@ async def seed_status(db=Depends(get_db)):
         }
     except Exception as e:
         return {"seeded": False, "error": str(e)}
+
+
+@router.get("/manager/districts")
+async def get_districts(db=Depends(get_db)):
+    """Return distinct districts from the retailers table for dropdowns."""
+    _FALLBACK = [
+        "Jalgaon","Aurangabad","Nashik","Pune","Ahmednagar",
+        "Nalgonda","Guntur","Krishna","Kurnool","Warangal",
+        "Vidisha","Bhopal","Indore","Ujjain","Jabalpur"
+    ]
+    try:
+        async with db.execute(
+            "SELECT DISTINCT district FROM retailers WHERE district IS NOT NULL ORDER BY district"
+        ) as cur:
+            rows = await cur.fetchall()
+        districts = [r["district"] for r in rows if r["district"]]
+        return {"districts": districts or _FALLBACK}
+    except Exception:
+        return {"districts": _FALLBACK}
+

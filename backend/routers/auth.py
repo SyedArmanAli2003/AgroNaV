@@ -35,42 +35,11 @@ class LoginRequest(BaseModel):
 
 @router.post("/signup")
 async def signup(req: SignUpRequest, db=Depends(get_db)):
-    """Register a new user with email/password and optional role."""
-    # Check if email already exists
-    async with db.execute("SELECT id FROM users WHERE email=?", (req.email,)) as cursor:
-        if await cursor.fetchone():
-            raise HTTPException(status_code=400, detail="Email already registered")
-
-    # Check if rep_id already exists
-    async with db.execute("SELECT id FROM users WHERE rep_id=?", (req.rep_id,)) as cursor:
-        if await cursor.fetchone():
-            raise HTTPException(status_code=400, detail="Rep ID already registered")
-
-    pw_hash = hash_password(req.password)
-    role = req.role if req.role in ("rep", "manager", "admin") else "rep"
-
-    await db.execute(
-        """INSERT INTO users
-           (email, password_hash, name, rep_id, role, district, state, territory_id, manager_id)
-           VALUES (?,?,?,?,?,?,?,?,?)""",
-        (req.email, pw_hash, req.name, req.rep_id, role,
-         req.district, req.state, req.territory_id, req.manager_id)
+    """[DISABLED] Public registration is closed. Use POST /api/manager/create-rep instead."""
+    raise HTTPException(
+        status_code=403,
+        detail="Registration is closed. Contact your manager to get access."
     )
-    await db.commit()
-
-    territory = req.district or "Nalgonda"
-    token = create_jwt(req.rep_id, req.email, req.name, territory, role)
-    return {
-        "token": token,
-        "role": role,
-        "user": {
-            "email": req.email,
-            "name": req.name,
-            "rep_id": req.rep_id,
-            "territory": territory,
-            "role": role,
-        }
-    }
 
 
 @router.post("/login")
