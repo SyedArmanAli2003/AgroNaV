@@ -156,11 +156,11 @@ function NavBar() {
           );
         })}
         <button
-          onClick={() => navigate("/select-territory")}
+          onClick={() => navigate("/profile")}
           style={{
             display: "flex", flexDirection: "column", alignItems: "center",
             gap: 3, padding: "8px 16px", border: "none", background: "transparent",
-            color: loc.pathname === "/select-territory" ? "var(--color-primary)" : "var(--text-muted)",
+            color: loc.pathname === "/profile" ? "var(--color-primary)" : "var(--text-muted)",
             fontSize: 10, fontFamily: "var(--font-body)", cursor: "pointer",
           }}
         >

@@ -88,6 +88,9 @@ function LeftPanel({ navigate, onOpenMenu, onScrollTo }) {
 }
 
 function RightPanel({ navigate, isAuthenticated, user, logout, showAccountDropdown, setShowAccountDropdown }) {
+  const role = user?.role || "rep";
+  const isManagerOrAdmin = role === "manager" || role === "admin";
+
   const handleAccountClick = () => {
     if (isAuthenticated) {
       setShowAccountDropdown(!showAccountDropdown);
@@ -111,9 +114,12 @@ function RightPanel({ navigate, isAuthenticated, user, logout, showAccountDropdo
           <div className="icon-circle" style={{ cursor: 'pointer' }} onClick={() => navigate('/alerts')} title="Alert Feed">
             <MessageCircle size={16} color="var(--text-primary)" />
           </div>
-          <div className="icon-circle" style={{ cursor: 'pointer' }} onClick={() => navigate('/manager')} title="Manager Portal">
-            <Users size={16} color="var(--text-primary)" />
-          </div>
+          {/* Manager Portal icon — only for managers/admins */}
+          {isManagerOrAdmin && (
+            <div className="icon-circle" style={{ cursor: 'pointer' }} onClick={() => navigate('/manager')} title="Manager Portal">
+              <Users size={16} color="var(--text-primary)" />
+            </div>
+          )}
           <div className="icon-circle" style={{ cursor: 'pointer' }} onClick={() => navigate('/dashboard')} title="Today's Plan">
             <Globe size={16} color="var(--text-primary)" />
           </div>
@@ -151,14 +157,17 @@ function RightPanel({ navigate, isAuthenticated, user, logout, showAccountDropdo
               >
                 Dashboard
               </div>
-              <div 
-                style={{ padding: '8px 16px', fontSize: '13px', color: 'var(--text-secondary)', cursor: 'pointer' }}
-                onClick={() => { navigate('/manager'); setShowAccountDropdown(false); }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-              >
-                Manager KPIs
-              </div>
+              {/* Manager KPIs — only visible to managers and admins */}
+              {isManagerOrAdmin && (
+                <div 
+                  style={{ padding: '8px 16px', fontSize: '13px', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                  onClick={() => { navigate('/manager'); setShowAccountDropdown(false); }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+                >
+                  Manager KPIs
+                </div>
+              )}
               <div 
                 style={{ padding: '8px 16px', fontSize: '13px', color: '#ef4444', cursor: 'pointer' }}
                 onClick={handleSignOut}
