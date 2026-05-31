@@ -54,8 +54,9 @@ async def log_visit(req: VisitLogRequest, db=Depends(get_db)):
     elif req.outcome in ("Rejected", "none"):
         outcome_score -= 10
 
-    # Clamp to [0, 100]
-    outcome_score = max(0, min(100, outcome_score))
+    # FIXED BUG 7: clamp to [-20, 100] (was max(0, ...)) so active rejections keep
+    # a negative score — recalibration treats these as downvotes, not neutral zeros.
+    outcome_score = max(-20, min(100, outcome_score))
 
     # Normalize the outcome for storage; keep the original label in a notes prefix
     normalized_outcome = _normalize_outcome(req.outcome)

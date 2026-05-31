@@ -165,7 +165,8 @@ async def _write_weather_cache(district_key: str, wx: "WeatherContext") -> None:
                     weather_risk, ndvi_value, ndvi_label, source)
                    VALUES (?, date('now'), ?, ?, ?, ?, ?, ?, ?)""",
                 (district_key, wx["rainfall_mm"], wx["temp_c"], wx["humidity_pct"],
-                 wx["weather_risk"], wx["ndvi_value"], wx["ndvi_label"], wx["source"])
+                 wx["weather_risk"], wx["ndvi_value"], wx["ndvi_label"],
+                 wx.get("source", "fallback"))  # FIXED BUG 9: never KeyError on source
             )
             await conn.commit()
     except Exception as exc:
@@ -203,7 +204,8 @@ def _write_weather_cache_sync(district_key: str, wx: "WeatherContext") -> None:
                 weather_risk, ndvi_value, ndvi_label, source)
                VALUES (?, date('now'), ?, ?, ?, ?, ?, ?, ?)""",
             (district_key, wx["rainfall_mm"], wx["temp_c"], wx["humidity_pct"],
-             wx["weather_risk"], wx["ndvi_value"], wx["ndvi_label"], wx["source"])
+             wx["weather_risk"], wx["ndvi_value"], wx["ndvi_label"],
+             wx.get("source", "fallback"))  # FIXED BUG 9: never KeyError on source
         )
         conn.commit()
         conn.close()

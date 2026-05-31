@@ -9,6 +9,12 @@ router = APIRouter()
 DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday"]
 
 
+# FIXED BUG 5: safe outlet-id extractor — rank_outlets() may key dicts by "id",
+# "outlet_id", or "retailer_id". Used consistently for daily_split AND outlet_map.
+def _oid(o: dict):
+    return o.get("id") or o.get("outlet_id") or o.get("retailer_id", "")
+
+
 def _week_label(week_start_date: str) -> str:
     dt = datetime.strptime(week_start_date, "%Y-%m-%d")
     week_num = dt.isocalendar()[1]
@@ -26,11 +32,11 @@ def _split_by_day(scored: list) -> dict:
     mid = scored[10:15]
     rest = scored[15:25]
     return {
-        "monday":    [o["id"] for o in top[:5]],
-        "tuesday":   [o["id"] for o in top[5:10]],
-        "wednesday": [o["id"] for o in mid],
-        "thursday":  [o["id"] for o in rest[:5]],
-        "friday":    [o["id"] for o in rest[5:10]],
+        "monday":    [_oid(o) for o in top[:5]],     # FIXED BUG 5: safe id access
+        "tuesday":   [_oid(o) for o in top[5:10]],    # FIXED BUG 5: safe id access
+        "wednesday": [_oid(o) for o in mid],          # FIXED BUG 5: safe id access
+        "thursday":  [_oid(o) for o in rest[:5]],     # FIXED BUG 5: safe id access
+        "friday":    [_oid(o) for o in rest[5:10]],   # FIXED BUG 5: safe id access
     }
 
 
@@ -112,7 +118,7 @@ async def generate_weekly_plan(body: dict, db=Depends(get_db)):
     if not top25:
         return {"success": False, "error": "No outlets found for this rep's district"}
 
-    assigned_ids = [o["id"] for o in top25]
+    assigned_ids = [_oid(o) for o in top25]  # FIXED BUG 5: safe id access
     daily_split = _split_by_day(top25)
     week_label = _week_label(week_start_date)
     week_end = _week_end_date(week_start_date)
@@ -132,7 +138,7 @@ async def generate_weekly_plan(body: dict, db=Depends(get_db)):
     async with db.execute("SELECT last_insert_rowid() AS id") as cur:
         plan_id = (await cur.fetchone())["id"]
 
-    outlet_map = {o["id"]: o for o in top25}
+    outlet_map = {_oid(o): o for o in top25}  # FIXED BUG 5: safe id access (aligns with daily_split)
     today_day = datetime.now().strftime("%A").lower()
 
     return {
@@ -206,7 +212,7 @@ async def get_rep_weekly_plan(rep_id: str = Query(...), db=Depends(get_db)):
         ) as cur:
             outlet_rows = await cur.fetchall()
         scored = rank_outlets([dict(r) for r in outlet_rows])
-        outlet_map = {o["id"]: o for o in scored}
+        outlet_map = {_oid(o): o for o in scored}  # FIXED BUG 5: safe id access (aligns with daily_split)
 
     plan["daily_split"] = _enrich_split(daily_split_raw, outlet_map, today_day)
     plan["assigned_outlets"] = assigned_ids

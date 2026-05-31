@@ -38,6 +38,21 @@ async def _rep_context(user_id: str, db) -> dict:
             if row:
                 district = row["district"]
 
+    # FIXED BUG 6: third fallback — derive district from the rep's actual visit
+    # history (visit_logs JOIN outlets) so any rep who has logged a visit gets
+    # their real territory instead of the wrong LIMIT 30 fallback.
+    if not district:
+        async with db.execute(
+            """SELECT o.district FROM visit_logs v
+               JOIN outlets o ON v.outlet_id = o.id
+               WHERE v.rep_id = ? AND o.district IS NOT NULL AND o.district != ''
+               LIMIT 1""",
+            (user_id,)
+        ) as cur:
+            row = await cur.fetchone()
+            if row:
+                district = row["district"]
+
     # Visit count today
     async with db.execute(
         "SELECT COUNT(*) as cnt FROM visit_logs WHERE rep_id = ? AND date = ?",

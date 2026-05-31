@@ -137,9 +137,13 @@ frontend_build_dir = os.path.abspath(
 )
 
 # API path prefixes that must NOT be caught by the React fallback
+# FIXED BUG 3: added all newer router prefixes so the React catchall never
+# intercepts these endpoints (api/ covers /api/* sub-paths; the rest are top-level).
 _API_PREFIXES = (
     "api/", "login", "signup", "recommendations", "visit_log",
-    "recalibrate", "health", "docs", "openapi.json"
+    "recalibrate", "health", "docs", "openapi.json",
+    "competitor", "chat", "route", "farmers", "weekly-plan",
+    "learning", "model", "outcomes",
 )
 
 if os.path.exists(frontend_build_dir):

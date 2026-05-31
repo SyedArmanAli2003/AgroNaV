@@ -117,16 +117,18 @@ async def _do_recalibrate(rep_id, db, days: int = 30) -> dict:
         """SELECT outlet_id,
                   SUM(CASE WHEN outcome IN ('sale','order','Order placed') THEN 1 ELSE 0 END) as wins,
                   COUNT(*) as total,
-                  SUM(CASE WHEN outcome IS NULL OR outcome = '' THEN 1 ELSE 0 END) as no_outcome
+                  SUM(CASE WHEN outcome IS NULL OR outcome = '' THEN 1 ELSE 0 END) as no_outcome,
+                  AVG(COALESCE(outcome_score, 0)) as avg_score
            FROM visit_logs
            WHERE rep_id=? AND date >= ?
            GROUP BY outlet_id""",
         (rep_id, cutoff)
     ) as cursor:
-        logs = await cursor.fetchall()
+        logs = await cursor.fetchall()  # FIXED BUG 7: also fetch avg_score for downvote penalty
 
     # ── Step 2: conversion rate per outlet ────────────────────────────────────
     conversion   = {}
+    avg_scores   = {}   # FIXED BUG 7: per-outlet average outcome_score (may be negative)
     total_wins   = 0
     total_logs   = 0
     total_no_out = 0
@@ -134,6 +136,7 @@ async def _do_recalibrate(rep_id, db, days: int = 30) -> dict:
     for row in logs:
         if row["total"] > 0:
             conversion[row["outlet_id"]] = row["wins"] / row["total"]
+        avg_scores[row["outlet_id"]] = row["avg_score"] or 0.0  # FIXED BUG 7: capture downvote signal
         total_wins   += (row["wins"] or 0)
         total_logs   += (row["total"] or 0)
         total_no_out += (row["no_outcome"] or 0)
@@ -152,7 +155,11 @@ async def _do_recalibrate(rep_id, db, days: int = 30) -> dict:
     for outlet in ranked:
         rate          = conversion.get(outlet["id"], 0.0)
         learning_boost= int(rate * 20)
-        outlet["score"] = min(100, int(outlet["score"] * 0.80) + learning_boost)
+        # FIXED BUG 7: treat a negative average outcome_score as an active downvote —
+        # subtract a penalty (up to 20 pts) so actively-rejected outlets drop below baseline.
+        avg           = avg_scores.get(outlet["id"], 0.0)
+        downvote_penalty = int(min(20, -avg)) if avg < 0 else 0
+        outlet["score"] = max(0, min(100, int(outlet["score"] * 0.80) + learning_boost - downvote_penalty))
         outlet["conversion_rate"] = round(rate, 3)
 
         if outlet["score"] >= 65:   outlet["label"] = "HIGH"

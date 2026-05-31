@@ -340,6 +340,79 @@ async def _classify_with_llm(
     return result, "rule-based"
 
 
+# FIXED BUG 1: synchronous twin of _classify_with_llm so analyze_competitor_observation
+# can call it directly instead of asyncio.run() inside asyncio.to_thread() (nested loop).
+def _classify_with_llm_sync(
+    rep_text: str,
+    nearby_stores: str,
+    outlet_name: str,
+    district: str,
+    tehsil: str,
+    stock_days: int,
+    days_since_purchase: int,
+    crop_stage: str,
+) -> tuple:
+    """Synchronous classification (Gemini → OpenRouter → rule-based).
+
+    The Gemini/OpenRouter SDK calls are already blocking/synchronous, so this is a
+    plain (non-async) version of _classify_with_llm. Returns (result_dict, source_label).
+    """
+    today = date.today().isoformat()
+    prompt = _PROMPT_TEMPLATE.format(
+        rep_text=rep_text or "(no observation entered)",
+        today=today,
+        district=district,
+        tehsil=tehsil,
+        nearby_stores=nearby_stores,
+        outlet_name=outlet_name,
+        stock_days=stock_days,
+        days_since_purchase=days_since_purchase,
+        crop_stage=crop_stage,
+    )
+
+    # ── Gemini ────────────────────────────────────────────────────────────────
+    if GEMINI_API_KEY and not GEMINI_API_KEY.startswith("your_"):
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=GEMINI_API_KEY)
+            model = genai.GenerativeModel(
+                model_name="gemini-2.0-flash",
+                system_instruction=_SYSTEM,
+            )
+            resp = model.generate_content(prompt)
+            text = resp.text.strip().replace("```json", "").replace("```", "").strip()
+            result = json.loads(text)
+            _validate_result(result)
+            return result, "gemini-2.0-flash"
+        except Exception as exc:
+            print(f"[competitor] Gemini failed: {exc}")
+
+    # ── OpenRouter LLaMA ──────────────────────────────────────────────────────
+    if OPENROUTER_API_KEY and not OPENROUTER_API_KEY.startswith("your_"):
+        try:
+            from openai import OpenAI
+            client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=OPENROUTER_API_KEY)
+            resp = client.chat.completions.create(
+                model="meta-llama/llama-3.3-70b-instruct",
+                messages=[
+                    {"role": "system", "content": _SYSTEM},
+                    {"role": "user",   "content": prompt},
+                ],
+                temperature=0.2,
+                max_tokens=400,
+            )
+            text = resp.choices[0].message.content.strip().replace("```json","").replace("```","").strip()
+            result = json.loads(text)
+            _validate_result(result)
+            return result, "openrouter-llama3"
+        except Exception as exc:
+            print(f"[competitor] OpenRouter failed: {exc}")
+
+    # ── Rule-based fallback ───────────────────────────────────────────────────
+    result = _rule_based_classify(rep_text, nearby_stores, outlet_name, stock_days, crop_stage)
+    return result, "rule-based"
+
+
 def _validate_result(r: dict) -> None:
     """Enforce strict rules from the prompt spec. Raises ValueError if broken."""
     required = {"threat_type","threat_level","competitor_name",
@@ -528,39 +601,35 @@ async def analyze_competitor_observation(
         # Step 1: nearby stores (best-effort, truly async httpx)
         nearby_stores = await _get_nearby_stores(lat, lng, radius_m=2000)
 
-        # Step 2 + 3: classify. _classify_with_llm calls SYNCHRONOUS LLM clients
-        # (Gemini / OpenRouter) with no timeout, which would block the event loop.
-        # Since this runs as a fire-and-forget task, offload it to a worker thread
-        # so the server stays responsive to other requests while it works.
-        import asyncio
-
-        def _classify_blocking():
-            return asyncio.run(_classify_with_llm(
-                rep_text=rep_text,
-                nearby_stores=nearby_stores,
-                outlet_name=outlet_name,
-                district=district,
-                tehsil=tehsil,
-                stock_days=14,
-                days_since_purchase=7,
-                crop_stage="vegetative",
-            ))
-
-        result, source = await asyncio.to_thread(_classify_blocking)
+        # FIXED BUG 1: direct synchronous classification call — replaces the
+        # asyncio.run()-inside-asyncio.to_thread() nested-event-loop pattern.
+        result, source = _classify_with_llm_sync(
+            rep_text=rep_text,
+            nearby_stores=nearby_stores,
+            outlet_name=outlet_name,
+            district=district,
+            tehsil=tehsil,
+            stock_days=14,
+            days_since_purchase=7,
+            crop_stage="vegetative",
+        )
 
         # Step 4: persist using the newer column set (own connection)
         today = date.today().isoformat()
         now = datetime.now().isoformat(timespec="seconds")
         try:
             async with aiosqlite.connect(DB_PATH) as conn:
+                # FIXED BUG 2: INSERT uses ONLY the exact competitor_intel columns
+                # defined in schema.sql — removed the duplicate legacy-alias columns
+                # (rep_observation, nearby_stores, at_risk_skus, defensive_tp) which
+                # are not in the canonical table and caused "no such column" failures.
                 await conn.execute(
                     """INSERT INTO competitor_intel
                        (retailer_id, rep_id, date, threat_type, threat_level,
                         competitor_name, at_risk_products, defensive_talking_point,
                         immediate_action, escalate_to_manager, opportunity_flag,
-                        rep_raw_observation, nearby_stores_detected, source, created_at,
-                        rep_observation, nearby_stores, at_risk_skus, defensive_tp)
-                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                        rep_raw_observation, nearby_stores_detected, source, created_at)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (
                         retailer_id, rep_id, today,
                         result.get("threat_type", "none"),
@@ -575,11 +644,6 @@ async def analyze_competitor_observation(
                         nearby_stores,
                         source,
                         now,
-                        # legacy columns (mirror values so get_history keeps working)
-                        rep_text or "",
-                        nearby_stores,
-                        json.dumps(result.get("at_risk_syngenta_products") or []),
-                        result.get("defensive_talking_point") or "",
                     )
                 )
                 await conn.commit()

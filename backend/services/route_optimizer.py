@@ -178,6 +178,28 @@ def _format_stop(stop_num: int, outlet: dict, drive_min: Optional[int] = None) -
     return f"Stop {stop_num}: {name} | Score: {score} | Reason: {reason} | Drive: {drive}"
 
 
+# FIXED BUG 8: helpers for outlets that have no usable lat/lng — they still appear
+# in the output (at the end) but with drive_time "—" and a clear note.
+def _has_coords(outlet: dict) -> bool:
+    """True only if both lat and lng are real (non-None) numbers."""
+    lat, lng = outlet.get("lat"), outlet.get("lng")
+    return isinstance(lat, (int, float)) and isinstance(lng, (int, float))
+
+
+def _format_missing_stop(stop_num: int, outlet: dict) -> str:
+    name   = outlet.get("retailer_name") or outlet.get("name") or "Unknown"
+    score  = round((outlet.get("priority_score") or 0) * 100)
+    reason = _primary_reason(outlet)
+    return f"Stop {stop_num}: {name} | Score: {score} | Reason: {reason} | Drive: — (coordinates not available)"
+
+
+def _missing_outlet_entry(outlet: dict) -> dict:
+    entry = dict(outlet)
+    entry["drive_time"] = "—"
+    entry["note"] = "coordinates not available"
+    return entry
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 5. PUBLIC ENTRY POINT
 # ─────────────────────────────────────────────────────────────────────────────
@@ -205,14 +227,24 @@ async def optimize_route(
           source:              str,    # "google-routes" | "priority-score-fallback"
         }
     """
-    # Select top-N by priority score
-    candidates = sorted(
-        [o for o in outlets if o.get("lat") and o.get("lng")],
-        key=lambda x: x.get("priority_score", 0),
-        reverse=True
-    )[:top_n]
+    # FIXED BUG 8: split into routable (real lat/lng) vs coordinate-less outlets.
+    # Routing/crow-fly only uses outlets with valid coords; the rest are appended
+    # at the end of the output with drive_time "—" so they are never dropped or crash.
+    ranked_all = sorted(outlets, key=lambda x: x.get("priority_score", 0), reverse=True)
+    candidates = [o for o in ranked_all if _has_coords(o)][:top_n]   # FIXED BUG 8
+    no_coords  = [o for o in ranked_all if not _has_coords(o)]       # FIXED BUG 8
 
     if not candidates:
+        # FIXED BUG 8: no routable outlets — still return any coordinate-less ones.
+        if no_coords:
+            lines = [_format_missing_stop(i + 1, o) for i, o in enumerate(no_coords)]
+            return {
+                "ordered_outlet_list": "\n".join(lines),
+                "ordered_outlets": [_missing_outlet_entry(o) for o in no_coords],
+                "total_km": 0.0,
+                "total_minutes": 0,
+                "source": "no-coordinates",
+            }
         return {
             "ordered_outlet_list": "No outlets available",
             "ordered_outlets": [],
@@ -223,10 +255,13 @@ async def optimize_route(
 
     # Single outlet — no routing needed
     if len(candidates) == 1:
-        stop_str = _format_stop(1, candidates[0])
+        # FIXED BUG 8: append any coordinate-less outlets after the single routed stop.
+        lines = [_format_stop(1, candidates[0])]
+        for o in no_coords:
+            lines.append(_format_missing_stop(len(lines) + 1, o))
         return {
-            "ordered_outlet_list": stop_str,
-            "ordered_outlets": candidates,
+            "ordered_outlet_list": "\n".join(lines),
+            "ordered_outlets": candidates + [_missing_outlet_entry(o) for o in no_coords],
             "total_km": 0.0,
             "total_minutes": 15,
             "source": "single-outlet",
@@ -280,9 +315,15 @@ async def optimize_route(
         drive_min = leg_mins[i] if i < len(leg_mins) else None
         lines.append(_format_stop(i + 1, outlet, drive_min))
 
+    # FIXED BUG 8: append coordinate-less outlets at the END with a clear note.
+    ordered_out = list(ordered)
+    for outlet in no_coords:
+        lines.append(_format_missing_stop(len(lines) + 1, outlet))
+        ordered_out.append(_missing_outlet_entry(outlet))
+
     return {
         "ordered_outlet_list": "\n".join(lines),
-        "ordered_outlets":     ordered,
+        "ordered_outlets":     ordered_out,  # FIXED BUG 8: includes coordinate-less outlets at end
         "total_km":            total_km,
         "total_minutes":       total_min,
         "source":              source,
