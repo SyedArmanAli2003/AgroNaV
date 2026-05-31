@@ -289,7 +289,7 @@ def _greeting(role: str, name: str, ctx: dict) -> str:
 # ── LLM call with fallback ────────────────────────────────────────────────────
 
 def _call_glm_sync(system: str, message: str):
-    """Blocking NVIDIA NIM call — must be run in a thread via asyncio.to_thread."""
+    """Blocking NVIDIA NIM call — GLM-5.1. Fast-fail timeout so we can cascade quickly."""
     if not NVIDIA_API_KEY or NVIDIA_API_KEY.startswith("your_"):
         return None
     try:
@@ -297,7 +297,7 @@ def _call_glm_sync(system: str, message: str):
         client = OpenAI(
             base_url="https://integrate.api.nvidia.com/v1",
             api_key=NVIDIA_API_KEY,
-            timeout=12.0,
+            timeout=6.0,  # Fast-fail: GLM often times out, cascade to Llama
         )
         resp = client.chat.completions.create(
             model="z-ai/glm-5.1",
@@ -321,10 +321,69 @@ async def _call_glm(system: str, message: str):
     try:
         return await asyncio.wait_for(
             asyncio.to_thread(_call_glm_sync, system, message),
-            timeout=14.0
+            timeout=8.0  # Slightly above sync timeout for cleanup
         )
     except Exception as e:
         print(f"[chat] GLM async wrapper failed: {e}")
+        return None
+
+
+def _call_llama_sync(system: str, message: str):
+    """Llama-3.3-70B via NVIDIA NIM (blocking)."""
+    if not NVIDIA_API_KEY or NVIDIA_API_KEY.startswith("your_"):
+        return None
+    try:
+        from openai import OpenAI
+        client = OpenAI(
+            base_url="https://integrate.api.nvidia.com/v1",
+            api_key=NVIDIA_API_KEY,
+            timeout=14.0,
+        )
+        resp = client.chat.completions.create(
+            model="meta/llama-3.3-70b-instruct",
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": message},
+            ],
+            temperature=0.3,
+            max_tokens=300,
+            stream=False,
+        )
+        return resp.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"[chat] Llama call failed: {e}")
+        return None
+
+
+async def _call_llama(system: str, message: str):
+    import asyncio
+    try:
+        return await asyncio.wait_for(
+            asyncio.to_thread(_call_llama_sync, system, message), timeout=16.0
+        )
+    except Exception as e:
+        print(f"[chat] Llama async wrapper failed: {e}")
+        return None
+
+
+async def _call_gemini_flash(system: str, message: str):
+    """Gemini 2.0 Flash via google-generativeai."""
+    gemini_key = os.getenv("GEMINI_API_KEY", "")
+    if not gemini_key or gemini_key.startswith("get_from"):
+        return None
+    try:
+        import asyncio
+        import google.generativeai as genai
+        genai.configure(api_key=gemini_key)
+        model_obj = genai.GenerativeModel(
+            "gemini-2.0-flash",
+            system_instruction=system
+        )
+        def _sync_call():
+            return model_obj.generate_content(message).text.strip()
+        return await asyncio.wait_for(asyncio.to_thread(_sync_call), timeout=14.0)
+    except Exception as e:
+        print(f"[chat] Gemini Flash call failed: {e}")
         return None
 
 
@@ -353,10 +412,11 @@ def _fallback_reply(role: str, ctx: dict) -> str:
 
 @router.post("/api/chat")
 async def chat(body: dict, db=Depends(get_db)):
-    message = str(body.get("message", "")).strip()
-    role = str(body.get("role", "rep")).lower()
-    user_id = str(body.get("user_id", "")).strip()
+    message   = str(body.get("message", "")).strip()
+    role      = str(body.get("role", "rep")).lower()
+    user_id   = str(body.get("user_id", "")).strip()
     user_name = str(body.get("name", "there")).strip() or "there"
+    model_id  = str(body.get("model", "gemini-flash")).strip()  # Default: gemini-flash (most reliable)
     extra_ctx = body.get("context") or {}
 
     if role not in ("rep", "manager", "admin"):
@@ -377,12 +437,51 @@ async def chat(body: dict, db=Depends(get_db)):
 
     # Special greeting init message
     if message == "__greeting__":
-        return {"reply": _greeting(role, user_name, ctx), "context": ctx}
+        return {"reply": _greeting(role, user_name, ctx), "context": ctx, "model_used": model_id}
 
     if not message:
-        return {"reply": "Please send a message.", "context": ctx}
+        return {"reply": "Please send a message.", "context": ctx, "model_used": model_id}
 
     system = _system_prompt(role, ctx)
-    reply = await _call_glm(system, message) or _fallback_reply(role, ctx)
 
-    return {"reply": reply, "context": ctx}
+    # ── Smart cascade: try requested model, auto-fallback on failure ──────────
+    reply = None
+    model_used = model_id
+
+    if model_id == "glm-5.1":
+        # GLM → Llama → Gemini cascade (GLM-5.1 times out on NVIDIA NIM)
+        print("[chat] Trying GLM-5.1...")
+        reply = await _call_glm(system, message)
+        if not reply:
+            print("[chat] GLM failed, cascading to Llama 3.3")
+            reply = await _call_llama(system, message)
+            model_used = "llama-3.3" if reply else model_id
+        if not reply:
+            print("[chat] Llama failed, cascading to Gemini Flash")
+            reply = await _call_gemini_flash(system, message)
+            model_used = "gemini-flash" if reply else model_id
+
+    elif model_id == "llama-3.3":
+        # Llama → Gemini cascade
+        print("[chat] Trying Llama 3.3...")
+        reply = await _call_llama(system, message)
+        if not reply:
+            print("[chat] Llama failed, cascading to Gemini Flash")
+            reply = await _call_gemini_flash(system, message)
+            model_used = "gemini-flash" if reply else model_id
+
+    else:  # gemini-flash (default, most reliable)
+        print("[chat] Trying Gemini Flash...")
+        reply = await _call_gemini_flash(system, message)
+        if not reply:
+            print("[chat] Gemini failed, cascading to Llama 3.3")
+            reply = await _call_llama(system, message)
+            model_used = "llama-3.3" if reply else model_id
+
+    # Final rule-based fallback (all LLMs failed)
+    if not reply:
+        print("[chat] All LLMs failed, using rule-based fallback")
+        reply = _fallback_reply(role, ctx)
+        model_used = "fallback"
+
+    return {"reply": reply, "context": ctx, "model_used": model_used}

@@ -189,9 +189,9 @@ function Dashboard() {
       <WelcomeTour userRole={authContext.user?.role || "rep"} />
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "20px 16px" }}>
 
-        {/* Tab bar: Today / My Week */}
+        {/* Tab bar: Today / My Week / Weekly Priority */}
         <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "1px solid var(--glass-border)" }}>
-          {[["today", "Today's List"], ["week", "My Week"]].map(([key, label]) => (
+          {[["today", "Today's List", null], ["week", "My Week", CalendarDays], ["priority", "Weekly Priority", Zap]].map(([key, label, Icon]) => (
             <button key={key} onClick={() => setDashTab(key)} style={{
               background: "none", border: "none", cursor: "pointer",
               padding: "10px 18px", fontSize: 14, fontWeight: 600,
@@ -200,7 +200,7 @@ function Dashboard() {
               borderBottom: dashTab === key ? "2px solid var(--color-primary)" : "2px solid transparent",
               display: "flex", alignItems: "center", gap: 6, transition: "all 0.15s"
             }}>
-              {key === "week" && <CalendarDays size={14} />}
+              {Icon && <Icon size={14} />}
               {label}
             </button>
           ))}
@@ -683,7 +683,52 @@ function Dashboard() {
           </div>
         )}
 
-        {/* Toast */}
+        {/* ── WEEKLY PRIORITY TAB ── */}
+        {dashTab === "priority" && (
+          <div>
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
+              <div>
+                <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)", fontFamily: "var(--font-body)" }}>{dateStr}</p>
+                <h1 style={{ margin: "4px 0 0", fontSize: "clamp(22px, 4vw, 30px)", fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-heading)" }}>
+                  Weekly Priority List
+                </h1>
+                <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>
+                  AI-ranked outlets across your full 7-day plan
+                </p>
+              </div>
+              <span style={{ padding: "6px 14px", borderRadius: 99, background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.4)", color: "#f59e0b", fontSize: 12, fontWeight: 700 }}>
+                Under Development
+              </span>
+            </div>
+
+            {/* Coming soon cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16, marginBottom: 24 }}>
+              {[
+                { icon: "📊", title: "AI-Ranked Weekly Outlets", desc: "CatBoost model will score all territory outlets across the 7-day window, surfacing the highest-conversion visits for each day." },
+                { icon: "🌾", title: "Crop Stage Alignment", desc: "Visit recommendations will align with active kharif/rabi crop stages and pest alert windows from live NDVI + IMD weather data." },
+                { icon: "🗺️", title: "Territory Heatmap", desc: "Visual 7-day coverage map showing which tehsils are over- or under-visited based on historical conversion data." },
+                { icon: "⚡", title: "Real-Time Rebalancing", desc: "Mark a visit done and the weekly list auto-rebalances — pushing urgent stockout outlets to earlier days." },
+              ].map(card => (
+                <div key={card.title} className="glass-card" style={{ padding: 20, opacity: 0.75 }}>
+                  <div style={{ fontSize: 24, marginBottom: 10 }}>{card.icon}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 6, fontFamily: "var(--font-heading)" }}>{card.title}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}>{card.desc}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Dataset preview note */}
+            <div className="glass-card" style={{ padding: 18, borderLeft: "3px solid rgba(245,158,11,0.6)", background: "rgba(245,158,11,0.03)" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#f59e0b", marginBottom: 4 }}>Connected to 4,000+ Retailer Dataset</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.65 }}>
+                This feature will draw on the full Syngenta production dataset (23,862 visit logs, CatBoost v1 + XGBoost ranker)
+                to generate 7-day prioritized outlet sequences. Daily views are live now — weekly optimization is coming in the next release.
+              </div>
+            </div>
+          </div>
+        )}
+
+
         {toast && (
           <div style={{
             position: "fixed", bottom: 82, left: "50%", transform: "translateX(-50%)",

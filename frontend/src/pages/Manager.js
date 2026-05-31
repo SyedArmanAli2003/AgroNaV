@@ -248,7 +248,7 @@ function Manager() {
   };
 
   const TABS = ["retailers", "reps", "plans", "create-rep", "learning", "model", "heatmap"];
-  const TAB_LABELS = { retailers: "Retailers", reps: "My Team", plans: "Weekly Plans", "create-rep": "➕ Create Rep", learning: "Weekly Learning", model: "AI Status", heatmap: "Territory" };
+  const TAB_LABELS = { retailers: "Retailers", reps: "My Team", plans: "Weekly Plans", "create-rep": "Create Rep", learning: "Weekly Learning", model: "AI Status", heatmap: "Territory" };
 
   return (
     <div className="page-container page-enter" style={{ padding: "20px 16px 100px" }}>
@@ -717,7 +717,7 @@ function Manager() {
                       { label: "Inference Time", value: modelInfo.inference_ms ? `${modelInfo.inference_ms}ms` : "—" },
                     ].map(stat => (
                       <div key={stat.label} style={{ padding: 12, background: "var(--glass-bg)", borderRadius: "var(--radius-md)", border: "1px solid var(--glass-border)" }}>
-                        <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 4 }}>{stat.label}</div>
                         <div style={{ fontSize: 16, fontWeight: 700, fontFamily: "var(--font-heading)", color: "var(--color-primary)" }}>{stat.value}</div>
                       </div>
                     ))}
@@ -738,114 +738,114 @@ function Manager() {
 
         {/* ── CREATE REP TAB ── */}
         {tab === "create-rep" && (
-          <div style={{ maxWidth: 600 }}>
-            <h2 style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 600, fontFamily: "var(--font-heading)", display: "flex", alignItems: "center", gap: 8 }}>
-              <UserPlus size={20} /> Create Rep Account
-            </h2>
-            <p style={{ margin: "0 0 24px", fontSize: 13, color: "var(--text-secondary)" }}>
-              Public registration is closed. Use this form to onboard new field reps. Their credentials will appear below — share them securely.
-            </p>
-
-            {/* Success card */}
-            {createRepResult && (
-              <div id="create-rep-success" style={{
-                marginBottom: 24, padding: 20, borderRadius: "var(--radius-md)",
-                background: "rgba(29,158,117,0.08)", border: "1px solid rgba(29,158,117,0.35)",
-                borderLeft: "3px solid #1D9E75",
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                  <CheckCircle size={18} color="#1D9E75" />
-                  <span style={{ fontSize: 15, fontWeight: 700, color: "#1D9E75" }}>
-                    Rep created — {createRepResult.rep?.name}
-                  </span>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  {[
-                    ["Rep ID",    createRepResult.login_credentials?.rep_id],
-                    ["Email",     createRepResult.login_credentials?.email],
-                    ["Password",  createRepResult.login_credentials?.password],
-                    ["District",  createRepResult.rep?.district],
-                    ["Territory", createRepResult.rep?.territory],
-                    ["Phone",     createRepResult.rep?.phone || "—"],
-                  ].map(([label, val]) => (
-                    <div key={label} style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(0,0,0,0.15)", border: "1px solid var(--border-subtle)" }}>
-                      <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 2 }}>{label}</div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", wordBreak: "break-all" }}>{val}</div>
-                    </div>
-                  ))}
-                </div>
-                <p style={{ margin: "12px 0 0", fontSize: 11, color: "var(--text-muted)" }}>
-                  ⚠️ Share these credentials securely. The rep should change the password after first login.
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, fontFamily: "var(--font-heading)", display: "flex", alignItems: "center", gap: 8 }}>
+                  <UserPlus size={20} color="var(--color-primary)" /> Create Rep Account
+                </h2>
+                <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>
+                  Self-registration is disabled. Onboard new field reps and share their credentials securely.
                 </p>
-                <button onClick={() => setCreateRepResult(null)} style={{ marginTop: 12, background: "none", border: "1px solid rgba(29,158,117,0.4)", borderRadius: 99, padding: "6px 16px", color: "#1D9E75", fontSize: 12, cursor: "pointer" }}>
-                  Create Another Rep
-                </button>
               </div>
-            )}
+            </div>
 
             {/* Error alert */}
             {createRepError && (
-              <div style={{ marginBottom: 16, padding: "12px 16px", borderRadius: 8, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ marginBottom: 16, padding: "12px 16px", borderRadius: 10, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
                 <AlertTriangle size={14} /> {createRepError}
               </div>
             )}
 
-            {/* Form */}
+            {/* Success card */}
+            {createRepResult && (
+              <div id="create-rep-success" className="glass-card" style={{ marginBottom: 24, padding: 24, borderLeft: "3px solid var(--color-primary)", background: "rgba(29,158,117,0.05)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+                  <CheckCircle size={20} color="var(--color-primary)" />
+                  <span style={{ fontSize: 16, fontWeight: 700, color: "var(--color-primary)" }}>Rep Created — {createRepResult.rep?.name}</span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 16 }}>
+                  {[["Rep ID", createRepResult.login_credentials?.rep_id], ["Email", createRepResult.login_credentials?.email], ["Password", createRepResult.login_credentials?.password], ["District", createRepResult.rep?.district], ["Territory", createRepResult.rep?.territory], ["Phone", createRepResult.rep?.phone || "—"]].map(([label, val]) => (
+                    <div key={label} style={{ padding: "10px 14px", borderRadius: 8, background: "var(--glass-bg)", border: "1px solid var(--glass-border)" }}>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>{label}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", wordBreak: "break-all" }}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)" }}>⚠️ Share credentials securely. Rep should change password after first login.</p>
+                  <button onClick={() => setCreateRepResult(null)} style={{ flexShrink: 0, marginLeft: 16, background: "none", border: "1px solid rgba(29,158,117,0.4)", borderRadius: 8, padding: "8px 16px", color: "var(--color-primary)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                    + Create Another
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Form + Info two-column layout */}
             {!createRepResult && (
-              <form id="create-rep-form" onSubmit={submitCreateRep} className="glass-card" style={{ padding: 24 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                  <div className="auth-input-group" style={{ gridColumn: "1/-1" }}>
-                    <label className="auth-label" htmlFor="cr-name">Full Name *</label>
-                    <input id="cr-name" className="glass-input auth-input" required placeholder="e.g. Ramesh Patil"
-                      value={createRepForm.name}
-                      onChange={e => setCreateRepForm(p => ({ ...p, name: e.target.value }))} />
+              <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 20, alignItems: "start" }}>
+                {/* Left: Form */}
+                <form id="create-rep-form" onSubmit={submitCreateRep} className="glass-card" style={{ padding: 28 }}>
+                  <p style={{ margin: "0 0 20px", fontSize: 12, fontWeight: 700, color: "var(--color-primary)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Rep Details</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-muted)", marginBottom: 6 }} htmlFor="cr-name">Full Name *</label>
+                      <input id="cr-name" className="glass-input auth-input" required placeholder="e.g. Ramesh Patil" value={createRepForm.name} onChange={e => setCreateRepForm(p => ({ ...p, name: e.target.value }))} />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-muted)", marginBottom: 6 }} htmlFor="cr-email">Email *</label>
+                        <input id="cr-email" type="email" className="glass-input auth-input" required placeholder="rep@syngenta.com" value={createRepForm.email} onChange={e => setCreateRepForm(p => ({ ...p, email: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-muted)", marginBottom: 6 }} htmlFor="cr-phone">Phone</label>
+                        <input id="cr-phone" className="glass-input auth-input" placeholder="+91 98765 43210" value={createRepForm.phone} onChange={e => setCreateRepForm(p => ({ ...p, phone: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-muted)", marginBottom: 6 }} htmlFor="cr-pw">Temporary Password *</label>
+                      <input id="cr-pw" type="text" className="glass-input auth-input" required placeholder="Min 6 characters" value={createRepForm.password} onChange={e => setCreateRepForm(p => ({ ...p, password: e.target.value }))} />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-muted)", marginBottom: 6 }} htmlFor="cr-district">District *</label>
+                        <select id="cr-district" className="glass-input auth-input" required value={createRepForm.district} onChange={e => setCreateRepForm(p => ({ ...p, district: e.target.value }))} style={{ cursor: "pointer" }}>
+                          <option value="">— Select district —</option>
+                          {districts.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-muted)", marginBottom: 6 }} htmlFor="cr-territory">Territory / Tehsil</label>
+                        <input id="cr-territory" className="glass-input auth-input" placeholder="e.g. Amalner" value={createRepForm.territory} onChange={e => setCreateRepForm(p => ({ ...p, territory: e.target.value }))} />
+                      </div>
+                    </div>
                   </div>
-                  <div className="auth-input-group">
-                    <label className="auth-label" htmlFor="cr-email">Email Address *</label>
-                    <input id="cr-email" type="email" className="glass-input auth-input" required placeholder="rep@syngenta.com"
-                      value={createRepForm.email}
-                      onChange={e => setCreateRepForm(p => ({ ...p, email: e.target.value }))} />
+                  <button id="cr-submit" type="submit" className="btn-primary" disabled={createRepSaving} style={{ marginTop: 24, width: "100%", padding: "13px", fontSize: 14 }}>
+                    {createRepSaving ? "Creating account…" : "Create Rep Account"}
+                  </button>
+                </form>
+
+                {/* Right: Info panels */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div className="glass-card" style={{ padding: 20 }}>
+                    <p style={{ margin: "0 0 14px", fontSize: 12, fontWeight: 700, color: "var(--color-primary)", textTransform: "uppercase", letterSpacing: "0.07em" }}>What Happens Next</p>
+                    {[["Rep ID", "Auto-generated unique ID (e.g. REP_A3F2C1)"], ["Role", "Field Rep — can log visits, view AI priority list, and see their daily route"], ["Login", "Rep signs in with their email + temporary password"], ["Security", "Rep should update their password after first login"]].map(([t, d]) => (
+                      <div key={t} style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+                        <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--color-primary)", marginTop: 7, flexShrink: 0 }} />
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 1 }}>{t}</div>
+                          <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>{d}</div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="auth-input-group">
-                    <label className="auth-label" htmlFor="cr-phone">Phone</label>
-                    <input id="cr-phone" className="glass-input auth-input" placeholder="+91 9876543210"
-                      value={createRepForm.phone}
-                      onChange={e => setCreateRepForm(p => ({ ...p, phone: e.target.value }))} />
-                  </div>
-                  <div className="auth-input-group">
-                    <label className="auth-label" htmlFor="cr-pw">Temporary Password *</label>
-                    <input id="cr-pw" type="text" className="glass-input auth-input" required placeholder="Min 6 chars"
-                      value={createRepForm.password}
-                      onChange={e => setCreateRepForm(p => ({ ...p, password: e.target.value }))} />
-                  </div>
-                  <div className="auth-input-group">
-                    <label className="auth-label" htmlFor="cr-district">District *</label>
-                    <select id="cr-district" className="glass-input auth-input" required
-                      value={createRepForm.district}
-                      onChange={e => setCreateRepForm(p => ({ ...p, district: e.target.value }))}
-                      style={{ cursor: "pointer" }}>
-                      <option value="">— Select district —</option>
-                      {districts.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                  </div>
-                  <div className="auth-input-group">
-                    <label className="auth-label" htmlFor="cr-territory">Territory / Tehsil</label>
-                    <input id="cr-territory" className="glass-input auth-input" placeholder="e.g. Amalner"
-                      value={createRepForm.territory}
-                      onChange={e => setCreateRepForm(p => ({ ...p, territory: e.target.value }))} />
+                  <div className="glass-card" style={{ padding: 18, borderLeft: "3px solid var(--color-primary)", background: "rgba(29,158,117,0.04)" }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-primary)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Team Size</div>
+                    <div style={{ fontSize: 36, fontWeight: 700, fontFamily: "var(--font-heading)", color: "var(--color-primary)", lineHeight: 1 }}>{reps.length}</div>
+                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4 }}>reps onboarded in your territory</div>
                   </div>
                 </div>
-
-                <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid var(--border-subtle)", fontSize: 12, color: "var(--text-muted)" }}>
-                  <strong style={{ color: "var(--text-secondary)" }}>Role:</strong> Field Representative (rep) — can log visits, view recommendations, and see their daily route.
-                  A unique Rep ID will be auto-generated (e.g. REP_A3F2C1).
-                </div>
-
-                <button id="cr-submit" type="submit" className="btn-primary" disabled={createRepSaving}
-                  style={{ marginTop: 20, width: "100%", padding: "13px", fontSize: 14 }}>
-                  {createRepSaving ? "Creating account…" : "Create Rep Account"}
-                </button>
-              </form>
+              </div>
             )}
           </div>
         )}

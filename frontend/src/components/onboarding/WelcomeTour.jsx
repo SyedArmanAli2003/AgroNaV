@@ -121,75 +121,76 @@ function WelcomeTour({ userRole = "rep" }) {
 
   return (
     <>
-      {/* Dim overlay */}
+      {/* Lightweight semi-transparent overlay — NO blur so dashboard stays visible */}
       <div style={{
         position: "fixed", inset: 0, zIndex: 1050,
-        background: "rgba(0,0,0,0.55)",
-        backdropFilter: step === 0 ? "blur(4px)" : "none"
+        background: "rgba(0,0,0,0.35)",
       }} onClick={dismiss} />
 
-      {/* Spotlight ring */}
+      {/* Spotlight ring for targeted steps */}
       {current.highlight && <Spotlight selector={current.highlight} />}
 
-      {/* Tooltip card */}
+      {/* Compact hint card — bottom right, not center-blocking */}
       <div style={{
         position: "fixed",
         bottom: 100,
-        left: "50%",
-        transform: "translateX(-50%)",
+        right: 24,
         zIndex: 1200,
-        width: "min(90vw, 440px)",
-        background: "rgba(10,20,15,0.96)",
-        backdropFilter: "blur(24px)",
-        border: "1px solid var(--glass-border-strong)",
-        borderRadius: 20,
-        padding: "24px 24px 20px",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(29,158,117,0.2)"
+        width: "min(88vw, 360px)",
+        background: "rgba(10,20,15,0.97)",
+        backdropFilter: "blur(20px)",
+        border: "1px solid rgba(29,158,117,0.3)",
+        borderRadius: 16,
+        padding: "18px 20px 16px",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(29,158,117,0.15)"
       }}>
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Leaf size={16} color="var(--color-primary)" />
-            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-primary)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              AgroNav Tour {step + 1}/{steps.length}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+            <Leaf size={13} color="var(--color-primary)" />
+            <span style={{ fontSize: 10, fontWeight: 700, color: "var(--color-primary)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+              Quick Tour · {step + 1}/{steps.length}
             </span>
           </div>
-          <button onClick={dismiss} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 2 }}>
-            <X size={18} />
+          <button onClick={dismiss} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 2, lineHeight: 1 }}>
+            <X size={15} />
           </button>
         </div>
 
-        <h3 style={{ margin: "0 0 10px", fontFamily: "var(--font-heading)", fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>
+        <h3 style={{ margin: "0 0 6px", fontFamily: "var(--font-heading)", fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>
           {current.title}
         </h3>
-        <p style={{ margin: "0 0 20px", fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.65 }}>
+        <p style={{ margin: "0 0 14px", fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
           {current.body}
         </p>
 
-        {/* Progress dots */}
-        <div style={{ display: "flex", gap: 5, marginBottom: 16 }}>
+        {/* Progress bar */}
+        <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
           {steps.map((_, i) => (
             <div key={i} style={{
-              height: 4, flex: i === step ? 2 : 1,
-              borderRadius: 99,
-              background: i <= step ? "var(--color-primary)" : "var(--glass-border)",
+              height: 3, flex: i === step ? 2 : 1, borderRadius: 99,
+              background: i <= step ? "var(--color-primary)" : "rgba(255,255,255,0.1)",
               transition: "all 0.3s ease"
             }} />
           ))}
         </div>
 
-        {/* CTA */}
-        <button
-          onClick={next}
-          className="btn-primary"
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 20px", fontSize: 14 }}
-        >
-          {current.cta} {step < steps.length - 1 && <ChevronRight size={16} />}
-        </button>
-
-        <button onClick={dismiss} style={{ display: "block", margin: "10px auto 0", background: "none", border: "none", fontSize: 12, color: "var(--text-muted)", cursor: "pointer" }}>
-          Skip tour
-        </button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <button onClick={dismiss} style={{ background: "none", border: "none", fontSize: 12, color: "var(--text-muted)", cursor: "pointer", padding: 0 }}>
+            Skip
+          </button>
+          <button
+            onClick={next}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: "var(--color-primary)", border: "none", borderRadius: 8,
+              padding: "8px 16px", fontSize: 13, fontWeight: 600,
+              color: "#fff", cursor: "pointer"
+            }}
+          >
+            {current.cta} {step < steps.length - 1 && <ChevronRight size={14} />}
+          </button>
+        </div>
       </div>
     </>
   );

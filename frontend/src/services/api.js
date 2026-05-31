@@ -359,11 +359,11 @@ export const api = {
   },
 
   // Role-aware AI chatbot
-  sendChatMessage: async (message, role, user_id, name = "there", context = null) => {
+  sendChatMessage: async (message, role, user_id, name = "there", model = "glm-5.1", context = null) => {
     const res = await fetch(`${BASE}/api/chat`, {
       method: "POST",
       headers: authHeaders(),
-      body: JSON.stringify({ message, role, user_id, name, context }),
+      body: JSON.stringify({ message, role, user_id, name, model, context }),
     });
     return res.json();
     // Returns: { reply: string, context: {...} }
