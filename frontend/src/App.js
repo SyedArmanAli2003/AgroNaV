@@ -78,7 +78,7 @@ function MainLayout() {
             <Route path="/about"   element={<ErrorBoundary><About /></ErrorBoundary>} />
             <Route path="/guide"   element={<ErrorBoundary><UserGuide /></ErrorBoundary>} />
 
-            {/* Protected routes */}
+            {/* Protected routes — accessible to all authenticated users */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard"          element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
               <Route path="/select-territory"   element={<ErrorBoundary><TerritorySelect /></ErrorBoundary>} />
@@ -86,8 +86,12 @@ function MainLayout() {
               <Route path="/log"                element={<ErrorBoundary><PostVisitLog /></ErrorBoundary>} />
               <Route path="/alerts"             element={<ErrorBoundary><AlertFeed /></ErrorBoundary>} />
               <Route path="/outcomes"           element={<ErrorBoundary><Outcomes /></ErrorBoundary>} />
-              <Route path="/manager"            element={<ErrorBoundary><Manager /></ErrorBoundary>} />
               <Route path="/profile"            element={<ErrorBoundary><ProfileSettings /></ErrorBoundary>} />
+            </Route>
+
+            {/* Manager-only routes — reps get redirected to dashboard */}
+            <Route element={<ProtectedRoute requiredRole="manager" />}>
+              <Route path="/manager" element={<ErrorBoundary><Manager /></ErrorBoundary>} />
             </Route>
 
             {/* Catch-all */}

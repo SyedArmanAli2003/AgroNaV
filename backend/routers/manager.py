@@ -57,6 +57,7 @@ class ManagerCreate(BaseModel):
 @router.get("/manager/kpis")
 async def get_manager_kpis(
     territory: str = "Nalgonda",
+    current_user=Depends(require_manager),
     db=Depends(get_db)
 ):
     today = date.today().isoformat()
