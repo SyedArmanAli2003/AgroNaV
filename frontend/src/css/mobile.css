@@ -1,0 +1,165 @@
+/* =================================================================
+   mobile.css — AgroNav mobile / responsive optimisation layer
+   Loaded globally (App.js). Desktop layout is unaffected; every rule
+   lives inside a max-width media query. Uses !important only where it
+   must override component inline styles.
+   ================================================================= */
+
+/* ---- Global: never allow horizontal scroll on mobile ---- */
+@media (max-width: 768px) {
+  html, body, #root {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  * {
+    /* Stop long unbroken strings (retailer ids, urls) from forcing scroll */
+    overflow-wrap: break-word;
+  }
+}
+
+/* =================================================================
+   TASK 6 — NavBar bottom tab bar (mobile)
+   The bottom tab bar already shows < 768px via design-tokens.css.
+   Here we guarantee 44px+ tap targets, safe-area padding, and that
+   page content is never hidden behind it.
+   ================================================================= */
+@media (max-width: 767px) {
+  .bottom-tab-bar {
+    height: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .bottom-tab-bar a,
+  .bottom-tab-bar button {
+    min-height: 44px;
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* The top sticky header is cramped on phones — compact it */
+  .mobile-topbar {
+    padding: 8px 12px !important;
+  }
+  /* Hide the "Guide" text link & sign-out label text on very small screens
+     to make room — icons/tabs in the bottom bar cover navigation */
+  .mobile-hide-sm {
+    display: none !important;
+  }
+}
+
+/* Give every authenticated page room above the bottom tab bar */
+@media (max-width: 767px) {
+  .page-container,
+  .app-page {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* =================================================================
+   TASK 2C — Dashboard tab bar (Today / My Week / Weekly Priority)
+   Full-width, evenly split, 44px min height, green active underline.
+   ================================================================= */
+@media (max-width: 600px) {
+  .dash-tabs {
+    width: 100%;
+  }
+  .dash-tabs > button {
+    flex: 1 1 0 !important;
+    min-height: 44px;
+    padding: 10px 6px !important;
+    font-size: 13px !important;
+    justify-content: center;
+  }
+}
+
+/* =================================================================
+   TASK 2A/2B — Dashboard recommendation cards
+   ================================================================= */
+@media (max-width: 480px) {
+  .shop-card {
+    width: 100% !important;
+    padding: 16px !important;
+  }
+  /* Retailer name stays >= 16px */
+  .shop-card .shop-name {
+    font-size: 16px !important;
+  }
+  /* Priority pill always visible, no shrink, no wrap */
+  .priority-pill {
+    flex-shrink: 0;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  /* Signal badges: clip to a single row so cards stay compact */
+  .signal-badges {
+    flex-wrap: nowrap !important;
+    overflow: hidden !important;
+  }
+  .signal-badges > span {
+    font-size: 11px !important;
+  }
+}
+
+/* =================================================================
+   TASK 4 — PostVisitLog outcome toggle buttons
+   3 equal-width large toggles in a row on mobile.
+   ================================================================= */
+@media (max-width: 480px) {
+  .toggle-group {
+    gap: 8px;
+  }
+  .toggle-group .toggle-btn {
+    flex: 1 1 0 !important;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 6px !important;
+    font-size: 13px !important;
+    border-radius: 12px !important;
+    text-align: center;
+  }
+  /* Visit-type group can wrap to 2 rows on tiny screens but stay tappable */
+  .toggle-group .toggle-btn svg {
+    flex-shrink: 0;
+  }
+
+  /* Form inputs full width, 48px min height */
+  .glass-input,
+  .auth-input {
+    width: 100% !important;
+    box-sizing: border-box;
+    min-height: 48px;
+    font-size: 16px !important; /* >=16px stops iOS auto-zoom on focus */
+  }
+  textarea.glass-input {
+    min-height: 80px;
+  }
+}
+
+/* =================================================================
+   TASK 1 (signin) + general form pages — full-width controls
+   ================================================================= */
+@media (max-width: 480px) {
+  .auth-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    padding: 24px 18px !important;
+  }
+  .auth-btn-primary,
+  .btn-primary {
+    width: 100%;
+    min-height: 48px;
+    font-size: 15px;
+  }
+}
+
+/* =================================================================
+   Typography floor — nothing smaller than 11px on mobile
+   ================================================================= */
+@media (max-width: 480px) {
+  body {
+    -webkit-text-size-adjust: 100%;
+  }
+}

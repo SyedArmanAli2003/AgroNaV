@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, ShieldCheck, ChevronRight, Leaf } from "lucide-react";
 import { api } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 const MOCK_ALERTS = [
   { id: "m1", type: "demand_spike", outlet_name: "Jalgaon District", message: "Demand spike: projected 583 units vs 4-week avg of 122 units (4.76× — threshold 1.8×). Immediate stock replenishment required.", severity: "high", timestamp: new Date(Date.now() - 2*3600000).toISOString(), trigger_signal: "projected=583 > 1.8 × avg=122", recommended_action: "Visit top outlets immediately. Prioritise fungicide SKUs." },
@@ -23,10 +24,23 @@ function timeAgo(iso) {
 
 function AlertFeed() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [alerts, setAlerts] = useState([]);
   const [isMock, setIsMock] = useState(false);
   const [loading, setLoading] = useState(true);
-  const district = localStorage.getItem("agronav_district") || "Jalgaon";
+  // FIXED: derive the district from the live auth user FIRST (same source as the
+  // navbar chip) so Alerts always matches the rep's current territory. Fall back
+  // to the localStorage keys, then to "Jalgaon" only as a last resort.
+  const district = (() => {
+    const fromUser = user?.district || user?.territory;
+    if (fromUser) return fromUser;
+    const plain = localStorage.getItem("agronav_district");
+    if (plain) return plain;
+    try {
+      const obj = JSON.parse(localStorage.getItem("agronav_rep_territory") || "{}");
+      return obj.district || "Jalgaon";
+    } catch { return "Jalgaon"; }
+  })();
 
   useEffect(() => {
     api.getAlerts(district).then(data => {

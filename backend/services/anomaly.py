@@ -57,14 +57,24 @@ async def get_alerts(district: str, db) -> list[dict]:
         print(f"[anomaly] Live detection failed for '{district}': {exc}")
 
     # ── 2. Fetch any other persisted undismissed alerts from DB ──────────────
+    # FIXED: scope persisted alerts to the requested district so a rep never sees
+    # another territory's alerts (e.g. a Patna rep was seeing Jalgaon alerts).
+    # Matches on the district column when present, and falls back to a name/text
+    # match for legacy rows written before the district column existed.
     try:
+        like = f"%{district}%"
         async with db.execute(
             """SELECT id, outlet_id, type, message, severity, outlet_name,
                       created_at, timestamp, dismissed
                FROM alerts
                WHERE dismissed = 0
+                 AND (
+                       LOWER(district) = LOWER(?)
+                    OR (district IS NULL AND (outlet_name LIKE ? OR message LIKE ?))
+                 )
                ORDER BY id DESC
-               LIMIT 50"""
+               LIMIT 50""",
+            (district, like, like)
         ) as cursor:
             rows = await cursor.fetchall()
             for row in rows:

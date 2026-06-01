@@ -89,7 +89,14 @@ export function AuthProvider({ children }) {
           }
         })();
         setToken(stored);
-        setUser({ ...decoded, ...storedTerritory });
+        const merged = { ...decoded, ...storedTerritory };
+        setUser(merged);
+        // Ensure agronav_district plain-string key is always set so AlertFeed
+        // and other pages can read it without parsing the JSON object.
+        const district = merged.district || storedTerritory.district || decoded.district;
+        if (district && !localStorage.getItem("agronav_district")) {
+          localStorage.setItem("agronav_district", district);
+        }
       } else {
         localStorage.removeItem("agronav_token");
       }

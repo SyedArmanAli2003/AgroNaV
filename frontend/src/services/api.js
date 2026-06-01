@@ -47,11 +47,13 @@ export const signup = async (name, email, repId, password, role = "rep", distric
 };
 
 // --- Recommendations ---
-export const getRecommendations = async (repId, date, district = null) => {
+export const getRecommendations = async (repId, date, district = null, aiMode = null) => {
   const token = localStorage.getItem("agronav_token");
   const dateStr = date || new Date().toISOString().split("T")[0];
   let url = `${BASE}/recommendations?rep_id=${encodeURIComponent(repId)}&date=${dateStr}`;
   if (district) url += `&district=${encodeURIComponent(district)}`;
+  const mode = aiMode || localStorage.getItem("agronav_ai_mode") || "live";
+  if (mode === "fast") url += `&ai_mode=fast`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
@@ -200,11 +202,6 @@ export const api = {
     const res = await fetch(`${BASE}/api/alerts/detect-all?top_n=${topN}`, {
       method: "POST", headers: getAuthHeader()
     });
-    return res.json();
-  },
-
-  getWeeklyStats: async () => {
-    const res = await fetch(`${BASE}/api/visits/weekly-stats`, { headers: getAuthHeader() });
     return res.json();
   },
 

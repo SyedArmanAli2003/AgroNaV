@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ChevronLeft, TrendingUp, Zap, BarChart3, CheckCircle, AlertTriangle } from "lucide-react";
 import { api, getCachedRecommendations, FALLBACK_NBA } from "../services/api";
+import useIsMobile from "../hooks/useIsMobile";
 
 function VisitDetail() {
   const { retailer_id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
   const [rec, setRec] = useState(location.state?.retailer || null);
   const [nba, setNba] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -71,6 +73,16 @@ function VisitDetail() {
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
               <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600, fontFamily: "var(--font-heading)" }}>Next Best Action</h2>
               <Zap size={20} className="ai-pulse" color="var(--color-primary)" />
+              {/* NBA source badge — small, top-right (TASK 3) */}
+              {(advice?.source || advice?.model_used) && (
+                <span style={{
+                  marginLeft: "auto", fontSize: 10, color: "var(--text-muted)",
+                  border: "1px solid var(--glass-border)", borderRadius: 99,
+                  padding: "2px 8px", whiteSpace: "nowrap"
+                }}>
+                  via {advice.source || advice.model_used}
+                </span>
+              )}
             </div>
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-primary)", marginBottom: 4 }}>Product to Pitch</div>
             <div style={{ fontSize: 24, fontWeight: 700, fontFamily: "var(--font-heading)", marginBottom: 14 }}>{product}</div>
@@ -117,9 +129,32 @@ function VisitDetail() {
           </div>
         </div>
 
-        {/* Fixed bottom */}
-        <div style={{ position: "fixed", left: "50%", bottom: 18, transform: "translateX(-50%)", width: "min(860px, calc(100% - 32px))", zIndex: 120, background: "var(--glass-bg-strong)", backdropFilter: "blur(20px)", border: "1px solid var(--glass-border-strong)", borderRadius: 28, padding: 14 }}>
-          <button className="btn-primary" style={{ fontSize: 15, padding: "15px 22px" }} onClick={() => navigate("/log", { state: { retailer: rec } })}>
+        {/* Fixed bottom action bar — on mobile sits above the bottom tab bar
+            (72px) and the button fills the width (TASK 3) */}
+        <div style={{
+          position: "fixed",
+          left: isMobile ? 16 : "50%",
+          right: isMobile ? 16 : undefined,
+          bottom: isMobile ? "calc(72px + env(safe-area-inset-bottom, 0px))" : 18,
+          transform: isMobile ? "none" : "translateX(-50%)",
+          width: isMobile ? "auto" : "min(860px, calc(100% - 32px))",
+          zIndex: 120,
+          background: "var(--glass-bg-strong)", backdropFilter: "blur(20px)",
+          border: "1px solid var(--glass-border-strong)",
+          borderRadius: isMobile ? 16 : 28,
+          padding: isMobile ? 8 : 14
+        }}>
+          <button
+            className="btn-primary"
+            style={{
+              width: "100%",
+              minHeight: isMobile ? 56 : undefined,
+              fontSize: isMobile ? 16 : 15,
+              fontWeight: 700,
+              padding: isMobile ? "0 22px" : "15px 22px"
+            }}
+            onClick={() => navigate("/log", { state: { retailer: rec } })}
+          >
             Log Visit Outcome →
           </button>
         </div>

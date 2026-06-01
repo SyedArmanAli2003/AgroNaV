@@ -42,6 +42,9 @@ async def init_tables():
             # alerts table: add outlet_name and timestamp columns if missing
             "ALTER TABLE alerts ADD COLUMN outlet_name TEXT",
             "ALTER TABLE alerts ADD COLUMN timestamp TEXT",
+            # FIXED: alerts must be scoped to a district so they never leak
+            # across territories (Patna rep was seeing Jalgaon alerts).
+            "ALTER TABLE alerts ADD COLUMN district TEXT",
             # visit_logs: add columns referenced by visit_log.py / visits.py /
             # outcomes.py so older DBs created before these columns existed work.
             "ALTER TABLE visit_logs ADD COLUMN competitor_observation TEXT",

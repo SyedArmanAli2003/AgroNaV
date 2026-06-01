@@ -96,6 +96,7 @@ async def get_recommendations(
     rep_id: str = Query(..., description="Rep ID, e.g. REP_0203"),
     date: str = Query(None, description="Prediction date YYYY-MM-DD"),
     district: str = Query(None, description="Override district (set by TerritorySelect)"),
+    ai_mode: str = Query("live", description="'fast' skips LLM NBA calls, returns rule-based instantly"),
     db=Depends(get_db)
 ):
     """
@@ -158,8 +159,12 @@ async def get_recommendations(
     except Exception:
         pass
 
+    # Track whether we had to fall back from the requested district
+    territory_mismatch = False
+
     # Fallback: if no territory-filtered results, try all retailers
     if not retailers:
+        territory_mismatch = bool(rep_district)  # district was set but returned nothing
         try:
             async with db.execute("SELECT * FROM retailers LIMIT 20") as cursor:
                 rows = await cursor.fetchall()
@@ -367,29 +372,35 @@ async def get_recommendations(
     # Result: 10 LLM calls run in parallel threads → cold load ~15s instead of 150s+.
     from db.database import DB_PATH
     import aiosqlite as _aiosqlite
+    from services.nba_service import _rule_based_nba
 
-    def _nba_thread_worker(ctx):
-        """Sync entry point for thread-pool — runs get_nba in a brand-new event loop."""
-        import asyncio as _asyncio
+    if ai_mode == "fast":
+        # Fast mode: skip all LLM calls, return rule-based NBA instantly (< 1s)
+        print("[recommendations] ai_mode=fast — using rule-based NBA for all outlets")
+        nba_results = [_rule_based_nba(ctx) for _, _, _, _, _, _, ctx in per_entry]
+    else:
+        def _nba_thread_worker(ctx):
+            """Sync entry point for thread-pool — runs get_nba in a brand-new event loop."""
+            import asyncio as _asyncio
 
-        async def _inner():
-            async with _aiosqlite.connect(DB_PATH) as thread_db:
-                thread_db.row_factory = _aiosqlite.Row
-                return await get_nba(ctx, thread_db)
+            async def _inner():
+                async with _aiosqlite.connect(DB_PATH) as thread_db:
+                    thread_db.row_factory = _aiosqlite.Row
+                    return await get_nba(ctx, thread_db)
 
-        return _asyncio.run(_inner())
+            return _asyncio.run(_inner())
 
-    try:
-        nba_results = await asyncio.wait_for(
-            asyncio.gather(
-                *[asyncio.to_thread(_nba_thread_worker, ctx) for _, _, _, _, _, _, ctx in per_entry],
-                return_exceptions=True
-            ),
-            timeout=25.0,  # hard cap: never block the endpoint > 25s
-        )
-    except asyncio.TimeoutError:
-        print("[recommendations] NBA gather timed out after 25s — using rule-based for all")
-        nba_results = [asyncio.TimeoutError("NBA timeout")] * len(per_entry)
+        try:
+            nba_results = await asyncio.wait_for(
+                asyncio.gather(
+                    *[asyncio.to_thread(_nba_thread_worker, ctx) for _, _, _, _, _, _, ctx in per_entry],
+                    return_exceptions=True
+                ),
+                timeout=25.0,  # hard cap: never block the endpoint > 25s
+            )
+        except asyncio.TimeoutError:
+            print("[recommendations] NBA gather timed out after 25s — using rule-based for all")
+            nba_results = [asyncio.TimeoutError("NBA timeout")] * len(per_entry)
 
     recommendations = []
     for (rank, entry, retailer, reasons, has_pest, pest_reason, outlet_context), nba_result in zip(per_entry, nba_results):
@@ -437,6 +448,12 @@ async def get_recommendations(
         "rep_id":       rep_id,
         "date":         date,
         "model_used":   active_model,
+        "ai_mode":      ai_mode,
+        # Set when the requested district had no retailers — frontend shows a banner
+        "territory_warning": (
+            f"No retailers found in '{rep_district}'. Showing sample data from the nearest available territory."
+            if territory_mismatch else None
+        ),
         # District-level weather summary (single Open-Meteo call for all outlets)
         "district_weather": {
             "district":       rep_district or "unknown",

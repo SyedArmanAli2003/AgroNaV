@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Zap, AlertTriangle, RefreshCw, Leaf, Trophy, ChevronLeft } from "lucide-react";
+import { MapPin, Zap, AlertTriangle, RefreshCw, Leaf, Trophy, ChevronLeft, Smartphone, Wifi, Download } from "lucide-react";
 import "../css/landing.css";
 import "../css/app.css";
 
@@ -79,6 +79,91 @@ function About() {
             {TECH_STACK.map(tech => (
               <span key={tech} style={{ background: "var(--glass-bg-strong)", border: "1px solid var(--glass-border)", borderRadius: 99, padding: "8px 18px", fontSize: 13, color: "var(--text-secondary)" }}>{tech}</span>
             ))}
+          </div>
+        </section>
+
+        {/* Works on any device — mobile story (TASK 7) */}
+        <section style={{ marginBottom: 56 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20, fontFamily: "var(--font-heading)" }}>Works on any device</h2>
+          <div style={{
+            display: "flex", gap: 28, alignItems: "center", flexWrap: "wrap",
+            justifyContent: "center"
+          }}>
+            {/* CSS phone frame */}
+            <div style={{
+              width: 200, height: 410, flexShrink: 0,
+              borderRadius: 34, padding: 10,
+              background: "linear-gradient(160deg, #1a2a20, #0c140e)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              boxShadow: "0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)",
+              position: "relative",
+            }}>
+              {/* notch */}
+              <div style={{
+                position: "absolute", top: 18, left: "50%", transform: "translateX(-50%)",
+                width: 70, height: 18, borderRadius: 99, background: "#000", zIndex: 2,
+              }} />
+              {/* screen */}
+              <div style={{
+                width: "100%", height: "100%", borderRadius: 26, overflow: "hidden",
+                background: "radial-gradient(ellipse at 80% 0%, rgba(29,158,117,0.18), transparent 55%), #0f1a14",
+                display: "flex", flexDirection: "column", padding: "30px 14px 14px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
+                  <Leaf size={16} color="var(--color-primary)" />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>AgroNav</span>
+                </div>
+                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Today's Priority</div>
+                {/* mock cards */}
+                {[
+                  { n: "Krishi Suppliers", s: 91, c: "#ef4444" },
+                  { n: "Bharat Kendra", s: 84, c: "#f59e0b" },
+                  { n: "Green Field Agro", s: 67, c: "#22c55e" },
+                ].map(card => (
+                  <div key={card.n} style={{
+                    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: 10, padding: "8px 10px", marginBottom: 8,
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                  }}>
+                    <span style={{ fontSize: 10, color: "#fff", fontWeight: 600 }}>{card.n}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: card.c }}>{card.s}%</span>
+                  </div>
+                ))}
+                <div style={{ marginTop: "auto", height: 34, borderRadius: 99, background: "var(--color-primary)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff" }}>
+                  View Route →
+                </div>
+              </div>
+            </div>
+
+            {/* Feature points */}
+            <div style={{ flex: "1 1 280px", maxWidth: 380, display: "flex", flexDirection: "column", gap: 16 }}>
+              {[
+                { Icon: Download, title: "Install on Android or iOS", desc: "Add to home screen — no app store needed. One tap to install." },
+                { Icon: Zap, title: "Loads instantly", desc: "Opens straight from your home screen like a native app." },
+                { Icon: Wifi, title: "Works offline", desc: "Cached recommendations keep working in low- or no-signal field areas." },
+              ].map(f => {
+                const Icon = f.Icon;
+                return (
+                  <div key={f.title} className="glass-card" style={{ display: "flex", gap: 14, alignItems: "flex-start", padding: 16 }}>
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                      background: "rgba(29,158,117,0.15)", border: "1px solid rgba(29,158,117,0.3)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Icon size={18} color="var(--color-primary)" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-heading)", marginBottom: 4 }}>{f.title}</div>
+                      <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.55 }}>{f.desc}</div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                <Smartphone size={14} color="var(--color-primary)" />
+                Progressive Web App · installable · offline-first
+              </div>
+            </div>
           </div>
         </section>
 

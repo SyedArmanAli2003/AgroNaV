@@ -1,0 +1,38 @@
+# AgroNav backend — locked dependency versions (IMPROVED: clean UTF-8, pinned to the
+# versions the app is verified against so deployment matches dev exactly).
+# Note: scikit-learn is pinned to 1.4.2; Model 2 (XGBoost pipeline) was pickled on
+# 1.6.1, so it loads via the graceful fallback in services/model2_inference.py and
+# Model 1 (CatBoost) serves recommendations. This is expected, not an error.
+
+# ── Web framework ─────────────────────────────────────────────
+fastapi==0.111.0
+uvicorn==0.29.0
+python-multipart==0.0.9
+
+# ── Database ──────────────────────────────────────────────────
+aiosqlite==0.20.0
+
+# ── Config / validation ───────────────────────────────────────
+python-dotenv==1.0.0
+pydantic==2.7.0
+
+# ── HTTP / LLM clients ────────────────────────────────────────
+httpx==0.28.1
+openai==2.37.0
+google-generativeai==0.8.6
+
+# ── ML models + explainability ────────────────────────────────
+catboost==1.2.10
+shap==0.49.1
+xgboost==3.2.0
+scikit-learn==1.4.2
+joblib==1.5.3
+pandas==2.2.0
+numpy==1.26.4
+
+# ── Auth ──────────────────────────────────────────────────────
+python-jose==3.5.0
+passlib==1.7.4
+bcrypt==5.0.0
+cryptography==48.0.0
+

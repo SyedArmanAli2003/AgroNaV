@@ -455,7 +455,8 @@ async def _persist_alert(result: AnomalyResult, db) -> int | None:
         return None
 
     today = date.today().isoformat()
-    outlet_name = result.affected_outlets[0] if result.affected_outlets else result.sales_data.get("district", "unknown")
+    district = result.sales_data.get("district", "unknown")
+    outlet_name = result.affected_outlets[0] if result.affected_outlets else district
 
     # Dedup: skip if same type already exists for this outlet today
     try:
@@ -471,10 +472,11 @@ async def _persist_alert(result: AnomalyResult, db) -> int | None:
 
     try:
         now = datetime.now().isoformat(timespec="seconds")
+        # FIXED: persist district so the alert stays scoped to its territory
         await db.execute(
-            """INSERT INTO alerts (outlet_id, type, message, severity, outlet_name, created_at, timestamp, dismissed)
-               VALUES (?, ?, ?, ?, ?, ?, ?, 0)""",
-            (0, result.alert_type, result.message, result.severity, outlet_name, now, now)
+            """INSERT INTO alerts (outlet_id, type, message, severity, outlet_name, district, created_at, timestamp, dismissed)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)""",
+            (0, result.alert_type, result.message, result.severity, outlet_name, district, now, now)
         )
         await db.commit()
 

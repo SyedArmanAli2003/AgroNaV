@@ -77,11 +77,12 @@ async def generate_live_alerts(district: str, db) -> int:
             ) as c2:
                 if await c2.fetchone():
                     continue
+            # FIXED: persist the district so alerts stay scoped to their territory
             await db.execute(
                 """INSERT INTO alerts
-                   (type, message, severity, outlet_name, created_at, timestamp, dismissed)
-                   VALUES (?,?,?,?,datetime('now'),datetime('now'),0)""",
-                (atype, msg, sev, district)
+                   (type, message, severity, outlet_name, district, created_at, timestamp, dismissed)
+                   VALUES (?,?,?,?,?,datetime('now'),datetime('now'),0)""",
+                (atype, msg, sev, district, district)
             )
             created += 1
         await db.commit()

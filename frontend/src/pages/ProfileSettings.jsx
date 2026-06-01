@@ -25,14 +25,24 @@ export default function ProfileSettings() {
     try {
       const res = await updateProfile({ name: name.trim(), district, state });
       if (res?.success) {
+        const savedDistrict = res.user?.district || district;
+        const savedState    = res.user?.state    || state;
         // Update AuthContext so navbar reflects change immediately
         setUser(prev => ({
           ...prev,
           name: res.user?.name || name.trim(),
-          district: res.user?.district || district,
-          territory: res.user?.district || district,
-          state: res.user?.state || state,
+          district: savedDistrict,
+          territory: savedDistrict,
+          state: savedState,
         }));
+        // Persist territory to localStorage so AlertFeed and Dashboard pick it up
+        localStorage.setItem("agronav_district", savedDistrict);
+        localStorage.setItem("agronav_rep_territory", JSON.stringify({
+          district: savedDistrict, territory: savedDistrict, state: savedState
+        }));
+        // Clear recommendation cache so Dashboard re-fetches for the new territory
+        localStorage.removeItem("agronav_recommendations");
+        localStorage.removeItem("agronav_last_prefetch");
         setStatus({ type: "success", msg: "Profile updated successfully!" });
       }
     } catch (err) {

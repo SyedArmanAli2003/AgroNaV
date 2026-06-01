@@ -97,3 +97,63 @@ test('App.js has manager-only route guarded by requiredRole', () => {
   expect(src).toContain('/manager');
   expect(src).toContain('manager');
 });
+
+// ── Mobile optimisation regression guards ──────────────────────────
+
+test('MOBILE Task 1 — manifest is standalone, portrait, dark bg', () => {
+  const m = JSON.parse(readSrc('../public/manifest.json'));
+  expect(m.display).toBe('standalone');
+  expect(m.orientation).toBe('portrait');
+  expect(m.background_color).toBe('#0f1a14');
+  expect(m.theme_color).toBe('#1D9E75');
+  expect(m.start_url).toBe('/');
+  expect(m.icons.length).toBeGreaterThanOrEqual(2);
+});
+
+test('MOBILE Task 1 — index.html has iOS PWA + locked viewport meta', () => {
+  const html = readSrc('../public/index.html');
+  expect(html).toContain('apple-mobile-web-app-capable');
+  expect(html).toContain('apple-mobile-web-app-status-bar-style');
+  expect(html).toContain('apple-mobile-web-app-title');
+  expect(html).toContain('maximum-scale=1');
+  expect(html).toContain('user-scalable=no');
+});
+
+test('MOBILE Task 1 — PWA install banner wired into App.js', () => {
+  expect(readSrc('App.js')).toContain('PWAInstallBanner');
+  const b = readSrc('components/PWAInstallBanner.jsx');
+  expect(b).toContain('beforeinstallprompt');
+  expect(b).toContain('Install AgroNav');
+  expect(b).toContain('agronav_pwa_dismissed');
+});
+
+test('MOBILE — useIsMobile hook exists and is used by key components', () => {
+  expect(readSrc('hooks/useIsMobile.js')).toContain('matchMedia');
+  expect(readSrc('pages/Dashboard.js')).toContain('useIsMobile');
+  expect(readSrc('pages/VisitDetail.jsx')).toContain('useIsMobile');
+  expect(readSrc('pages/PostVisitLog.jsx')).toContain('useIsMobile');
+  expect(readSrc('components/ChatBot.jsx')).toContain('useIsMobile');
+});
+
+test('MOBILE — mobile.css loaded and covers nav/tabs/inputs', () => {
+  expect(readSrc('App.js')).toContain('mobile.css');
+  const css = readSrc('css/mobile.css');
+  expect(css).toContain('overflow-x: hidden');
+  expect(css).toContain('.bottom-tab-bar');
+  expect(css).toContain('.dash-tabs');
+  expect(css).toContain('min-height: 52px'); // outcome toggle buttons
+});
+
+test('MOBILE Task 4 — PostVisitLog has rejection reason + collapsible competitor', () => {
+  const src = readSrc('pages/PostVisitLog.jsx');
+  expect(src).toContain('rejectionReason');
+  expect(src).toContain("outcome === \"Rejected\"");
+  expect(src).toContain('Add competitor note');
+  expect(src).toContain('showCompetitor');
+});
+
+test('MOBILE Task 7 — About page has mobile story section', () => {
+  const src = readSrc('pages/About.jsx');
+  expect(src).toContain('Works on any device');
+  expect(src).toContain('Works offline');
+});

@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, Store, Megaphone, Users, CheckCircle, Handshake, XCircle, WifiOff, Shield, AlertTriangle, TrendingUp } from "lucide-react";
+import { ChevronLeft, Store, Megaphone, Users, CheckCircle, Handshake, XCircle, WifiOff, Shield, AlertTriangle, TrendingUp, Plus } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { api, postVisitLog } from "../services/api";
 import { queueVisitLog } from "../services/offline";
 import { Select } from "../components/ui/Select";
+import useIsMobile from "../hooks/useIsMobile";
+
+const REJECTION_REASONS = [
+  "Price too high", "Already stocked", "Competitor product",
+  "No demand now", "Credit terms", "Other"
+];
 
 const SYNGENTA_PRODUCTS = [
   "Tilt 250 EC", "Score 250 EC", "Kavach 75 WP", "Amistar 250 SC",
@@ -30,6 +36,7 @@ function PostVisitLog() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const preselected = location.state?.retailer;
 
   const [retailers, setRetailers] = useState([]);
@@ -37,10 +44,12 @@ function PostVisitLog() {
   const [visitType, setVisitType] = useState("");
   const [product, setProduct] = useState(preselected?.product_recommended || "");
   const [outcome, setOutcome] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState("");
-  // Competitor intelligence
+  // Competitor intelligence (collapsible on mobile)
+  const [showCompetitor, setShowCompetitor] = useState(false);
   const [compObs, setCompObs] = useState("");
   const [compAnalyzing, setCompAnalyzing] = useState(false);
   const [compResult, setCompResult] = useState(null);
@@ -121,6 +130,7 @@ function PostVisitLog() {
       visit_type: visitType,
       product_discussed: product,
       outcome,
+      rejection_reason: outcome === "Rejected" ? rejectionReason : "",
       notes,
       competitor_observation: compObs || "",
       date: new Date().toISOString().split("T")[0],
@@ -211,9 +221,38 @@ function PostVisitLog() {
               );
             })}
           </div>
+
+          {/* Rejection reason — only when outcome is "Rejected" (TASK 4) */}
+          {outcome === "Rejected" && (
+            <div style={{ marginTop: 14 }}>
+              <p className="section-label" style={{ marginBottom: 8 }}>Reason for rejection</p>
+              <Select
+                options={REJECTION_REASONS.map(r => ({ value: r, label: r }))}
+                value={rejectionReason}
+                onChange={setRejectionReason}
+                placeholder="— Select reason —"
+              />
+            </div>
+          )}
         </div>
 
-        {/* Competitor Observation */}
+        {/* Competitor Observation — collapsible (TASK 4) */}
+        {!showCompetitor ? (
+          <button
+            type="button"
+            onClick={() => setShowCompetitor(true)}
+            style={{
+              display: "flex", alignItems: "center", gap: 8, alignSelf: "flex-start",
+              background: "var(--glass-bg)", border: "1px dashed var(--glass-border)",
+              borderRadius: 12, padding: "12px 16px", minHeight: 48,
+              color: "var(--color-primary)", fontSize: 14, fontWeight: 600,
+              cursor: "pointer", fontFamily: "var(--font-body)", width: "100%",
+              justifyContent: "center",
+            }}
+          >
+            <Plus size={16} /> Add competitor note
+          </button>
+        ) : (
         <div className="glass-card">
           <p className="section-label">
             <Shield size={13} style={{ verticalAlign: "-1px", marginRight: 5 }} />
@@ -334,6 +373,7 @@ function PostVisitLog() {
             </div>
           )}
         </div>
+        )}
 
         {/* Notes */}
         <div className="glass-card">
@@ -341,12 +381,27 @@ function PostVisitLog() {
           <textarea className="glass-input" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any context for this visit…" rows={3} style={{ resize: "vertical" }} />
         </div>
 
-        <button type="submit" className="btn-primary" disabled={!isReady || submitting} style={{ opacity: isReady ? 1 : 0.4 }}>
+        {/* Submit — fixed to bottom on mobile, above the tab bar (TASK 4) */}
+        <button
+          type="submit"
+          className="btn-primary"
+          disabled={!isReady || submitting}
+          style={isMobile ? {
+            position: "fixed",
+            left: 16, right: 16,
+            bottom: "calc(72px + env(safe-area-inset-bottom, 0px))",
+            width: "auto", minHeight: 56, fontSize: 16, fontWeight: 700,
+            zIndex: 120, opacity: isReady ? 1 : 0.5,
+            boxShadow: "0 8px 28px rgba(29,158,117,0.4)",
+          } : { opacity: isReady ? 1 : 0.4 }}
+        >
           {submitting ? "Saving…" : "Submit Visit Log"}
         </button>
         <p style={{ textAlign: "center", fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
           Logged outcomes are used in Sunday's model retraining
         </p>
+        {/* Spacer so the fixed submit button never covers the note on mobile */}
+        {isMobile && <div style={{ height: 80 }} aria-hidden="true" />}
       </form>
 
       {/* Toast */}

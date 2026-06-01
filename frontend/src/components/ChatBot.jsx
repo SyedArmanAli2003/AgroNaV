@@ -2,9 +2,9 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { MessageCircle, X, Send, Bot, ChevronDown } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
+import useIsMobile from "../hooks/useIsMobile";
 
-// TASK 6: use CSS clamp so the panel fills the screen on narrow phones
-// (iPhone 12 Pro = 390px) while staying capped at 360px on desktop.
+// Desktop panel size (capped). Mobile uses full-width / 70vh — see component.
 const PANEL_W = "min(360px, calc(100vw - 16px))";
 const PANEL_H = "min(480px, calc(100dvh - 180px))";
 
@@ -16,6 +16,7 @@ const MODELS = [
 
 export default function ChatBot() {
   const { user, isAuthenticated } = useAuth();
+  const isMobile = useIsMobile();
   const [open, setOpen]           = useState(false);
   const [messages, setMessages]   = useState([]);
   const [input, setInput]         = useState("");
@@ -104,7 +105,9 @@ export default function ChatBot() {
         onClick={handleToggle}
         aria-label={open ? "Close chat" : "Open AI assistant"}
         style={{
-          position: "fixed", bottom: 90, right: 20,
+          position: "fixed",
+          bottom: isMobile ? "calc(84px + env(safe-area-inset-bottom, 0px))" : 90,
+          right: isMobile ? 16 : 20,
           width: 52, height: 52, borderRadius: "50%",
           background: open ? "rgba(255,255,255,0.15)" : "var(--color-primary, #1D9E75)",
           border: "1.5px solid rgba(255,255,255,0.18)",
@@ -119,13 +122,26 @@ export default function ChatBot() {
       {/* Chat panel */}
       {open && (
         <div style={{
-          /* TASK 6: right: 8px on mobile keeps the panel inside the viewport */
-          position: "fixed", bottom: 152, right: "max(8px, env(safe-area-inset-right, 8px))",
-          width: PANEL_W, height: PANEL_H,
+          /* TASK 5: full-width 70vh panel above the nav bar on mobile;
+             capped floating panel on desktop */
+          position: "fixed",
+          ...(isMobile
+            ? {
+                left: 0, right: 0,
+                bottom: "calc(64px + env(safe-area-inset-bottom, 0px))",
+                width: "100vw",
+                height: "70vh",
+                borderRadius: "20px 20px 0 0",
+              }
+            : {
+                bottom: 152, right: "max(8px, env(safe-area-inset-right, 8px))",
+                width: PANEL_W, height: PANEL_H,
+                borderRadius: 20,
+              }),
           display: "flex", flexDirection: "column",
           background: "rgba(10, 20, 14, 0.97)",
           border: "1px solid rgba(255,255,255,0.12)",
-          borderRadius: 20, backdropFilter: "blur(24px)",
+          backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
           boxShadow: "0 12px 48px rgba(0,0,0,0.55)",
           zIndex: 1099, overflow: "hidden",

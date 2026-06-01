@@ -45,6 +45,7 @@ function TerritorySelect() {
     } catch { /* Non-fatal */ }
     const territoryData = { state: selectedState, district: selectedDistrict, territory: selectedDistrict, territory_id: territoryId };
     localStorage.setItem("agronav_rep_territory", JSON.stringify(territoryData));
+    localStorage.setItem("agronav_district", selectedDistrict);  // plain-string key used by AlertFeed
     // Clear stale recommendation cache so Dashboard fetches fresh data for the new territory
     localStorage.removeItem("agronav_recommendations");
     localStorage.removeItem("agronav_last_prefetch");

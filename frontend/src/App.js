@@ -4,10 +4,12 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import NavBar from "./components/NavBar";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ChatBot from "./components/ChatBot";
+import PWAInstallBanner from "./components/PWAInstallBanner";
 import { Leaf } from "lucide-react";
 import "./index.css";
 import "./css/landing.css";
 import "./css/app.css";
+import "./css/mobile.css";
 
 // Eager (critical path)
 import Landing from "./pages/Landing";
@@ -101,6 +103,8 @@ function MainLayout() {
       </div>
       {/* Floating AI chatbot — visible on all authenticated pages */}
       {!isPublic && <ChatBot />}
+      {/* PWA install prompt — appears once on supported mobile browsers */}
+      <PWAInstallBanner />
     </>
   );
 }
