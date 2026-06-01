@@ -18,6 +18,78 @@ from services.district_anomaly import detect_district_anomaly, detect_all_distri
 router = APIRouter()
 
 
+# IMPROVED: generate REAL demand-spike / demand-drop alerts from retailer_pos data
+# (anchored to the latest transaction date so it works on the historical dataset),
+# replacing reliance on static seeded alerts. Best-effort — never breaks the feed.
+async def generate_live_alerts(district: str, db) -> int:
+    created = 0
+    try:
+        # Anchor the window to the most recent POS date for this district
+        async with db.execute(
+            """SELECT MAX(p.transaction_date) AS anchor
+               FROM retailer_pos p JOIN retailers r ON p.retailer_id = r.retailer_id
+               WHERE r.district = ?""",
+            (district,)
+        ) as cur:
+            row = await cur.fetchone()
+        anchor = row["anchor"] if row else None
+        if not anchor:
+            return 0
+
+        async with db.execute(
+            """SELECT p.sku_name AS sku,
+                      SUM(CASE WHEN p.transaction_date > date(?, '-7 days')
+                               THEN p.sku_qty ELSE 0 END) AS this_week,
+                      SUM(CASE WHEN p.transaction_date BETWEEN date(?, '-28 days')
+                                                          AND date(?, '-7 days')
+                               THEN p.sku_qty ELSE 0 END) / 3.0 AS avg_3w
+               FROM retailer_pos p JOIN retailers r ON p.retailer_id = r.retailer_id
+               WHERE r.district = ? AND p.sku_name != ''
+               GROUP BY p.sku_name
+               HAVING avg_3w > 0
+               ORDER BY this_week DESC
+               LIMIT 50""",
+            (anchor, anchor, anchor, district)
+        ) as cur:
+            rows = await cur.fetchall()
+
+        for r in rows:
+            sku = r["sku"]
+            tw = r["this_week"] or 0
+            avg = r["avg_3w"] or 0
+            if avg <= 0:
+                continue
+            atype = sev = msg = None
+            if tw > 1.8 * avg:
+                atype, sev = "demand_spike", "high"
+                msg = (f"Demand spike: {sku} selling {round(tw / avg, 1)}x normal in "
+                       f"{district} — stock up and prioritise top retailers.")
+            elif tw < 0.5 * avg:
+                atype, sev = "demand_drop", "medium"
+                drop = round((1 - tw / max(avg, 1)) * 100)
+                msg = (f"Demand drop: {sku} down {drop}% vs 3-week average in "
+                       f"{district} — check competitor activity.")
+            if not atype:
+                continue
+            # Dedupe: skip if an identical active alert already exists
+            async with db.execute(
+                "SELECT id FROM alerts WHERE message=? AND dismissed=0", (msg,)
+            ) as c2:
+                if await c2.fetchone():
+                    continue
+            await db.execute(
+                """INSERT INTO alerts
+                   (type, message, severity, outlet_name, created_at, timestamp, dismissed)
+                   VALUES (?,?,?,?,datetime('now'),datetime('now'),0)""",
+                (atype, msg, sev, district)
+            )
+            created += 1
+        await db.commit()
+    except Exception as e:
+        print(f"[alerts] live alert generation skipped: {e}")
+    return created
+
+
 @router.get("")
 async def list_alerts(
     district: str = Query("Jalgaon", description="District to detect anomalies for"),
@@ -27,13 +99,16 @@ async def list_alerts(
     Return active alerts for a district.
 
     # What it does:
-    #   1. Runs live statistical anomaly detection (6-week rolling sales from retailer_pos)
-    #   2. Merges with any undismissed alerts already in the DB
-    #   3. Returns sorted by severity (high first)
+    #   1. IMPROVED: generates live demand-spike/drop alerts from real POS data
+    #   2. Runs live statistical anomaly detection (6-week rolling sales from retailer_pos)
+    #   3. Merges with any undismissed alerts already in the DB
+    #   4. Returns sorted by severity (high first)
     # Input: district query param (defaults to Jalgaon for demo)
     # Output: List of alert dicts
     """
     try:
+        # IMPROVED: refresh data-driven alerts before reading the table
+        await generate_live_alerts(district, db)
         alerts = await get_alerts(district, db)
         return alerts
     except Exception as e:

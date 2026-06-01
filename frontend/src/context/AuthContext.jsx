@@ -57,9 +57,11 @@ export function AuthProvider({ children }) {
     const mergedUser = decoded ? { ...decoded, ...storedTerritory } : null;
     setUser(mergedUser);
 
-    // Pre-fetch recommendations in background
+    // FIXED: only pre-fetch recommendations for reps. Managers/admins have no
+    // territory, so the old unconditional call returned empty data or a swallowed
+    // API error on every manager/admin login.
     const repId = decoded?.sub || decoded?.rep_id;
-    if (repId) {
+    if (repId && (decoded?.role === "rep" || !decoded?.role)) {
       prefetchRecs(repId);
     }
   }, []);

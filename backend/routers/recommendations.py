@@ -300,6 +300,25 @@ async def get_recommendations(
         # Derive final pest alert: DB flag OR weather rule
         has_pest, pest_reason = derive_pest_alert(weather_ctx, int(bool(raw_pest)))
 
+        # IMPROVED: real conversion rate + last rejection reason from this retailer's
+        # actual visit history, so NBA talking points cite REAL numbers (was hardcoded 45%).
+        real_conv_rate = 45
+        real_rejection = "price concern"
+        try:
+            async with db.execute(
+                """SELECT COUNT(*) AS total,
+                          SUM(CASE WHEN outcome IN ('sale','order','Order placed') THEN 1 ELSE 0 END) AS wins,
+                          MAX(CASE WHEN outcome='none' THEN rejection_reason ELSE NULL END) AS last_rejection
+                   FROM visit_logs WHERE retailer_id = ?""",
+                (str(retailer["retailer_id"]),)
+            ) as cur:
+                crow = await cur.fetchone()
+            if crow and (crow["total"] or 0) > 0:
+                real_conv_rate = round((crow["wins"] or 0) / crow["total"] * 100)
+                real_rejection = crow["last_rejection"] or "price concern"
+        except Exception as e:
+            print(f"[recommendations] conversion lookup failed for {retailer['retailer_id']}: {e}")
+
         outlet_context = {
             # Identity
             "retailer_id":          retailer["retailer_id"],
@@ -320,9 +339,9 @@ async def get_recommendations(
             "active_pest_alerts":   pest_reason if has_pest else "",
             # ML score
             "priority_score":       round(entry["probability"], 4),
-            # Conversion rate placeholder (real: SELECT wins/total FROM visit_logs WHERE retailer_id=?)
-            "conversion_rate":      45,
-            "top_rejection_reason": "price concern",
+            # IMPROVED: real values from visit_logs (fallback 45% / 'price concern' if no history)
+            "conversion_rate":      real_conv_rate,
+            "top_rejection_reason": real_rejection,
             "campaign_status":      "not enrolled",
             # Live weather + NDVI — the key signal judges will ask about
             "weather":              dict(weather_ctx),

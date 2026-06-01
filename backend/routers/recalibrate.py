@@ -113,30 +113,39 @@ async def _do_recalibrate(rep_id, db, days: int = 30) -> dict:
     cutoff = (date.today() - timedelta(days=days)).isoformat()
 
     # ── Step 1: visit outcome logs ────────────────────────────────────────────
+    # FIXED: no `outcome_score > 0` filter anywhere — every visit (including
+    # rejections) is counted so 'none' outcomes can actively pull the rate down.
     async with db.execute(
         """SELECT outlet_id,
                   SUM(CASE WHEN outcome IN ('sale','order','Order placed') THEN 1 ELSE 0 END) as wins,
                   COUNT(*) as total,
                   SUM(CASE WHEN outcome IS NULL OR outcome = '' THEN 1 ELSE 0 END) as no_outcome,
+                  SUM(CASE WHEN outcome='sale' THEN 1.0 ELSE 0 END) as sale_count,
+                  SUM(CASE WHEN outcome='none' THEN 1.0 ELSE 0 END) as none_count,
                   AVG(COALESCE(outcome_score, 0)) as avg_score
            FROM visit_logs
            WHERE rep_id=? AND date >= ?
            GROUP BY outlet_id""",
         (rep_id, cutoff)
     ) as cursor:
-        logs = await cursor.fetchall()  # FIXED BUG 7: also fetch avg_score for downvote penalty
+        logs = await cursor.fetchall()
 
     # ── Step 2: conversion rate per outlet ────────────────────────────────────
     conversion   = {}
-    avg_scores   = {}   # FIXED BUG 7: per-outlet average outcome_score (may be negative)
+    avg_scores   = {}   # per-outlet average outcome_score (may be negative)
     total_wins   = 0
     total_logs   = 0
     total_no_out = 0
 
     for row in logs:
         if row["total"] > 0:
-            conversion[row["outlet_id"]] = row["wins"] / row["total"]
-        avg_scores[row["outlet_id"]] = row["avg_score"] or 0.0  # FIXED BUG 7: capture downvote signal
+            # FIXED: adjusted conversion rate = (sales − 0.25·rejections) / visits.
+            # Rejections (outcome='none') now actively downvote the outlet instead of
+            # being ignored, so a heavily-rejected outlet gets a NEGATIVE rate.
+            conversion[row["outlet_id"]] = (
+                (row["sale_count"] - 0.25 * row["none_count"]) / row["total"]
+            )
+        avg_scores[row["outlet_id"]] = row["avg_score"] or 0.0
         total_wins   += (row["wins"] or 0)
         total_logs   += (row["total"] or 0)
         total_no_out += (row["no_outcome"] or 0)

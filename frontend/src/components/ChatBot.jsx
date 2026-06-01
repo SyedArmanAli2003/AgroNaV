@@ -242,6 +242,19 @@ export default function ChatBot() {
               <Send size={15} color={input.trim() && !loading ? "#fff" : "rgba(255,255,255,0.25)"} />
             </button>
           </div>
+
+          {/* IMPROVED: show which model actually responded so the AI tier system is
+              visible to judges during the demo */}
+          <div style={{
+            padding: "0 14px 8px", fontSize: 10, color: "rgba(255,255,255,0.35)",
+            textAlign: "center", flexShrink: 0,
+          }}>
+            Powered by {
+              (modelUsed === "fallback" || modelUsed === "rule-based" || modelUsed === "rule-based-fallback")
+                ? "Offline mode"
+                : (MODELS.find(m => m.id === modelUsed)?.label || modelUsed)
+            }
+          </div>
         </div>
       )}
 

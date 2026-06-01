@@ -22,28 +22,56 @@ _anomaly_detector = None
 _anomaly_scaler = None
 _model_schema = None
 _anomaly_schema = None
+_load_attempted = False   # FIXED: guard so a failed load is not retried (avoids repeated crashes/logs)
 
 
 def _load_artifacts():
-    global _ranking_model, _anomaly_detector, _anomaly_scaler, _model_schema, _anomaly_schema
-    if _ranking_model is not None:
-        return  # already loaded
+    # FIXED: each joblib.load wrapped in its own try/except so a scikit-learn
+    # version mismatch (pickled on 1.6.1, running on 1.8.0 → "_RemainderColsList")
+    # degrades gracefully instead of raising. Model 1 (CatBoost) then handles all
+    # recommendations. We set _load_attempted so we never re-attempt a failing load.
+    global _ranking_model, _anomaly_detector, _anomaly_scaler, _model_schema, _anomaly_schema, _load_attempted
+    if _load_attempted:
+        return  # already tried (success or graceful failure)
+    _load_attempted = True
 
     import joblib
 
-    _ranking_model = joblib.load(MODEL2_DIR / "ranking_model.joblib")
-    _anomaly_detector = joblib.load(MODEL2_DIR / "anomaly_detector.joblib")
-    _anomaly_scaler = joblib.load(MODEL2_DIR / "anomaly_scaler.joblib")
+    try:
+        _ranking_model = joblib.load(MODEL2_DIR / "ranking_model.joblib")
+    except Exception as e:
+        _ranking_model = None
+        print("[Model2] XGBoost pipeline load failed (sklearn mismatch) "
+              "— Model1 CatBoost will handle all recommendations")
+        print(f"[Model2]   (detail: {e})")
 
-    with open(MODEL2_DIR / "model_schema.json") as f:
-        _model_schema = json.load(f)
-    with open(MODEL2_DIR / "anomaly_schema.json") as f:
-        _anomaly_schema = json.load(f)
+    try:
+        _anomaly_detector = joblib.load(MODEL2_DIR / "anomaly_detector.joblib")
+    except Exception as e:
+        _anomaly_detector = None
+        print(f"[Model2] anomaly_detector load failed — anomaly detection disabled ({e})")
 
-    print("[model2] XGBoost ranking model + IsolationForest anomaly detector loaded")
+    try:
+        _anomaly_scaler = joblib.load(MODEL2_DIR / "anomaly_scaler.joblib")
+    except Exception as e:
+        _anomaly_scaler = None
+        print(f"[Model2] anomaly_scaler load failed ({e})")
+
+    try:
+        with open(MODEL2_DIR / "model_schema.json") as f:
+            _model_schema = json.load(f)
+        with open(MODEL2_DIR / "anomaly_schema.json") as f:
+            _anomaly_schema = json.load(f)
+    except Exception as e:
+        print(f"[Model2] schema load failed ({e})")
+
+    if _ranking_model is not None:
+        print("[model2] XGBoost ranking model + IsolationForest anomaly detector loaded")
 
 
 def get_ranking_model():
+    # FIXED: never raise — return None if the model could not be loaded so callers
+    # can fall through to Model 1 / rule-based scoring.
     _load_artifacts()
     return _ranking_model
 
@@ -150,6 +178,10 @@ def score_retailers_batch(retailers: list[dict], top_n: int = 10) -> list[dict]:
     """
     Score a batch of retailers with Model 2 and return top_n ranked results.
     """
+    # FIXED: if Model 2 is unavailable (sklearn mismatch), return [] so the caller
+    # falls through to Model 1 / rule-based scoring instead of crashing.
+    if get_ranking_model() is None:
+        return []
     _load_artifacts()
     results = []
     for r in retailers:
@@ -172,6 +204,10 @@ def detect_anomalies(volume_data: list[dict]) -> list[dict]:
     Input: list of {"retailer_id": ..., "sku_id": ..., "total_volume_sold": ..., "avg_unit_price": ...}
     """
     _load_artifacts()
+    # FIXED: guard against unloaded anomaly artifacts (sklearn mismatch) — return no
+    # spikes rather than raising AttributeError.
+    if _anomaly_detector is None or _anomaly_scaler is None:
+        return []
     if not volume_data:
         return []
 

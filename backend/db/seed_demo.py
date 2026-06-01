@@ -100,6 +100,63 @@ async def seed_demo_data(db):
     except Exception as e:
         print(f"[seed] Demo account seed error: {e}")
 
+    # FIXED: sync real retailers → outlets table. The weekly-plan and recommendation
+    # logic reads the `outlets` table, which only had 8 demo rows — not enough to fill
+    # a 5-day plan (Wed–Fri came back empty). Copy up to 30 geocoded retailers into
+    # outlets so plans, routing and scoring have real territory data. Idempotent via
+    # the <25 guard so it runs at most once.
+    try:
+        async with db.execute("SELECT COUNT(*) as c FROM outlets") as cur:
+            row = await cur.fetchone()
+            outlets_count = row["c"] if row else 0
+
+        if outlets_count < 25:
+            # FIXED: retailers in the dataset have NO lat/lng populated, so the
+            # original `WHERE lat IS NOT NULL` synced zero rows. Derive coordinates
+            # from the district centroid + a deterministic jitter so outlets get
+            # usable coordinates (needed for routing AND to fill a 5-day plan).
+            # Prefer the demo rep's district (Jalgaon) so REP_0203's plan is populated.
+            _CENTROIDS = {
+                "jalgaon": (21.0077, 75.5626), "nalgonda": (17.0575, 79.2671),
+                "nashik": (19.9975, 73.7898), "pune": (18.5204, 73.8567),
+                "aurangabad": (19.8762, 75.3433), "amravati": (20.9320, 77.7523),
+            }
+            _DEFAULT_CENTROID = (21.0077, 75.5626)  # Jalgaon
+
+            # FIXED: do not SELECT contact_name — that column is absent on older
+            # retailers tables (only added in the dataset-load path). owner_name → "".
+            async with db.execute("""
+                SELECT retailer_name, district, tehsil
+                FROM retailers
+                ORDER BY CASE WHEN district='Jalgaon' THEN 0 ELSE 1 END, retailer_id
+                LIMIT 30
+            """) as cur:
+                retailers = await cur.fetchall()
+
+            for i, r in enumerate(retailers):
+                district = r["district"] or "Jalgaon"
+                base_lat, base_lng = _CENTROIDS.get(district.lower(), _DEFAULT_CENTROID)
+                # Deterministic small jitter (~±0.05°, roughly ±5km) so outlets cluster
+                # realistically around the district centre and routing has variety.
+                jitter_lat = ((i * 37) % 100 - 50) / 1000.0
+                jitter_lng = ((i * 53) % 100 - 50) / 1000.0
+                lat = round(base_lat + jitter_lat, 5)
+                lng = round(base_lng + jitter_lng, 5)
+                await db.execute("""
+                    INSERT OR IGNORE INTO outlets
+                    (name, type, owner_name, district, lat, lng,
+                     last_visit_date, stock_days_remaining,
+                     has_pest_alert, sales_spike, crop_stage)
+                    VALUES (?,?,?,?,?,?,date('now','-14 days'),5,0,0,?)
+                """, (r["retailer_name"], "retailer",
+                      "",  # FIXED: owner_name blank (contact_name column not present)
+                      district, lat, lng, "vegetative"))
+            await db.commit()
+            print(f"[seed] Synced retailers -> outlets table ({len(retailers)} candidates, "
+                  f"was {outlets_count})")
+    except Exception as e:
+        print(f"[seed] retailers->outlets sync error: {e}")
+
     # ── Check if real retailers are seeded ───────────────────────────────────
     try:
         async with db.execute("SELECT COUNT(*) as c FROM retailers") as rc:

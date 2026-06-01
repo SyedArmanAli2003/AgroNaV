@@ -128,6 +128,15 @@ app.include_router(weekly_plan_router.router, tags=["weekly-plan"])
 from routers import chat as chat_router
 app.include_router(chat_router.router, tags=["chat"])
 
+# FIXED: define /health BEFORE the React catchall and unconditionally. Previously
+# /health was declared after the "/{catchall:path}" route (and "health" is in
+# _API_PREFIXES), so the catchall intercepted GET /health and returned 404. Routes
+# are matched in registration order, so this must come first.
+@app.get("/health")
+async def health():
+    return {"status": "ok", "service": "AgroNav"}
+
+
 # ── Serve React Frontend ───────────────────────────────────────────────────────
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -160,10 +169,7 @@ if os.path.exists(frontend_build_dir):
         if os.path.isfile(file_path):
             return FileResponse(file_path)
         return FileResponse(os.path.join(frontend_build_dir, "index.html"))
-
-    @app.get("/health")
-    async def health():
-        return {"status": "ok", "service": "AgroNav"}
+    # FIXED: /health moved above the catchall (defined earlier, unconditionally).
 
 
 if __name__ == "__main__":

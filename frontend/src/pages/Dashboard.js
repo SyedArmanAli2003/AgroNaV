@@ -461,7 +461,8 @@ function Dashboard() {
             return (
               <article
                 key={rec.retailer_id}
-                className="glass-card"
+                className="glass-card shop-card"
+                /* FIXED BUG 7: added 'shop-card' so WelcomeTour's .shop-card spotlight resolves */
                 onClick={() => navigate(`/visit/${rec.retailer_id}`, { state: { retailer: rec } })}
                 style={{ cursor: "pointer", transition: "transform 0.18s, box-shadow 0.18s", padding: "20px" }}
                 onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(29,158,117,0.18)"; }}
@@ -493,6 +494,49 @@ function Dashboard() {
                   </span>
                 </div>
 
+                {/* IMPROVED: live-signal badges — surface weather/NDVI/pest/NBA signal
+                    at a glance so judges see the AI's real inputs without opening the card */}
+                <div className="signal-badges" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                  {(() => {
+                    const badges = [];
+                    const chip = (key, text, bg, fg, border) => (
+                      <span key={key} style={{
+                        fontSize: 10.5, fontWeight: 600, padding: "3px 8px", borderRadius: 99,
+                        background: bg, color: fg, border: `1px solid ${border}`,
+                        whiteSpace: "nowrap", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis",
+                      }}>{text}</span>
+                    );
+                    const wr = (rec.weather?.weather_risk || "").toLowerCase();
+                    if (wr) {
+                      const danger = wr.includes("fungal") || wr.includes("heat");
+                      const warn = wr.includes("humidity");
+                      const [bg, fg, bd] = danger
+                        ? ["rgba(239,68,68,0.14)", "#f87171", "rgba(239,68,68,0.35)"]
+                        : warn ? ["rgba(245,158,11,0.14)", "#fbbf24", "rgba(245,158,11,0.35)"]
+                               : ["rgba(255,255,255,0.06)", "var(--text-secondary)", "rgba(255,255,255,0.12)"];
+                      badges.push(chip("weather", rec.weather.weather_risk, bg, fg, bd));
+                    }
+                    const nl = (rec.ndvi?.label || "").toLowerCase();
+                    if (nl) {
+                      const stress = nl.includes("stress");
+                      const moderate = nl.includes("moderate");
+                      const [bg, fg, bd] = stress
+                        ? ["rgba(239,68,68,0.14)", "#f87171", "rgba(239,68,68,0.35)"]
+                        : moderate ? ["rgba(245,158,11,0.14)", "#fbbf24", "rgba(245,158,11,0.35)"]
+                                   : ["rgba(29,158,117,0.14)", "var(--color-primary)", "rgba(29,158,117,0.35)"];
+                      badges.push(chip("ndvi", `NDVI: ${rec.ndvi.label}`, bg, fg, bd));
+                    }
+                    if (rec.has_pest_alert) {
+                      badges.push(chip("pest", "⚠ Pest Alert", "rgba(239,68,68,0.16)", "#f87171", "rgba(239,68,68,0.4)"));
+                    }
+                    if (rec.nba?.signal_used) {
+                      badges.push(chip("signal", String(rec.nba.signal_used).slice(0, 30),
+                        "rgba(255,255,255,0.05)", "var(--text-muted)", "rgba(255,255,255,0.1)"));
+                    }
+                    return badges;
+                  })()}
+                </div>
+
                 {/* Row 2: Priority bar */}
                 <div style={{ height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 99, overflow: "hidden", margin: "10px 0" }}>
                   <div style={{ height: "100%", width: `${Math.max(score * 100, 8)}%`, background: color, borderRadius: 99, boxShadow: `0 0 12px ${color}`, transition: "width 0.5s ease" }} />
@@ -505,7 +549,8 @@ function Dashboard() {
                 </div>
 
                 {/* Row 4: Reasons */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
+                {/* FIXED BUG 7: added 'reasons-list' class so WelcomeTour's .reasons-list spotlight resolves */}
+                <div className="reasons-list" style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
                   {(rec.reasons || []).slice(0, 3).map((r, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--text-secondary)", fontFamily: "var(--font-body)" }}>
                       <CheckCircle size={13} color="var(--color-primary)" style={{ flexShrink: 0 }} />
@@ -538,7 +583,8 @@ function Dashboard() {
                     View Full Brief →
                   </button>
                   <button
-                    className="btn-primary"
+                    className="btn-primary hover-scale"
+                    /* FIXED BUG 7: added 'hover-scale' so WelcomeTour's button.hover-scale spotlight resolves */
                     style={{ flex: 1, padding: "10px", fontSize: 13 }}
                     onClick={(e) => { e.stopPropagation(); navigate("/log", { state: { retailer: rec } }); }}
                   >
