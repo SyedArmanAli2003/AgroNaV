@@ -29,6 +29,9 @@ async function prefetchRecs(repId) {
     const data = await getRecommendations(repId, today);
     if (data && data.recommendations) {
       cacheRecommendations(data);
+      // TASK 3: record when the prefetch finished so Dashboard can serve
+      // cached data instantly on the next mount without a loading delay.
+      localStorage.setItem("agronav_last_prefetch", Date.now());
     }
   } catch {
     /* silent — dashboard handles missing cache gracefully */

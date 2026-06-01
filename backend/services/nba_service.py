@@ -94,6 +94,7 @@ async def get_nba(outlet_context: dict, db) -> dict:
             nvidia_client = OpenAI(
                 base_url="https://integrate.api.nvidia.com/v1",
                 api_key=NVIDIA_API_KEY,
+                timeout=10.0,  # fail fast so thread-pool stays fast
             )
             response = nvidia_client.chat.completions.create(
                 model="z-ai/glm-5.1",
@@ -122,6 +123,7 @@ async def get_nba(outlet_context: dict, db) -> dict:
             client = OpenAI(
                 base_url="https://openrouter.ai/api/v1",
                 api_key=OPENROUTER_API_KEY,
+                timeout=10.0,  # fail fast
             )
             response = client.chat.completions.create(
                 model="meta-llama/llama-3.3-70b-instruct",
@@ -147,7 +149,10 @@ async def get_nba(outlet_context: dict, db) -> dict:
                 model_name="gemini-2.0-flash",
                 system_instruction=NBA_SYSTEM_PROMPT
             )
-            response = model.generate_content(user_prompt)
+            response = model.generate_content(
+                user_prompt,
+                request_options={"timeout": 10},  # fail fast
+            )
             text = response.text.strip()
             text = text.replace("```json", "").replace("```", "").strip()
             result = json.loads(text)

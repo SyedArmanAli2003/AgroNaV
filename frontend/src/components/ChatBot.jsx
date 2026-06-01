@@ -3,8 +3,10 @@ import { MessageCircle, X, Send, Bot, ChevronDown } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 
-const PANEL_W = 360;
-const PANEL_H = 480;
+// TASK 6: use CSS clamp so the panel fills the screen on narrow phones
+// (iPhone 12 Pro = 390px) while staying capped at 360px on desktop.
+const PANEL_W = "min(360px, calc(100vw - 16px))";
+const PANEL_H = "min(480px, calc(100dvh - 180px))";
 
 const MODELS = [
   { id: "llama-3.3",    label: "Llama 3.3",    provider: "Meta" },
@@ -117,7 +119,8 @@ export default function ChatBot() {
       {/* Chat panel */}
       {open && (
         <div style={{
-          position: "fixed", bottom: 152, right: 20,
+          /* TASK 6: right: 8px on mobile keeps the panel inside the viewport */
+          position: "fixed", bottom: 152, right: "max(8px, env(safe-area-inset-right, 8px))",
           width: PANEL_W, height: PANEL_H,
           display: "flex", flexDirection: "column",
           background: "rgba(10, 20, 14, 0.97)",
