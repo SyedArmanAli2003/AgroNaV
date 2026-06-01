@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, ChevronRight, Leaf } from "lucide-react";
 
+// sessionStorage key so the tour resets every browser session (shows once per login)
 const TOUR_KEY = "agronav_tour_done";
 
 const REP_STEPS = [
@@ -57,16 +58,34 @@ const MANAGER_STEPS = [
   }
 ];
 
+// Spotlight retries finding the element for up to 3s so it works even after
+// async data loads (recommendation cards appear after the fetch completes).
 function Spotlight({ selector }) {
   const [rect, setRect] = useState(null);
+  const attemptsRef = useRef(0);
 
   useEffect(() => {
-    if (!selector) return;
-    const el = document.querySelector(selector);
-    if (el) {
-      const r = el.getBoundingClientRect();
-      setRect({ top: r.top - 8, left: r.left - 8, width: r.width + 16, height: r.height + 16 });
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (!selector) { setRect(null); return; }
+    attemptsRef.current = 0;
+
+    const tryFind = () => {
+      attemptsRef.current += 1;
+      const el = document.querySelector(selector);
+      if (el) {
+        const r = el.getBoundingClientRect();
+        setRect({ top: r.top - 8, left: r.left - 8, width: r.width + 16, height: r.height + 16 });
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        return true;
+      }
+      return false;
+    };
+
+    if (!tryFind() && attemptsRef.current < 12) {
+      // Retry every 500ms up to ~6s total to handle async-loaded cards
+      const id = setInterval(() => {
+        if (tryFind() || attemptsRef.current >= 12) clearInterval(id);
+      }, 500);
+      return () => clearInterval(id);
     }
   }, [selector]);
 
@@ -95,15 +114,17 @@ function WelcomeTour({ userRole = "rep" }) {
   const steps = userRole === "manager" ? MANAGER_STEPS : REP_STEPS;
 
   useEffect(() => {
-    const done = localStorage.getItem(TOUR_KEY);
+    // Use sessionStorage so tour resets each browser session / fresh login
+    const done = sessionStorage.getItem(TOUR_KEY);
     if (!done) {
-      // Small delay so the dashboard has time to render
-      setTimeout(() => setVisible(true), 800);
+      // Delay start: give recommendation cards time to render after data fetch
+      const id = setTimeout(() => setVisible(true), 1200);
+      return () => clearTimeout(id);
     }
   }, []);
 
   const dismiss = () => {
-    localStorage.setItem(TOUR_KEY, "true");
+    sessionStorage.setItem(TOUR_KEY, "true");
     setVisible(false);
   };
 
@@ -121,16 +142,16 @@ function WelcomeTour({ userRole = "rep" }) {
 
   return (
     <>
-      {/* Lightweight semi-transparent overlay — NO blur so dashboard stays visible */}
+      {/* Lightweight semi-transparent overlay */}
       <div style={{
         position: "fixed", inset: 0, zIndex: 1050,
         background: "rgba(0,0,0,0.35)",
       }} onClick={dismiss} />
 
-      {/* Spotlight ring for targeted steps */}
+      {/* Spotlight ring — retries until element is in DOM */}
       {current.highlight && <Spotlight selector={current.highlight} />}
 
-      {/* Compact hint card — bottom right, not center-blocking */}
+      {/* Compact hint card */}
       <div style={{
         position: "fixed",
         bottom: 100,

@@ -45,9 +45,12 @@ function TerritorySelect() {
     } catch { /* Non-fatal */ }
     const territoryData = { state: selectedState, district: selectedDistrict, territory: selectedDistrict, territory_id: territoryId };
     localStorage.setItem("agronav_rep_territory", JSON.stringify(territoryData));
+    // Clear stale recommendation cache so Dashboard fetches fresh data for the new territory
+    localStorage.removeItem("agronav_recommendations");
+    localStorage.removeItem("agronav_last_prefetch");
     if (token) login(token);
     setLoading(false);
-    navigate("/dashboard");
+    navigate("/dashboard", { state: { territoryChanged: true } });
   };
 
   return (

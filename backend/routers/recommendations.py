@@ -95,6 +95,7 @@ def get_last_recommended_product(retailer_id: str, territory_id: str) -> str | N
 async def get_recommendations(
     rep_id: str = Query(..., description="Rep ID, e.g. REP_0203"),
     date: str = Query(None, description="Prediction date YYYY-MM-DD"),
+    district: str = Query(None, description="Override district (set by TerritorySelect)"),
     db=Depends(get_db)
 ):
     """
@@ -112,8 +113,8 @@ async def get_recommendations(
     if not date:
         date = date_type.today().isoformat()
 
-    # 1. Lookup rep's territory from users table
-    rep_district = None
+    # 1. Lookup rep's territory from users table; allow client-side override (post territory change)
+    rep_district = district or None  # frontend sends district after TerritorySelect
     rep_state = None
     try:
         async with db.execute(
@@ -121,7 +122,7 @@ async def get_recommendations(
         ) as cursor:
             rep_row = await cursor.fetchone()
             if rep_row:
-                rep_district = rep_row["district"]
+                rep_district = rep_district or rep_row["district"]  # override wins if provided
                 rep_state = rep_row["state"]
     except Exception:
         pass

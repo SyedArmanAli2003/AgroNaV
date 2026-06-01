@@ -91,6 +91,14 @@ function Dashboard() {
       const repId = authContext.user?.sub || authContext.user?.rep_id || "REP_0203";
       const todayStr = new Date().toISOString().split("T")[0];
       const cached = getCachedRecommendations();
+      // Territory district from localStorage (set by TerritorySelect or ProfileSettings)
+      const storedTerritory = (() => {
+        try { return JSON.parse(localStorage.getItem("agronav_rep_territory") || "{}"); } catch { return {}; }
+      })();
+      const district = authContext.user?.district || storedTerritory?.district || null;
+
+      // If coming from a territory change, skip cache entirely and fetch fresh
+      const territoryJustChanged = !!location.state?.territoryChanged;
 
       // TASK 3: if a prefetch completed within the last 300s, serve cached data
       // instantly — no loading state visible to the judge. If the prefetch was
@@ -99,7 +107,7 @@ function Dashboard() {
       const secondsSincePrefetch = (Date.now() - lastPrefetch) / 1000;
       const recentPrefetch = secondsSincePrefetch < 300;
 
-      if (cached?.recommendations) {
+      if (!territoryJustChanged && cached?.recommendations) {
         const cachedAt = new Date(cached.cached_at);
         const hoursAgo = (new Date() - cachedAt) / (1000 * 60 * 60);
         setRecommendations([...cached.recommendations].sort((a, b) => a.rank - b.rank));
@@ -118,7 +126,7 @@ function Dashboard() {
       }
 
       try {
-        const freshData = await getRecommendations(repId, todayStr);
+        const freshData = await getRecommendations(repId, todayStr, district);
         if (freshData?.recommendations) {
           const sortedFresh = [...freshData.recommendations].sort((a, b) => a.rank - b.rank);
           setRecommendations(sortedFresh);

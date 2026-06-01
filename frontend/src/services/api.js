@@ -47,13 +47,12 @@ export const signup = async (name, email, repId, password, role = "rep", distric
 };
 
 // --- Recommendations ---
-export const getRecommendations = async (repId, date) => {
+export const getRecommendations = async (repId, date, district = null) => {
   const token = localStorage.getItem("agronav_token");
   const dateStr = date || new Date().toISOString().split("T")[0];
-  const res = await fetch(
-    `${BASE}/recommendations?rep_id=${repId}&date=${dateStr}`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+  let url = `${BASE}/recommendations?rep_id=${encodeURIComponent(repId)}&date=${dateStr}`;
+  if (district) url += `&district=${encodeURIComponent(district)}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };

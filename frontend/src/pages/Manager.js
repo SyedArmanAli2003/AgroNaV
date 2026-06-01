@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { Navigate } from "react-router-dom";
 import {
   IndianRupee, TrendingUp, Users, RefreshCw,
   UserPlus, Download, Map, Store, PlusCircle,
@@ -117,6 +118,11 @@ function Manager() {
   }, []); // eslint-disable-line
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Role guard — after all hooks so React's hook order stays stable
+  if (user && user.role !== "manager" && user.role !== "admin") {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const data = kpis?.kpis || kpis || {};
   const kpiCards = [
