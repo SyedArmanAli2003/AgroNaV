@@ -84,7 +84,7 @@ function SignUp() {
           <ShieldCheck size={18} color="#3b82f6" style={{ flexShrink: 0 }} />
           <span style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
             <strong style={{ color: "#3b82f6" }}>Managers & Admins:</strong> Create rep accounts from the{" "}
-            <strong>Manager Portal → Create Rep</strong> tab.
+            <strong>Manager Portal → "Create Rep" </strong> tab.
           </span>
         </div>
 
