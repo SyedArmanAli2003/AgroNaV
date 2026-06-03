@@ -46,6 +46,18 @@ export const signup = async (name, email, repId, password, role = "rep", distric
   return res.json();
 };
 
+// --- Low-bandwidth detection ---
+// Returns true on 2G/slow-2g or when Data Saver is enabled in the browser/OS.
+export const isLowBandwidth = () => {
+  const conn = navigator.connection ||
+               navigator.mozConnection ||
+               navigator.webkitConnection;
+  if (!conn) return false;
+  return conn.effectiveType === "2g" ||
+         conn.effectiveType === "slow-2g" ||
+         conn.saveData === true;
+};
+
 // --- Recommendations ---
 export const getRecommendations = async (repId, date, district = null, aiMode = null) => {
   const token = localStorage.getItem("agronav_token");
@@ -54,6 +66,9 @@ export const getRecommendations = async (repId, date, district = null, aiMode = 
   if (district) url += `&district=${encodeURIComponent(district)}`;
   const mode = aiMode || localStorage.getItem("agronav_ai_mode") || "live";
   if (mode === "fast") url += `&ai_mode=fast`;
+  // On 2G/Data Saver: request lite payload (~5KB vs ~50KB) — skips weather,
+  // NDVI badges and LLM NBA. Backend respects ?mode=lite.
+  if (isLowBandwidth()) url += `&mode=lite`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) throw new Error(await res.text());
   return res.json();
@@ -147,6 +162,22 @@ export const api = {
     } catch {
       return FALLBACK_NBA;
     }
+  },
+
+  // FIX 5: one-sentence "Why this outlet?" explanation via LLaMA 3.3
+  explainOutlet: async (retailer_id) => {
+    const res = await fetch(`${BASE}/api/explain/${encodeURIComponent(retailer_id)}`, {
+      headers: getAuthHeader(),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  // FIX 6: weekly acceptance-rate trend for the manager learning chart
+  getRecalibrateHistory: async () => {
+    const res = await fetch(`${BASE}/api/recalibrate/history`, { headers: getAuthHeader() });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
   },
 
   logOutcome: async (outlet_id, result, order_value = 0, rejection_reason = null, notes = "") => {

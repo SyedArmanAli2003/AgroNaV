@@ -215,7 +215,6 @@ function WelcomeTour({ userRole = "rep" }) {
     left: Math.round((window.innerWidth - Math.min(window.innerWidth * 0.94, 420)) / 2),
     transform: "none",
   }));
-  const spotTimerRef            = useRef(null);
   const cardRef                 = useRef(null);
 
   const steps   = userRole === "manager" ? MANAGER_STEPS : REP_STEPS;

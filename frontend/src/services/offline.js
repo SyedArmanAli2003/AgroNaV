@@ -28,6 +28,28 @@ export const queueVisitLog = (visitLogData) => {
   const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]");
   queue.push({ ...visitLogData, queued_at: new Date().toISOString() });
   localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+
+  // TASK 8: Also store in the service worker cache with a unique key so
+  // Background Sync can flush the log even after the app is closed.
+  if ("serviceWorker" in navigator && "SyncManager" in window) {
+    navigator.serviceWorker.ready.then(async (sw) => {
+      try {
+        const cache = await caches.open("agronav-queue-v1");
+        const key   = `queued-visit-${visitLogData.retailer_id || "unknown"}-${Date.now()}`;
+        // Store as a Response wrapping the JSON payload
+        await cache.put(
+          new Request(key),
+          new Response(JSON.stringify(visitLogData), {
+            headers: { "Content-Type": "application/json" },
+          })
+        );
+        await sw.sync.register("flush-visit-logs");
+        console.log("[offline] Registered background sync for visit log");
+      } catch (e) {
+        console.log("[offline] Background sync registration failed:", e);
+      }
+    });
+  }
 };
 
 export const flushVisitLogQueue = async () => {

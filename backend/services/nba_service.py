@@ -1,8 +1,8 @@
 # What it does: Next Best Action generation via 4-tier fallback
-#   Tier 1: NVIDIA GLM-5.1 (z-ai/glm-5.1 via integrate.api.nvidia.com)
-#   Tier 2: OpenRouter (meta-llama/llama-3.3-70b-instruct)
-#   Tier 3: Google Gemini (gemini-2.0-flash)
-#   Tier 4: Rule-based deterministic fallback (works offline)
+#   Tier 1: OpenRouter LLaMA 3.3 (meta-llama/llama-3.3-70b-instruct) — PRIMARY, fastest/most reliable
+#   Tier 2: NVIDIA GLM-5.1 (z-ai/glm-5.1 via integrate.api.nvidia.com) — fallback, strong reasoning
+#   Tier 3: Google Gemini Flash (gemini-2.0-flash)
+#   Tier 4: Rule-based deterministic fallback (works offline, always works)
 # Input: Outlet context dict (now enriched with live weather + NDVI), async DB
 # Output: NBA dict with product_to_pitch, agronomic_advice, talking_points, etc.
 # Called by: routers/recommendations.py
@@ -87,8 +87,38 @@ async def get_nba(outlet_context: dict, db) -> dict:
     user_prompt = _build_user_prompt(outlet_context)
     result = None
 
-    # 3. Tier 1 — NVIDIA GLM-5.1
-    if NVIDIA_API_KEY and not NVIDIA_API_KEY.startswith("your_"):
+    # 3. Tier 1 — OpenRouter LLaMA 3.3 (PRIMARY — fastest, most reliable)
+    if OPENROUTER_API_KEY and not OPENROUTER_API_KEY.startswith("your_"):
+        print("[NBA] Trying LLaMA 3.3 (Tier 1)")
+        try:
+            from openai import OpenAI
+            client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=OPENROUTER_API_KEY,
+                timeout=10.0,  # fail fast
+            )
+            response = client.chat.completions.create(
+                model="meta-llama/llama-3.3-70b-instruct",
+                messages=[
+                    {"role": "system", "content": NBA_SYSTEM_PROMPT},
+                    {"role": "user",   "content": user_prompt}
+                ],
+                temperature=0.3,
+                max_tokens=600,
+            )
+            text = response.choices[0].message.content.strip()
+            text = text.replace("```json", "").replace("```", "").strip()
+            result = json.loads(text)
+            required = ["product_to_pitch", "agronomic_advice", "talking_points", "one_line_summary"]
+            if not all(k in result for k in required):
+                print("[NBA] LLaMA 3.3 response missing keys, trying next tier")
+                result = None
+        except Exception as e:
+            print(f"[NBA] LLaMA 3.3 failed: {e}. Trying GLM-5.1...")
+
+    # 4. Tier 2 — NVIDIA GLM-5.1 (fallback — slower but strong reasoning)
+    if result is None and NVIDIA_API_KEY and not NVIDIA_API_KEY.startswith("your_"):
+        print("[NBA] Trying GLM-5.1 (Tier 2)")
         try:
             from openai import OpenAI
             nvidia_client = OpenAI(
@@ -111,36 +141,12 @@ async def get_nba(outlet_context: dict, db) -> dict:
             result = json.loads(text)
             required = ["product_to_pitch", "agronomic_advice", "talking_points", "one_line_summary"]
             if not all(k in result for k in required):
-                print("[NBA] NVIDIA GLM response missing keys, trying next tier")
+                print("[NBA] GLM-5.1 response missing keys, trying next tier")
                 result = None
         except Exception as e:
-            print(f"[NBA] NVIDIA GLM failed: {e}")
+            print(f"[NBA] GLM-5.1 failed: {e}. Trying Gemini...")
 
-    # 4. Tier 2 — OpenRouter LLaMA 3.3
-    if result is None and OPENROUTER_API_KEY and not OPENROUTER_API_KEY.startswith("your_"):
-        try:
-            from openai import OpenAI
-            client = OpenAI(
-                base_url="https://openrouter.ai/api/v1",
-                api_key=OPENROUTER_API_KEY,
-                timeout=10.0,  # fail fast
-            )
-            response = client.chat.completions.create(
-                model="meta-llama/llama-3.3-70b-instruct",
-                messages=[
-                    {"role": "system", "content": NBA_SYSTEM_PROMPT},
-                    {"role": "user",   "content": user_prompt}
-                ],
-                temperature=0.3,
-                max_tokens=600,
-            )
-            text = response.choices[0].message.content.strip()
-            text = text.replace("```json", "").replace("```", "").strip()
-            result = json.loads(text)
-        except Exception as e:
-            print(f"[NBA] OpenRouter failed: {e}. Trying Gemini...")
-
-    # 5. Tier 3 — Google Gemini
+    # 5. Tier 3 — Google Gemini Flash
     if result is None and GEMINI_API_KEY and not GEMINI_API_KEY.startswith("your_"):
         try:
             import google.generativeai as genai

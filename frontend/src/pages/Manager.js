@@ -4,7 +4,7 @@ import {
   IndianRupee, TrendingUp, Users, RefreshCw,
   UserPlus, Download, Map, Store, PlusCircle,
   ToggleLeft, ToggleRight, CheckCircle, X, Cpu, Zap,
-  BarChart2, BookOpen, AlertTriangle, ArrowUpRight, ArrowDownRight, Award,
+  BarChart2, BookOpen, AlertTriangle, Award,
   CalendarDays, Play, ThumbsUp, Clock, ChevronDown, ChevronRight
 } from "lucide-react";
 import { api } from "../services/api";
@@ -54,6 +54,7 @@ function Manager() {
   const [weeklyStats, setWeeklyStats]     = useState(null);
   const [weeklyLearning, setWeeklyLearning] = useState(null);
   const [learningLoading, setLearningLoading] = useState(false);
+  const [learnHistory, setLearnHistory] = useState(null);  // FIX 6: weekly trend
 
   // Weekly Plans state
   const [weeklyPlans, setWeeklyPlans] = useState({});        // keyed by rep_id
@@ -78,7 +79,7 @@ function Manager() {
   const [createRepSaving, setCreateRepSaving]   = useState(false);
   const [createRepResult, setCreateRepResult]   = useState(null);   // success payload
   const [createRepError,  setCreateRepError]    = useState("");
-  const [districts, setDistricts]               = useState([
+  const [districts] = useState([
     "Jalgaon","Aurangabad","Nashik","Pune","Ahmednagar",
     "Nalgonda","Guntur","Krishna","Kurnool","Warangal",
     "Vidisha","Bhopal","Indore","Ujjain","Jabalpur"
@@ -118,6 +119,15 @@ function Manager() {
   }, []); // eslint-disable-line
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // FIX 6: load weekly acceptance-rate trend when the Learning tab opens
+  useEffect(() => {
+    if (tab === "learning" && learnHistory === null) {
+      api.getRecalibrateHistory()
+        .then(setLearnHistory)
+        .catch(() => setLearnHistory({ weeks: [], trend: "stable", total_logs: 0 }));
+    }
+  }, [tab, learnHistory]);
 
   // Role guard — after all hooks so React's hook order stays stable
   if (user && user.role !== "manager" && user.role !== "admin") {
@@ -575,6 +585,58 @@ function Manager() {
                 {learningLoading ? "Analysing..." : "Run AI Analysis"}
               </button>
             </div>
+
+            {/* FIX 6: Weekly acceptance-rate learning trend (CSS bar chart) */}
+            {learnHistory && (
+              <div className="glass-card" style={{ marginBottom: 20 }}>
+                <p style={{ margin: "0 0 14px", fontSize: 12, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Acceptance Rate Trend (last {learnHistory.weeks?.length || 0} weeks)
+                </p>
+                {(!learnHistory.weeks || learnHistory.weeks.length === 0) ? (
+                  <div style={{ fontSize: 13, color: "var(--text-muted)", fontStyle: "italic" }}>
+                    Not enough logged visits yet to chart a trend.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {learnHistory.weeks.map((w, i) => {
+                      const rate = Number(w.acceptance_rate) || 0;
+                      const color = rate > 60 ? "var(--color-success, #22c55e)"
+                                  : rate >= 40 ? "var(--color-warning, #f59e0b)"
+                                  : "#ef4444";
+                      return (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ width: 64, fontSize: 11, color: "var(--text-muted)", fontFamily: "monospace", flexShrink: 0 }}>
+                            wk {w.week}
+                          </div>
+                          <div style={{ flex: 1, height: 22, background: "rgba(255,255,255,0.06)", borderRadius: 6, overflow: "hidden", position: "relative" }}>
+                            <div style={{
+                              width: `${Math.max(rate, 2)}%`, height: "100%", background: color,
+                              borderRadius: 6, transition: "width 0.5s ease",
+                              display: "flex", alignItems: "center", justifyContent: "flex-end",
+                              paddingRight: 8, boxSizing: "border-box",
+                            }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: "#06140d" }}>{rate}%</span>
+                            </div>
+                          </div>
+                          <div style={{ width: 56, fontSize: 11, color: "var(--text-muted)", textAlign: "right", flexShrink: 0 }}>
+                            {w.visits} visit{w.visits === 1 ? "" : "s"}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {/* Summary line */}
+                <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--glass-border)", fontSize: 13, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: 6 }}>
+                  Trained on <strong style={{ color: "var(--text-primary)" }}>{learnHistory.total_logs}</strong> visits —
+                  Acceptance rate{" "}
+                  <strong style={{ color: learnHistory.trend === "improving" ? "var(--color-success, #22c55e)" : learnHistory.trend === "declining" ? "#ef4444" : "var(--text-muted)" }}>
+                    {learnHistory.trend}{" "}
+                    {learnHistory.trend === "improving" ? "↑" : learnHistory.trend === "declining" ? "↓" : "→"}
+                  </strong>
+                </div>
+              </div>
+            )}
 
             {/* Conversion KPI strip */}
             {weeklyStats && (

@@ -12,6 +12,10 @@ function VisitDetail() {
   const [rec, setRec] = useState(location.state?.retailer || null);
   const [nba, setNba] = useState(null);
   const [loading, setLoading] = useState(true);
+  // FIX 5: "Why this outlet?" explanation
+  const [explain, setExplain] = useState(null);
+  const [explainLoading, setExplainLoading] = useState(false);
+  const [showExplain, setShowExplain] = useState(false);
 
   useEffect(() => {
     const cached = getCachedRecommendations();
@@ -99,6 +103,61 @@ function VisitDetail() {
                 <AlertTriangle size={14} /> {advice.promotion}
               </div>
             )}
+
+            {/* FIX 5: Why this outlet? — one-line LLaMA explanation */}
+            <div style={{ marginTop: 16 }}>
+              <button
+                onClick={async () => {
+                  if (showExplain) { setShowExplain(false); return; }
+                  setShowExplain(true);
+                  if (!explain && !explainLoading) {
+                    setExplainLoading(true);
+                    try {
+                      const data = await api.explainOutlet(retailer_id);
+                      setExplain(data);
+                    } catch {
+                      setExplain({ explanation: "Could not load explanation right now.", top_signal: "" });
+                    } finally {
+                      setExplainLoading(false);
+                    }
+                  }
+                }}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  background: "transparent", border: "1px solid var(--color-primary)",
+                  color: "var(--color-primary)", borderRadius: 99,
+                  padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  fontFamily: "var(--font-body)",
+                }}
+              >
+                <Zap size={14} /> {showExplain ? "Hide explanation" : "Why this outlet?"}
+              </button>
+
+              {showExplain && (
+                <div style={{
+                  marginTop: 12, padding: "14px 16px", borderRadius: 12,
+                  background: "rgba(29,158,117,0.08)", border: "1px solid rgba(29,158,117,0.25)",
+                }}>
+                  {explainLoading ? (
+                    <div style={{ fontSize: 13, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 8 }}>
+                      <Zap size={14} className="ai-pulse" /> Generating explanation…
+                    </div>
+                  ) : (
+                    <>
+                      <p style={{ margin: 0, fontSize: 13, fontStyle: "italic", color: "var(--color-primary)", lineHeight: 1.6 }}>
+                        {explain?.explanation}
+                      </p>
+                      {explain?.top_signal && (
+                        <div style={{ marginTop: 8, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)" }}>
+                          Top signal: {explain.top_signal}
+                          {explain?.priority_score != null && ` · score ${Math.round(explain.priority_score * 100)}/100`}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </section>
 
           {/* Context */}

@@ -462,11 +462,15 @@ async def chat(body: dict, db=Depends(get_db)):
             model_used = "gemini-flash" if reply else model_id
 
     elif model_id == "llama-3.3":
-        # Llama → Gemini cascade
+        # Llama → GLM → Gemini cascade (matches NBA tier order: LLaMA primary)
         print("[chat] Trying Llama 3.3...")
         reply = await _call_llama(system, message)
         if not reply:
-            print("[chat] Llama failed, cascading to Gemini Flash")
+            print("[chat] Llama failed, cascading to GLM-5.1")
+            reply = await _call_glm(system, message)
+            model_used = "glm-5.1" if reply else model_id
+        if not reply:
+            print("[chat] GLM failed, cascading to Gemini Flash")
             reply = await _call_gemini_flash(system, message)
             model_used = "gemini-flash" if reply else model_id
 

@@ -5,8 +5,11 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Change this to your Cloud Run URL for production
-const BASE = "http://localhost:8000";
+// ⚠️ CHANGE THIS before demo — point at the machine running the backend.
+// On a physical phone use your computer's LAN IP (e.g. http://192.168.1.20:8000),
+// NOT localhost. On Android emulator use http://10.0.2.2:8000.
+const BASE_URL = 'http://YOUR_BACKEND_URL:8000'; // CHANGE THIS before demo
+const BASE = BASE_URL;
 
 /**
  * Get the stored auth token from AsyncStorage.
@@ -17,6 +20,11 @@ async function getAuthToken() {
   } catch {
     return null;
   }
+}
+
+/** Public helper — read the stored JWT (used by screens to gate navigation). */
+export async function getToken() {
+  return getAuthToken();
 }
 
 /**
@@ -32,6 +40,35 @@ async function authHeaders(extra = {}) {
 }
 
 export const api = {
+  // FIX 4: authenticate against the backend and persist the JWT.
+  login: async (identifier, password) => {
+    const res = await fetch(`${BASE}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // backend accepts email OR rep_id in the `email` field
+      body: JSON.stringify({ email: identifier, password }),
+    });
+    if (!res.ok) {
+      throw new Error("Invalid credentials");
+    }
+    const data = await res.json();
+    const token = data.token || data.access_token;
+    if (token) {
+      await AsyncStorage.setItem("agronav_token", token);
+      if (data.role) await AsyncStorage.setItem("agronav_role", data.role);
+    }
+    return { token, role: data.role || "rep", ...data };
+  },
+
+  logout: async () => {
+    try {
+      await AsyncStorage.removeItem("agronav_token");
+      await AsyncStorage.removeItem("agronav_role");
+    } catch {}
+  },
+
+  getToken,
+
   morningSync: async () => {
     try {
       const headers = await authHeaders();

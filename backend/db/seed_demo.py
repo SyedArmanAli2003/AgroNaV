@@ -157,6 +157,9 @@ async def seed_demo_data(db):
     except Exception as e:
         print(f"[seed] retailers->outlets sync error: {e}")
 
+    # ── Seed demo visit logs so the learning loop + recalibration look real ───
+    await _seed_demo_visit_logs(db)
+
     # ── Check if real retailers are seeded ───────────────────────────────────
     try:
         async with db.execute("SELECT COUNT(*) as c FROM retailers") as rc:
@@ -187,6 +190,73 @@ async def seed_demo_data(db):
 
     # ── Seed all real data tables ────────────────────────────────────────────
     await _seed_all_tables(db)
+
+
+async def _seed_demo_visit_logs(db):
+    """
+    Seed 10 realistic demo visit logs for the demo rep so the learning loop and
+    recalibration have enough signal to look meaningful in the demo. Idempotent:
+    only runs when the total visit_logs count is below 12.
+
+    Mix: 4 sale, 3 order, 2 none (price concern), 1 Rejected (already stocked),
+    spread across the last 14 days, against the top outlets.
+    """
+    try:
+        async with db.execute("SELECT COUNT(*) AS c FROM visit_logs") as cur:
+            row = await cur.fetchone()
+            total = row["c"] if row else 0
+        if total >= 12:
+            return  # already have enough — nothing to do
+
+        # Grab the top outlets to attach the visits to
+        async with db.execute("SELECT id, name FROM outlets ORDER BY id LIMIT 10") as cur:
+            outlets = await cur.fetchall()
+        if not outlets:
+            print("[seed] no outlets yet — skipping demo visit log seed")
+            return
+
+        rep_id = "REP_0203"  # the demo rep account
+        products = ["Tilt 250 EC", "Score 250 EC", "Kavach 75 WP", "Amistar 250 SC",
+                    "Actara 25 WG", "Cruiser 350 FS", "Vertimec 1.8 EC", "Alto 5 SC",
+                    "Axial 50 EC", "Movondo"]
+
+        # (outcome, outcome_score, order_value, rejection_reason)
+        plan = [
+            ("sale",      10, 12000, ""),
+            ("sale",      10,  9000, ""),
+            ("sale",      10, 15000, ""),
+            ("sale",      10,  7500, ""),
+            ("order",      8,  5000, ""),
+            ("order",      8,  6200, ""),
+            ("order",      8,  4800, ""),
+            ("none",     -10,     0, "price concern"),
+            ("none",     -10,     0, "price concern"),
+            ("Rejected", -10,     0, "already stocked"),
+        ]
+
+        seeded = 0
+        for i, (outcome, score, order_value, reason) in enumerate(plan):
+            o = outlets[i % len(outlets)]
+            days_ago = (i % 13) + 1  # spread across last 1–13 days
+            await db.execute(
+                """INSERT INTO visit_logs
+                   (outlet_id, rep_id, retailer_id, retailer_name, date, visit_type,
+                    product_discussed, outcome, notes, synced, outcome_score,
+                    order_value, rejection_reason, submitted_at)
+                   VALUES (?,?,?,?,date('now', ?),?,?,?,?,1,?,?,?,datetime('now', ?))""",
+                (
+                    o["id"], rep_id, f"RTL_{o['id']:05d}", o["name"],
+                    f"-{days_ago} days", "retailer_meeting",
+                    products[i % len(products)], outcome,
+                    "Demo seed visit", score, order_value, reason,
+                    f"-{days_ago} days",
+                )
+            )
+            seeded += 1
+        await db.commit()
+        print(f"[seed] Seeded {seeded} demo visit logs")
+    except Exception as e:
+        print(f"[seed] demo visit log seed error: {e}")
 
 
 async def _seed_all_tables(db):

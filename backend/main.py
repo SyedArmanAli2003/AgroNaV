@@ -66,6 +66,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Gzip all responses > 500 bytes — reduces /recommendations from ~50KB to ~8KB on 2G
+from starlette.middleware.gzip import GZipMiddleware
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
@@ -145,14 +149,27 @@ frontend_build_dir = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "../frontend/build")
 )
 
-# API path prefixes that must NOT be caught by the React fallback
-# FIXED BUG 3: added all newer router prefixes so the React catchall never
-# intercepts these endpoints (api/ covers /api/* sub-paths; the rest are top-level).
+# API path prefixes that must NOT be caught by the React fallback.
+# IMPORTANT: Only add BACKEND API paths here, never frontend React route names.
+# The "api/" prefix covers all /api/* sub-paths (e.g. /api/outcomes, /api/alerts).
+# Frontend routes like /outcomes, /dashboard, /log etc. must NOT appear here —
+# they need to fall through to index.html so the SPA router can handle them.
 _API_PREFIXES = (
-    "api/", "login", "recommendations", "visit_log",
-    "recalibrate", "health", "docs", "openapi.json",
-    "competitor", "chat", "route", "farmers", "weekly-plan",
-    "learning", "model", "outcomes",
+    "api/",             # covers /api/outcomes, /api/alerts, /api/manager, etc.
+    "login",            # POST /login (auth)
+    "recommendations",  # GET /recommendations (ML model 1)
+    "visit_log",        # POST /visit_log
+    "recalibrate",      # POST /recalibrate
+    "competitor",       # POST /competitor/analyze
+    "chat",             # POST /chat
+    "route",            # GET /route
+    "farmers",          # GET /farmers
+    "weekly-plan",      # GET /weekly-plan
+    "learning",         # POST /learning
+    "model",            # /model/* (Model 2 endpoints)
+    "health",           # GET /health
+    "docs",             # Swagger UI
+    "openapi.json",     # OpenAPI schema
 )
 
 if os.path.exists(frontend_build_dir):

@@ -93,6 +93,56 @@ async def recalibrate_explain(
     }
 
 
+# ── FIX 6: weekly learning trend for the manager dashboard ────────────────────
+
+@router.get("/api/recalibrate/history")
+async def recalibrate_history(db=Depends(get_db)):
+    """
+    Weekly acceptance-rate trend computed from all logged visit outcomes.
+    Powers the Manager → Weekly Learning bar chart.
+
+    Returns:
+        weeks:      [{week, visits, acceptance_rate}, ...]  (oldest → newest, max 8)
+        trend:      "improving" | "declining" | "stable"   (last 2 weeks compared)
+        total_logs: total visit_logs counted
+    """
+    weeks = []
+    try:
+        async with db.execute(
+            """SELECT strftime('%W-%Y', date) AS week_key,
+                      COUNT(*) AS visits,
+                      ROUND(SUM(CASE WHEN outcome='sale' THEN 1.0 ELSE 0 END)
+                            * 100.0 / COUNT(*), 1) AS acceptance_rate
+               FROM visit_logs
+               WHERE date IS NOT NULL AND date != ''
+               GROUP BY week_key
+               ORDER BY week_key ASC
+               LIMIT 8"""
+        ) as cur:
+            rows = await cur.fetchall()
+        for r in rows:
+            weeks.append({
+                "week":            r["week_key"],
+                "visits":          r["visits"] or 0,
+                "acceptance_rate": r["acceptance_rate"] if r["acceptance_rate"] is not None else 0.0,
+            })
+    except Exception as e:
+        print(f"[recalibrate/history] query failed: {e}")
+
+    total_logs = sum(w["visits"] for w in weeks)
+
+    # Trend: compare last two weeks' acceptance rate
+    trend = "stable"
+    if len(weeks) >= 2:
+        last, prev = weeks[-1]["acceptance_rate"], weeks[-2]["acceptance_rate"]
+        if last > prev + 2:
+            trend = "improving"
+        elif last < prev - 2:
+            trend = "declining"
+
+    return {"weeks": weeks, "trend": trend, "total_logs": total_logs}
+
+
 # ── Core recalibration logic ──────────────────────────────────────────────────
 
 async def _do_recalibrate(rep_id, db, days: int = 30) -> dict:

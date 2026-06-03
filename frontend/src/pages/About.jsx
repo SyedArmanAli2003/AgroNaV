@@ -82,6 +82,51 @@ function About() {
           </div>
         </section>
 
+        {/* Built for Rural India — rural access section (TASK 10) */}
+        <section style={{ marginBottom: 56 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20, fontFamily: "var(--font-heading)" }}>
+            Built for Rural India
+          </h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
+            {[
+              {
+                icon: "📵",
+                title: "Works Offline in Zero-Signal Areas",
+                desc: "Visit plans and outlet data are cached on the device. Log your visits offline — they sync automatically when you get signal.",
+              },
+              {
+                icon: "📶",
+                title: "Smart on 2G/3G",
+                desc: "Detects slow connections automatically. Loads a lite version using 90% less data — no weather maps, no heavy NBA calls.",
+              },
+              {
+                icon: "📲",
+                title: "Install on Your Phone",
+                desc: "Add to home screen — works like a native app without an app store download. Opens in seconds even from a weak connection.",
+              },
+              {
+                icon: "💬",
+                title: "Share via WhatsApp",
+                desc: "Send today's visit plan to your manager in one tap. Field reps in rural India live on WhatsApp — so does AgroNav.",
+              },
+            ].map((card) => (
+              <div
+                key={card.title}
+                className="glass-card"
+                style={{ borderTop: "2px solid rgba(29,158,117,0.4)" }}
+              >
+                <div style={{ fontSize: 28, marginBottom: 10 }}>{card.icon}</div>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8, fontFamily: "var(--font-heading)" }}>
+                  {card.title}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.65 }}>
+                  {card.desc}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* Works on any device — mobile story (TASK 7) */}
         <section style={{ marginBottom: 56 }}>
           <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20, fontFamily: "var(--font-heading)" }}>Works on any device</h2>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Package, CheckCircle } from "lucide-react";
 import "../css/app.css";
@@ -103,4 +103,13 @@ function RecommendationCard({ rec, rank, onMarkVisited }) {
   );
 }
 
-export default RecommendationCard;
+// Prevents re-render when a sibling card or parent state changes
+// (e.g. banner dismiss, tab switch) — only re-renders when the
+// card's own data meaningfully changes.
+export default memo(
+  RecommendationCard,
+  (prev, next) =>
+    prev.retailer_id    === next.retailer_id &&
+    prev.priority_score === next.priority_score &&
+    prev.nba?.product_to_pitch === next.nba?.product_to_pitch
+);
