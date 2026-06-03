@@ -145,7 +145,7 @@ function PostVisitLog() {
       msg = "Saved offline — syncs when you reconnect";
     }
     setToast(msg);
-    setTimeout(() => navigate("/dashboard", { state: { toastMessage: msg } }), 1800);
+    setTimeout(() => navigate("/outcomes", { state: { toastMessage: msg } }), 1800);
     setSubmitting(false);
   };
 
@@ -404,10 +404,38 @@ function PostVisitLog() {
         {isMobile && <div style={{ height: 80 }} aria-hidden="true" />}
       </form>
 
-      {/* Toast */}
+      {/* Toast — top-right, consistent with dashboard toast */}
       {toast && (
-        <div style={{ position: "fixed", bottom: 82, left: "50%", transform: "translateX(-50%)", background: "var(--glass-bg-strong)", backdropFilter: "blur(12px)", borderRadius: 99, padding: "12px 24px", fontSize: 14, zIndex: 9999, animation: "toastIn 0.25s ease forwards", whiteSpace: "nowrap", border: `1px solid ${toast.includes("offline") ? "var(--color-warning-dim)" : "var(--color-primary-dim)"}`, color: toast.includes("offline") ? "var(--color-warning)" : "var(--color-primary)" }}>
-          {toast.includes("offline") ? <WifiOff size={14} style={{ marginRight: 6, verticalAlign: "-2px" }} /> : <CheckCircle size={14} style={{ marginRight: 6, verticalAlign: "-2px" }} />}
+        <div
+          style={{
+            position: "fixed",
+            top: 70,          // below the navbar
+            right: 20,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background: "rgba(10,20,14,0.97)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            borderRadius: 12,
+            padding: "12px 18px",
+            fontSize: 13,
+            fontWeight: 600,
+            zIndex: 9999,
+            animation: "toastIn 0.3s ease forwards",
+            whiteSpace: "nowrap",
+            border: `1px solid ${
+              toast.includes("offline")
+                ? "rgba(245,158,11,0.4)"
+                : "rgba(29,158,117,0.4)"
+            }`,
+            color: toast.includes("offline") ? "var(--color-warning)" : "var(--color-primary)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+          }}
+        >
+          {toast.includes("offline")
+            ? <WifiOff size={14} style={{ flexShrink: 0 }} />
+            : <CheckCircle size={14} style={{ flexShrink: 0 }} />}
           {toast}
         </div>
       )}

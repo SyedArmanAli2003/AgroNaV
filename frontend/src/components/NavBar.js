@@ -25,6 +25,7 @@ function NavBar() {
   const [aiMode, setAiMode] = useState(
     () => localStorage.getItem("agronav_ai_mode") || "live"
   );
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   const role = user?.role || "rep";
   const TABS = (role === "manager" || role === "admin") ? MANAGER_TABS : REP_TABS;
@@ -39,11 +40,19 @@ function NavBar() {
   };
 
   const handleLogout = useCallback(() => {
-    if (window.confirm("Sign out of AgroNav?")) {
+    if (confirmLogout) {
       logout();
       navigate("/signin");
+    } else {
+      setConfirmLogout(true);
+      // Auto-cancel after 4 seconds if no confirmation
+      setTimeout(() => setConfirmLogout(false), 4000);
     }
-  }, [logout, navigate]);
+  }, [logout, navigate, confirmLogout]);
+
+  const cancelLogout = useCallback(() => {
+    setConfirmLogout(false);
+  }, []);
 
 
   return (
@@ -140,13 +149,28 @@ function NavBar() {
             </span>
           </div>
 
-          <button
-            onClick={handleLogout}
-            title="Sign out"
-            style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 99, padding: "6px 14px", color: "var(--text-muted)", cursor: "pointer", fontSize: 12, fontFamily: "var(--font-body)", display: "flex", alignItems: "center", gap: 6 }}
-          >
-            <LogOut size={13} /> <span className="mobile-hide-sm">Sign out</span>
-          </button>
+          {/* Sign-out: shows inline confirm on first click */}
+          {confirmLogout ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.35)", borderRadius: 99, padding: "4px 10px" }}>
+              <span style={{ fontSize: 11, color: "#f87171", fontWeight: 600, whiteSpace: "nowrap" }}>Sign out?</span>
+              <button
+                onClick={handleLogout}
+                style={{ background: "rgba(239,68,68,0.8)", border: "none", borderRadius: 99, padding: "4px 10px", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-body)" }}
+              >Yes</button>
+              <button
+                onClick={cancelLogout}
+                style={{ background: "transparent", border: "none", borderRadius: 99, padding: "4px 8px", color: "var(--text-muted)", fontSize: 11, cursor: "pointer", fontFamily: "var(--font-body)" }}
+              >Cancel</button>
+            </div>
+          ) : (
+            <button
+              onClick={handleLogout}
+              title="Sign out"
+              style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: 99, padding: "6px 14px", color: "var(--text-muted)", cursor: "pointer", fontSize: 12, fontFamily: "var(--font-body)", display: "flex", alignItems: "center", gap: 6 }}
+            >
+              <LogOut size={13} /> <span className="mobile-hide-sm">Sign out</span>
+            </button>
+          )}
         </div>
       </div>
 

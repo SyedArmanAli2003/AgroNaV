@@ -976,15 +976,18 @@ function Dashboard() {
 
         {toast && (
           <div style={{
-            position: "fixed", bottom: 82, left: "50%", transform: "translateX(-50%)",
-            background: "var(--glass-bg-strong)", backdropFilter: "blur(12px)",
-            borderRadius: 99, padding: "12px 24px",
-            color: "var(--color-primary)", fontSize: 14, zIndex: 9999,
-            animation: "toastIn 0.25s ease forwards", whiteSpace: "nowrap",
-            border: "1px solid var(--color-primary-dim)",
+            position: "fixed", top: 70, right: 20,
+            display: "flex", alignItems: "center", gap: 8,
+            background: "rgba(10,20,14,0.97)", backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            borderRadius: 12, padding: "12px 18px",
+            color: "var(--color-primary)", fontSize: 13, fontWeight: 600,
+            zIndex: 9999, animation: "toastIn 0.3s ease forwards", whiteSpace: "nowrap",
+            border: "1px solid rgba(29,158,117,0.4)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
             fontFamily: "var(--font-body)"
           }}>
-            <CheckCircle size={14} style={{ marginRight: 6, verticalAlign: "-2px" }} />
+            <CheckCircle size={14} style={{ flexShrink: 0 }} />
             {toast}
           </div>
         )}

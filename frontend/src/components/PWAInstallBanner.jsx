@@ -56,37 +56,36 @@ export default function PWAInstallBanner() {
     <div
       style={{
         position: "fixed",
-        left: "50%",
-        transform: "translateX(-50%)",
-        bottom: "calc(76px + env(safe-area-inset-bottom, 0px))", // above bottom tab bar
-        width: "min(440px, calc(100vw - 24px))",
+        top: 68,                              // just below the sticky navbar
+        right: 16,
+        width: "min(340px, calc(100vw - 32px))",
         zIndex: 1300,
         background: "linear-gradient(135deg, #1D9E75, #0e7a55)",
-        borderRadius: 16,
-        boxShadow: "0 12px 40px rgba(29,158,117,0.45), 0 0 0 1px rgba(255,255,255,0.1)",
-        padding: "14px 16px",
+        borderRadius: 14,
+        boxShadow: "0 8px 32px rgba(29,158,117,0.4), 0 0 0 1px rgba(255,255,255,0.1)",
+        padding: "12px 14px",
         display: "flex",
         alignItems: "center",
-        gap: 12,
-        animation: "fadeSlideUp 0.35s ease forwards",
+        gap: 10,
+        animation: "toastIn 0.3s ease forwards",
         fontFamily: "var(--font-body, 'Inter', sans-serif)",
       }}
     >
       <div
         style={{
-          width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
           background: "rgba(255,255,255,0.18)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}
       >
-        <Smartphone size={20} color="#fff" />
+        <Smartphone size={18} color="#fff" />
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#fff", lineHeight: 1.25 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.25 }}>
           Install AgroNav on your phone
         </div>
-        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 2 }}>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 2 }}>
           Works offline — no app store needed.
         </div>
       </div>
@@ -94,26 +93,26 @@ export default function PWAInstallBanner() {
       <button
         onClick={install}
         style={{
-          display: "flex", alignItems: "center", gap: 6,
-          background: "#fff", border: "none", borderRadius: 10,
-          padding: "9px 14px", fontSize: 13, fontWeight: 700,
+          display: "flex", alignItems: "center", gap: 5,
+          background: "#fff", border: "none", borderRadius: 8,
+          padding: "7px 12px", fontSize: 12, fontWeight: 700,
           color: "#0e7a55", cursor: "pointer", flexShrink: 0,
           fontFamily: "inherit",
         }}
       >
-        <Download size={14} /> Install
+        <Download size={13} /> Install
       </button>
 
       <button
         onClick={dismiss}
         aria-label="Dismiss install prompt"
         style={{
-          background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8,
-          width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 6,
+          width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center",
           cursor: "pointer", flexShrink: 0,
         }}
       >
-        <X size={15} color="#fff" />
+        <X size={13} color="#fff" />
       </button>
     </div>
   );

@@ -4,10 +4,16 @@ import { RefreshCw, ClipboardList, CheckCircle, Clock, Leaf, Plus } from "lucide
 import { useAuth } from "../context/AuthContext";
 import { getOutcomes } from "../services/api";
 
+// Maps both backend-normalized values (sale/order/none) AND original frontend labels
 const OUTCOME_STYLES = {
-  "Order placed": { bg: "var(--color-success-dim)", color: "var(--color-success)", label: "Order Placed" },
-  "Interested":   { bg: "var(--color-warning-dim)", color: "var(--color-warning)", label: "Interested" },
-  "Rejected":     { bg: "var(--color-urgent-dim)",  color: "var(--text-muted)",    label: "Rejected" }
+  // Backend-normalized (what is stored in DB)
+  "sale":  { bg: "rgba(29,158,117,0.15)", color: "var(--color-primary)",   label: "Order Placed" },
+  "order": { bg: "rgba(245,158,11,0.15)", color: "var(--color-warning)",   label: "Interested"   },
+  "none":  { bg: "rgba(239,68,68,0.12)",  color: "var(--text-muted)",      label: "Rejected"     },
+  // Frontend labels (for any older records or queued items)
+  "Order placed": { bg: "rgba(29,158,117,0.15)", color: "var(--color-primary)",   label: "Order Placed" },
+  "Interested":   { bg: "rgba(245,158,11,0.15)", color: "var(--color-warning)",   label: "Interested"   },
+  "Rejected":     { bg: "rgba(239,68,68,0.12)",  color: "var(--text-muted)",      label: "Rejected"     },
 };
 
 function timeAgo(dateStr) {
@@ -108,15 +114,20 @@ function Outcomes() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {logs.map((log, i) => {
-          const style = OUTCOME_STYLES[log.outcome] || OUTCOME_STYLES["Rejected"];
+          // Normalize outcome lookup — backend stores "sale"/"order"/"none"
+          const rawOutcome = (log.outcome || "").toLowerCase().trim();
+          const style = OUTCOME_STYLES[log.outcome] || OUTCOME_STYLES[rawOutcome] || OUTCOME_STYLES["none"];
           return (
             <div key={log.id || i} className="glass-card" style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 600, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontFamily: "var(--font-heading)" }}>
-                  {log.outlet_name || log.retailer_id || "Unknown Retailer"}
+                  {log.retailer_name || log.outlet_name || log.retailer_id || "Unknown Retailer"}
                 </div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                  {timeAgo(log.date || log.queued_at)} · {log.product_discussed || log.notes || "—"}
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2, display: "flex", gap: 6, alignItems: "center" }}>
+                  <span>{timeAgo(log.date || log.queued_at)}</span>
+                  {(log.product_discussed || log.visit_type) && <span style={{ opacity: 0.5 }}>·</span>}
+                  {log.product_discussed && <span>{log.product_discussed}</span>}
+                  {log.visit_type && !log.product_discussed && <span style={{ textTransform: "capitalize" }}>{log.visit_type.replace(/_/g, " ")}</span>}
                 </div>
               </div>
               <div style={{ background: style.bg, color: style.color, borderRadius: 99, padding: "4px 12px", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 }}>
