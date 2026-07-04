@@ -101,7 +101,7 @@ async def get_manager_kpis(
         row = await cursor.fetchone()
         acceptance = row["acceptance_rate"] if row else 0.0
 
-    # Outlets (legacy)
+    # Outlets in territory (used only for high_priority_pending below)
     async with db.execute("SELECT * FROM outlets WHERE district=?", (territory,)) as cursor:
         outlets = await cursor.fetchall()
 
@@ -140,7 +140,7 @@ async def get_manager_kpis(
         "kpis": {
             "total_retailers": retailers_count,
             "reps_count": reps_count,
-            "visits_today": len(outlets),
+            "visits_today": visits_completed,
             "visits_completed": visits_completed,
             "high_priority_pending": sum(
                 1 for o in outlets
@@ -238,10 +238,12 @@ async def update_retailer(
     db=Depends(get_db)
 ):
     """Update retailer info. Only owner manager can update."""
-    # Build dynamic update
+    ALLOWED_FIELDS = {"retailer_name", "contact_name", "phone", "tehsil", "is_active"}
     fields = []
     values = []
     for field, val in data.dict(exclude_none=True).items():
+        if field not in ALLOWED_FIELDS:
+            continue
         fields.append(f"{field}=?")
         values.append(val)
 

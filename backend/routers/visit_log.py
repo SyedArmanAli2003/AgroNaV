@@ -67,13 +67,18 @@ async def log_visit(req: VisitLogRequest, db=Depends(get_db)):
     today = datetime.now().strftime("%Y-%m-%d")
 
     try:
+        outlet_id_val = None
+        try:
+            outlet_id_val = int(req.retailer_id)
+        except (ValueError, TypeError):
+            pass
         await db.execute(
             """INSERT INTO visit_logs
                (outlet_id, retailer_id, retailer_name, rep_id, date, outcome,
                 notes, synced, outcome_score, visit_type, product_discussed,
                 order_value)
                VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)""",
-            (req.retailer_id, req.retailer_id, req.retailer_name or "",
+            (outlet_id_val, req.retailer_id, req.retailer_name or "",
              req.rep_id, today, normalized_outcome,
              notes, outcome_score, req.visit_type,
              req.product_discussed or "", req.order_value or 0)

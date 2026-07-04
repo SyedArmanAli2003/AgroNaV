@@ -70,12 +70,17 @@ async def log_outcome(outcome: OutcomeLog, db=Depends(get_db)):
         product_discussed = getattr(outcome, 'product_discussed', '') or ''
         visit_type = getattr(outcome, 'visit_type', None) or 'retailer_meeting'
 
+        outlet_id_val = None
+        try:
+            outlet_id_val = int(outcome.outlet_id) if outcome.outlet_id is not None else None
+        except (ValueError, TypeError):
+            outlet_id_val = None
         await db.execute(
             """INSERT INTO visit_logs
                (outlet_id, rep_id, date, outcome, notes, synced, outcome_score, order_value, rejection_reason,
                 retailer_id, retailer_name, product_discussed, visit_type)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (outcome.outlet_id, getattr(outcome, 'rep_id', 1), today,
+            (outlet_id_val, str(getattr(outcome, 'rep_id', '1')), today,
              result, outcome.notes or "", 1,
              outcome_score, order_value, rejection_reason,
              retailer_id, retailer_name,

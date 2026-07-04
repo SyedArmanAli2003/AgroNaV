@@ -71,9 +71,9 @@ async def get_history(
     """
     try:
         async with db.execute(
-            """SELECT id, date, rep_observation, nearby_stores,
+            """SELECT id, date, rep_raw_observation, nearby_stores_detected,
                       threat_type, threat_level, competitor_name,
-                      at_risk_skus, defensive_tp, immediate_action,
+                      at_risk_products, defensive_talking_point, immediate_action,
                       escalate_to_manager, opportunity_flag, created_at
                FROM competitor_intel
                WHERE retailer_id=?
@@ -87,19 +87,19 @@ async def get_history(
         for r in rows:
             import json
             records.append({
-                "id":                    r["id"],
-                "date":                  r["date"],
-                "rep_observation":       r["rep_observation"],
-                "nearby_stores":         r["nearby_stores"],
-                "threat_type":           r["threat_type"],
-                "threat_level":          r["threat_level"],
-                "competitor_name":       r["competitor_name"],
-                "at_risk_skus":          json.loads(r["at_risk_skus"] or "[]"),
-                "defensive_talking_point": r["defensive_tp"],
-                "immediate_action":      r["immediate_action"],
-                "escalate_to_manager":   bool(r["escalate_to_manager"]),
-                "opportunity_flag":      bool(r["opportunity_flag"]),
-                "created_at":            r["created_at"],
+                "id":                      r["id"],
+                "date":                    r["date"],
+                "rep_observation":         r["rep_raw_observation"],
+                "nearby_stores":           r["nearby_stores_detected"],
+                "threat_type":             r["threat_type"],
+                "threat_level":            r["threat_level"],
+                "competitor_name":         r["competitor_name"],
+                "at_risk_skus":            json.loads(r["at_risk_products"] or "[]"),
+                "defensive_talking_point": r["defensive_talking_point"],
+                "immediate_action":        r["immediate_action"],
+                "escalate_to_manager":     bool(r["escalate_to_manager"]),
+                "opportunity_flag":        bool(r["opportunity_flag"]),
+                "created_at":              r["created_at"],
             })
 
         return {"retailer_id": retailer_id, "records": records}

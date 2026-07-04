@@ -115,7 +115,7 @@ async def update_profile(
     if not rep_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    # Build dynamic update
+    ALLOWED_FIELDS = {"name", "district", "state"}
     fields, values = [], []
     if req.name and req.name.strip():
         fields.append("name=?")

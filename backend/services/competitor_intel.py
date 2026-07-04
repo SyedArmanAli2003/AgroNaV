@@ -458,9 +458,9 @@ async def _persist(retailer_id: str, result: dict, nearby_stores: str, rep_text:
         now = datetime.now().isoformat(timespec="seconds")
         await db.execute(
             """INSERT INTO competitor_intel
-               (retailer_id, date, rep_observation, nearby_stores,
+               (retailer_id, date, rep_raw_observation, nearby_stores_detected,
                 threat_type, threat_level, competitor_name,
-                at_risk_skus, defensive_tp, immediate_action,
+                at_risk_products, defensive_talking_point, immediate_action,
                 escalate_to_manager, opportunity_flag, created_at)
                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (

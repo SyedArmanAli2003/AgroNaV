@@ -58,28 +58,35 @@ async def _get_outlets_for_rep(rep_id: str, db) -> tuple[list, str, str]:
     except Exception as e:
         print(f"[route] Rep lookup failed: {e}")
 
-    # Pull retailers for this rep's district (top 10 by priority features)
+    # Pull outlets for this rep's district (top 10 by priority features)
     outlets = []
     try:
         async with db.execute(
-            """SELECT r.retailer_id, r.retailer_name, r.district, r.tehsil,
-                      r.lat, r.lng, r.stock_days_remaining, r.has_pest_alert,
-                      r.crop_growth_stage, r.days_since_last_visit,
-                      COALESCE(r.sales_velocity_30d, 0) as sales_vel
-               FROM retailers r
-               WHERE r.district=?
-               AND r.lat IS NOT NULL AND r.lng IS NOT NULL
-               ORDER BY r.has_pest_alert DESC, r.stock_days_remaining ASC
+            """SELECT o.id, o.name, o.district, o.lat, o.lng,
+                      o.stock_days_remaining, o.has_pest_alert, o.crop_stage,
+                      o.last_visit_date
+               FROM outlets o
+               WHERE o.district=?
+               AND o.lat IS NOT NULL AND o.lng IS NOT NULL
+               ORDER BY o.has_pest_alert DESC, COALESCE(o.stock_days_remaining, 99) ASC
                LIMIT 10""",
             (district,)
         ) as cur:
             rows = await cur.fetchall()
 
+        today_date = dt_date.today()
         for r in rows:
-            # Simple priority score: pest alert + low stock + overdue visit
             stock = r["stock_days_remaining"] or 14
-            days  = r["days_since_last_visit"] or 7
-            pest  = r["has_pest_alert"] or 0
+            pest  = int(r["has_pest_alert"] or 0)
+            days  = 7
+            if r["last_visit_date"]:
+                try:
+                    lvd = dt_date.fromisoformat(r["last_visit_date"])
+                    days = (today_date - lvd).days
+                except Exception:
+                    days = 7
+            days = max(1, min(days, 60))
+
             score = min(1.0, (pest * 0.4) + (max(0, 14 - stock) / 14) * 0.35 + (min(days, 30) / 30) * 0.25)
 
             reasons = []
@@ -88,16 +95,16 @@ async def _get_outlets_for_rep(rep_id: str, db) -> tuple[list, str, str]:
             if days > 14:       reasons.append(f"overdue visit ({days} days)")
 
             outlets.append({
-                "retailer_id":          r["retailer_id"],
-                "retailer_name":        r["retailer_name"],
+                "retailer_id":          f"RTL_{r['id']:05d}",
+                "retailer_name":        r["name"],
                 "district":             r["district"],
-                "tehsil":               r["tehsil"],
+                "tehsil":               district,
                 "lat":                  float(r["lat"]),
                 "lng":                  float(r["lng"]),
                 "stock_days_remaining": stock,
                 "has_pest_alert":       pest,
-                "crop_growth_stage":    r["crop_growth_stage"] or "vegetative",
-                "days_since_last_visit":days,
+                "crop_growth_stage":    r["crop_stage"] or "vegetative",
+                "days_since_last_visit": days,
                 "priority_score":       round(score, 3),
                 "reasons":              reasons or ["high priority score"],
             })
