@@ -14,10 +14,7 @@ from db.database import get_db
 
 router = APIRouter()
 
-NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
-
-
-# ── DB context loaders ────────────────────────────────────────────────────────
+# NVIDIA API key will be fetched inside the functions at runtime
 
 async def _rep_context(user_id: str, db) -> dict:
     today = datetime.now().strftime("%Y-%m-%d")
@@ -290,17 +287,18 @@ def _greeting(role: str, name: str, ctx: dict) -> str:
 
 def _call_glm_sync(system: str, message: str):
     """Blocking NVIDIA NIM call — GLM-5.1. Fast-fail timeout so we can cascade quickly."""
-    if not NVIDIA_API_KEY:
+    nvidia_key = os.getenv("NVIDIA_API_KEY", "")
+    if not nvidia_key:
         print("[chat] SKIP GLM: NVIDIA_API_KEY not set")
         return None
-    if NVIDIA_API_KEY.startswith("your_"):
+    if nvidia_key.startswith("your_"):
         print("[chat] SKIP GLM: NVIDIA_API_KEY is still a placeholder (your_...)")
         return None
     try:
         from openai import OpenAI
         client = OpenAI(
             base_url="https://integrate.api.nvidia.com/v1",
-            api_key=NVIDIA_API_KEY,
+            api_key=nvidia_key,
             timeout=6.0,  # Fast-fail: GLM often times out, cascade to Llama
         )
         resp = client.chat.completions.create(
@@ -334,17 +332,18 @@ async def _call_glm(system: str, message: str):
 
 def _call_llama_sync(system: str, message: str):
     """Llama-3.3-70B via NVIDIA NIM (blocking)."""
-    if not NVIDIA_API_KEY:
+    nvidia_key = os.getenv("NVIDIA_API_KEY", "")
+    if not nvidia_key:
         print("[chat] SKIP Llama: NVIDIA_API_KEY not set")
         return None
-    if NVIDIA_API_KEY.startswith("your_"):
+    if nvidia_key.startswith("your_"):
         print("[chat] SKIP Llama: NVIDIA_API_KEY is still a placeholder (your_...)")
         return None
     try:
         from openai import OpenAI
         client = OpenAI(
             base_url="https://integrate.api.nvidia.com/v1",
-            api_key=NVIDIA_API_KEY,
+            api_key=nvidia_key,
             timeout=14.0,
         )
         resp = client.chat.completions.create(
