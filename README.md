@@ -6,7 +6,7 @@
 
 **IITM × Syngenta Hackathon 2026**
 
-[![Frontend Live Demo](https://img.shields.io/badge/Live%20Demo-Netlify-00C7B7?style=for-the-badge&logo=netlify&logoColor=white)](https://agronav-frontend.netlify.app)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://agronav.onrender.com)
 [![Backend](https://img.shields.io/badge/FastAPI-0.136-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Frontend](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
 [![ML](https://img.shields.io/badge/CatBoost-AUC%200.79-FF6600?style=for-the-badge)](https://catboost.ai)
@@ -510,31 +510,20 @@ docker run -p 8080:8080 \
   agronav
 ```
 
-### Google Cloud Run
+### Render (Automatic Deployment)
 
-```bash
-# Authenticate
-gcloud auth login
-gcloud config set project agronav-496820
+This project contains a `render.yaml` blueprint file for easy, free deployment on Render. It builds both the React frontend and Python FastAPI backend inside a single Docker container, serving the entire application from a single URL (no CORS configuration needed!).
 
-# Build and push image
-gcloud builds submit \
-  --tag gcr.io/agronav-496820/agronav:latest \
-  --timeout=25m .
+To deploy:
+1. Sign up for a free account at [Render.com](https://render.com) (no credit card required).
+2. Connect your GitHub account to Render.
+3. Click **New** -> **Blueprint**.
+4. Select your connected **AgroNaV** repository.
+5. Render will automatically read `render.yaml` and configure the web service with all the required environment variables.
+6. Click **Apply** and wait for the build to complete!
 
-# Deploy to Cloud Run
-gcloud run deploy agronav \
-  --image gcr.io/agronav-496820/agronav:latest \
-  --platform managed \
-  --region us-central1 \
-  --memory 2Gi \
-  --cpu 2 \
-  --allow-unauthenticated \
-  --port 8080 \
-  --set-env-vars "GEMINI_API_KEY=...,OPENROUTER_API_KEY=...,SECRET_KEY=..."
-```
+Your app will be live at `https://agronav.onrender.com` (or whatever custom domain Render generates for you).
 
-**Live deployment:** https://agronav-730909394840.us-central1.run.app
 
 ---
 
