@@ -7,7 +7,6 @@
 **IITM × Syngenta Hackathon 2026**
 
 [![Frontend Live Demo](https://img.shields.io/badge/Live%20Demo-Netlify-00C7B7?style=for-the-badge&logo=netlify&logoColor=white)](https://agronav-frontend.netlify.app)
-[![Backend Live Demo](https://img.shields.io/badge/Live%20Demo-Cloud%20Run-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)](https://agronav-730909394840.us-central1.run.app)
 [![Backend](https://img.shields.io/badge/FastAPI-0.136-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Frontend](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
 [![ML](https://img.shields.io/badge/CatBoost-AUC%200.79-FF6600?style=for-the-badge)](https://catboost.ai)
