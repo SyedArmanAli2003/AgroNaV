@@ -13,11 +13,16 @@ import bcrypt
 # JWT configuration
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 if not JWT_SECRET:
-    JWT_SECRET = secrets.token_urlsafe(32)
-    print("[auth] WARNING: No JWT_SECRET in .env — generated random secret (changes on restart)")
+    # Stable fallback: derive from hostname so tokens survive restarts on the same
+    # machine/container image. For production, always set JWT_SECRET env var.
+    import hashlib, socket
+    _seed = f"agronav-stable-{socket.gethostname()}"
+    JWT_SECRET = hashlib.sha256(_seed.encode()).hexdigest()
+    print("[auth] WARNING: No JWT_SECRET in env — using stable derived secret. "
+          "Set JWT_SECRET env var in Cloud Run for production security.")
 
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRY_DAYS = 7
+JWT_EXPIRY_DAYS = 30  # Extended from 7 so users aren't kicked out after a week
 
 
 # ---- Password hashing ----

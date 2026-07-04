@@ -967,7 +967,50 @@ function Manager() {
           >
             <RefreshCw size={14} /> Trigger Recalibration
           </button>
-          <button style={{ padding: "11px 18px", borderRadius: 99, border: "1px solid var(--glass-border)", background: "var(--glass-bg)", color: "var(--text-secondary)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)", display: "flex", alignItems: "center", gap: 6 }}>
+          <button
+            onClick={async () => {
+              showToast("Generating report…");
+              try {
+                // Fetch visit logs for all reps in this territory
+                const token = localStorage.getItem("agronav_token");
+                const rows = [];
+                // Header row
+                rows.push(["Rep ID","Rep Name","Retailer","Tehsil","Product","Outcome","Date","Notes"].join(","));
+                // Per-rep logs
+                for (const rep of reps) {
+                  try {
+                    const res = await fetch(`/api/outcomes?rep_id=${encodeURIComponent(rep.rep_id)}`, { headers: { Authorization: `Bearer ${token}` } });
+                    const data = await res.json();
+                    for (const log of (data.logs || [])) {
+                      const outcomeLabel = log.outcome === "sale" ? "Order Placed" : log.outcome === "order" ? "Interested" : "Rejected";
+                      rows.push([
+                        rep.rep_id,
+                        `"${rep.name}"`,
+                        `"${log.retailer_name || log.outlet_name || log.retailer_id || ""}"`  ,
+                        `"${log.visit_type || ""}"`  ,
+                        `"${log.product_discussed || ""}"`  ,
+                        outcomeLabel,
+                        log.date || "",
+                        `"${(log.notes || "").replace(/"/g, "'")}"`,
+                      ].join(","));
+                    }
+                  } catch {}
+                }
+                const csv = rows.join("\n");
+                const blob = new Blob([csv], { type: "text/csv" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `agronav-report-${new Date().toISOString().split("T")[0]}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast("Report downloaded");
+              } catch {
+                showToast("Export failed — try again");
+              }
+            }}
+            style={{ padding: "11px 18px", borderRadius: 99, border: "1px solid var(--glass-border)", background: "var(--glass-bg)", color: "var(--text-secondary)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)", display: "flex", alignItems: "center", gap: 6 }}
+          >
             <Download size={14} /> Export Report
           </button>
         </div>
