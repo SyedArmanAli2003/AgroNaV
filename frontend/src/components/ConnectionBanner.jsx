@@ -13,6 +13,9 @@ export default function ConnectionBanner() {
   useEffect(() => {
     const goOnline  = () => setStatus("online");
     const goOffline = () => setStatus("offline");
+
+    setStatus(navigator.onLine ? "online" : "offline");
+
     window.addEventListener("online",  goOnline);
     window.addEventListener("offline", goOffline);
     return () => {

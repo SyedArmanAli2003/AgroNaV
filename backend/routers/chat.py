@@ -290,7 +290,11 @@ def _greeting(role: str, name: str, ctx: dict) -> str:
 
 def _call_glm_sync(system: str, message: str):
     """Blocking NVIDIA NIM call — GLM-5.1. Fast-fail timeout so we can cascade quickly."""
-    if not NVIDIA_API_KEY or NVIDIA_API_KEY.startswith("your_"):
+    if not NVIDIA_API_KEY:
+        print("[chat] SKIP GLM: NVIDIA_API_KEY not set")
+        return None
+    if NVIDIA_API_KEY.startswith("your_"):
+        print("[chat] SKIP GLM: NVIDIA_API_KEY is still a placeholder (your_...)")
         return None
     try:
         from openai import OpenAI
@@ -330,7 +334,11 @@ async def _call_glm(system: str, message: str):
 
 def _call_llama_sync(system: str, message: str):
     """Llama-3.3-70B via NVIDIA NIM (blocking)."""
-    if not NVIDIA_API_KEY or NVIDIA_API_KEY.startswith("your_"):
+    if not NVIDIA_API_KEY:
+        print("[chat] SKIP Llama: NVIDIA_API_KEY not set")
+        return None
+    if NVIDIA_API_KEY.startswith("your_"):
+        print("[chat] SKIP Llama: NVIDIA_API_KEY is still a placeholder (your_...)")
         return None
     try:
         from openai import OpenAI
@@ -369,7 +377,11 @@ async def _call_llama(system: str, message: str):
 async def _call_gemini_flash(system: str, message: str):
     """Gemini 2.0 Flash via google-generativeai."""
     gemini_key = os.getenv("GEMINI_API_KEY", "")
-    if not gemini_key or gemini_key.startswith("get_from"):
+    if not gemini_key:
+        print("[chat] SKIP Gemini: GEMINI_API_KEY not set")
+        return None
+    if gemini_key.startswith("get_from"):
+        print("[chat] SKIP Gemini: GEMINI_API_KEY is still a placeholder (get_from...)")
         return None
     try:
         import asyncio
@@ -387,24 +399,44 @@ async def _call_gemini_flash(system: str, message: str):
         return None
 
 
-def _fallback_reply(role: str, ctx: dict) -> str:
+def _fallback_reply(role: str, ctx: dict, message: str) -> str:
+    msg_lower = message.lower()
     if role == "rep":
+        pending = ctx.get("pending_visits", 0)
+        top = ctx.get("top_priority_outlet", "N/A")
+        visited = ctx.get("visit_count_today", 0)
+
+        if any(w in msg_lower for w in ["next", "where", "which", "who", "priority", "top"]):
+            if top != "N/A":
+                return f"Your top priority outlet is {top}. You have {pending} outlets still to visit today."
+            return f"You have {visited} visits logged today with {pending} still pending."
+        if any(w in msg_lower for w in ["how many", "count", "stats", "status", "progress", "summary"]):
+            return f"You've visited {visited} outlets today. {pending} remaining. Top priority: {top}."
         return (
-            f"You have {ctx.get('visit_count_today', 0)} visits logged today "
-            f"with {ctx.get('pending_visits', 0)} outlets still pending. "
-            f"Your top priority outlet is {ctx.get('top_priority_outlet', 'N/A')}."
+            f"AI models are currently unavailable, but here's your status: "
+            f"{visited} visits logged, {pending} pending. Top priority: {top}. "
+            f"How can I help with your day?"
         )
     elif role == "manager":
+        visited_reps = ctx.get("reps_visited_today", 0)
+        total = ctx.get("total_reps", 0)
+        rate = ctx.get("acceptance_rate", 0)
+
+        if any(w in msg_lower for w in ["revenue", "sales", "accept", "rate", "kpi", "performance"]):
+            return f"Acceptance rate this week is {rate}%. {visited_reps} of {total} reps visited today."
+        if any(w in msg_lower for w in ["rep", "team", "who", "coach"]):
+            return f"{visited_reps} of {total} reps have visited today. Acceptance rate: {rate}%."
         return (
-            f"Team status: {ctx.get('reps_visited_today', 0)} of "
-            f"{ctx.get('total_reps', 0)} reps have visited today. "
-            f"Acceptance rate this week: {ctx.get('acceptance_rate', 0)}%."
+            f"AI models are currently unavailable. Team status: {visited_reps}/{total} reps visited, "
+            f"{rate}% acceptance rate this week. What would you like to know?"
         )
     else:
+        visits = ctx.get("total_visits_today", 0)
+        reps = ctx.get("active_reps", 0)
+        rate = ctx.get("acceptance_rate", 0)
         return (
-            f"System: {ctx.get('total_visits_today', 0)} visits today, "
-            f"{ctx.get('active_reps', 0)} active reps, "
-            f"{ctx.get('acceptance_rate', 0)}% acceptance rate (30-day)."
+            f"AI models are currently unavailable. System: {visits} visits today, "
+            f"{reps} active reps, {rate}% acceptance rate (30-day). Ask me anything!"
         )
 
 
@@ -485,7 +517,7 @@ async def chat(body: dict, db=Depends(get_db)):
     # Final rule-based fallback (all LLMs failed)
     if not reply:
         print("[chat] All LLMs failed, using rule-based fallback")
-        reply = _fallback_reply(role, ctx)
+        reply = _fallback_reply(role, ctx, message)
         model_used = "fallback"
 
     return {"reply": reply, "context": ctx, "model_used": model_used}

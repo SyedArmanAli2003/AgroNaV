@@ -268,10 +268,10 @@ export default function ChatBot() {
             padding: "0 14px 8px", fontSize: 10, color: "rgba(255,255,255,0.35)",
             textAlign: "center", flexShrink: 0,
           }}>
-            Powered by {
+            {
               (modelUsed === "fallback" || modelUsed === "rule-based" || modelUsed === "rule-based-fallback")
-                ? "Offline mode"
-                : (MODELS.find(m => m.id === modelUsed)?.label || modelUsed)
+                ? "AI unavailable — showing data summary"
+                : `Powered by ${MODELS.find(m => m.id === modelUsed)?.label || modelUsed}`
             }
           </div>
         </div>
