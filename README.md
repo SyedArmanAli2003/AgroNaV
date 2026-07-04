@@ -6,7 +6,8 @@
 
 **IITM × Syngenta Hackathon 2026**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Cloud%20Run-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)](https://agronav-730909394840.us-central1.run.app)
+[![Frontend Live Demo](https://img.shields.io/badge/Live%20Demo-Netlify-00C7B7?style=for-the-badge&logo=netlify&logoColor=white)](https://agronav-frontend.netlify.app)
+[![Backend Live Demo](https://img.shields.io/badge/Live%20Demo-Cloud%20Run-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)](https://agronav-730909394840.us-central1.run.app)
 [![Backend](https://img.shields.io/badge/FastAPI-0.136-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Frontend](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
 [![ML](https://img.shields.io/badge/CatBoost-AUC%200.79-FF6600?style=for-the-badge)](https://catboost.ai)
@@ -555,10 +556,10 @@ The app ships with seeded demo accounts. Use these to explore without signing up
 
 | Name | Role | Contribution |
 |------|------|-------------|
-| **Syed Arman Ali** | Fullstack Developer | React frontend, FastAPI backend, Cloud Run deployment, ML API integration, auth system, UI/UX ,Frontend components, API services, UI implementation, visit logging system |
+| **Syed Arman Ali** | Fullstack Developer | React frontend, FastAPI backend, Project deployment, ML API integration, auth system, UI/UX ,Frontend components, API services, UI implementation, visit logging system , MCP server integration via netlify|
 | **Md Ehtesham Ansari** | ML Model Developer |  Model 2 (XGBoost) training, SHAP integration, anomaly detection, feature engineering |
 | **Dweep** | ML Model devloper | Model 1 (CatBoost) training, SHAP integration, anomaly detection, feature engineering |
-| **Himanshu Sengar** | Project Manager | Product roadmap, requirements, coordination, presentation, demo scripting |
+
 
 ---
 

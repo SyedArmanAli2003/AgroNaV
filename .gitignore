@@ -13,3 +13,4 @@ catboost_info/
 data/raw/
 *.csv
 *.parquet
+frontend/netlify.toml
